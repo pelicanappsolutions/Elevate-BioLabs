@@ -1,0 +1,208 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { SearchX } from "lucide-react";
+import type { Prisma, ProductForm } from "@prisma/client";
+
+import { db } from "@/lib/db";
+import { ProductCard } from "@/components/product-card";
+import { ProductFilters } from "@/components/products/product-filters";
+import { SortSelect } from "@/components/products/sort-select";
+import { Button } from "@/components/ui/button";
+
+export const metadata: Metadata = {
+  title: "Peptide Catalog",
+  description:
+    "Browse third-party tested research peptides — filter by category, purity, form, and price. For Research Use Only.",
+};
+
+export const revalidate = 120;
+
+const PAGE_SIZE = 12;
+
+const SORTS = {
+  newest: { createdAt: "desc" },
+  "price-asc": { priceCents: "asc" },
+  "price-desc": { priceCents: "desc" },
+  name: { name: "asc" },
+} satisfies Record<string, Prisma.ProductOrderByWithRelationInput>;
+
+type SortKey = keyof typeof SORTS;
+
+interface SearchParams {
+  q?: string;
+  category?: string;
+  form?: string;
+  minPrice?: string;
+  maxPrice?: string;
+  inStock?: string;
+  sort?: string;
+  page?: string;
+}
+
+/** Build the Prisma filter from URL state. URL is the single source of truth,
+ *  so filters survive refresh, share, and back-button. */
+function buildWhere(sp: SearchParams): Prisma.ProductWhereInput {
+  const where: Prisma.ProductWhereInput = { active: true };
+
+  if (sp.q) {
+    where.OR = [
+      { name: { contains: sp.q, mode: "insensitive" } },
+      { sku: { contains: sp.q, mode: "insensitive" } },
+      { cas: { contains: sp.q, mode: "insensitive" } },
+      { description: { contains: sp.q, mode: "insensitive" } },
+    ];
+  }
+  if (sp.category) where.category = { slug: sp.category };
+  if (sp.form) where.form = sp.form as ProductForm;
+  if (sp.inStock === "1") where.stock = { gt: 0 };
+
+  const min = sp.minPrice ? Math.round(Number(sp.minPrice) * 100) : undefined;
+  const max = sp.maxPrice ? Math.round(Number(sp.maxPrice) * 100) : undefined;
+  if (Number.isFinite(min) || Number.isFinite(max)) {
+    where.priceCents = {
+      ...(Number.isFinite(min) ? { gte: min } : {}),
+      ...(Number.isFinite(max) ? { lte: max } : {}),
+    };
+  }
+  return where;
+}
+
+function buildQuery(sp: SearchParams, overrides: Partial<SearchParams>) {
+  const merged = { ...sp, ...overrides };
+  const params = new URLSearchParams();
+  for (const [k, v] of Object.entries(merged)) {
+    if (v != null && v !== "") params.set(k, String(v));
+  }
+  const qs = params.toString();
+  return qs ? `/products?${qs}` : "/products";
+}
+
+export default async function ProductsPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
+  const page = Math.max(1, Number(searchParams.page) || 1);
+  const sortKey = (searchParams.sort && searchParams.sort in SORTS
+    ? searchParams.sort
+    : "newest") as SortKey;
+
+  const where = buildWhere(searchParams);
+
+  const [products, total, categories] = await Promise.all([
+    db.product.findMany({
+      where,
+      include: { images: { orderBy: { sortOrder: "asc" }, take: 1 } },
+      orderBy: SORTS[sortKey],
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+    }),
+    db.product.count({ where }),
+    db.category.findMany({ orderBy: { sortOrder: "asc" } }),
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const hasFilters = Boolean(
+    searchParams.q ||
+      searchParams.category ||
+      searchParams.form ||
+      searchParams.minPrice ||
+      searchParams.maxPrice ||
+      searchParams.inStock
+  );
+
+  return (
+    <div className="container-tight py-8 sm:py-12">
+      <header className="mb-6">
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+          {searchParams.q ? `Results for "${searchParams.q}"` : "Peptide catalog"}
+        </h1>
+        <p className="mt-1.5 text-sm text-muted-foreground">
+          {total} product{total === 1 ? "" : "s"} • All compounds supplied For Research
+          Use Only
+        </p>
+      </header>
+
+      <div className="grid gap-6 lg:grid-cols-[240px_1fr]">
+        {/* Filters: collapsible accordion on mobile, sticky rail on desktop */}
+        <ProductFilters categories={categories} />
+
+        <div>
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <p className="text-xs text-muted-foreground sm:text-sm">
+              Showing {products.length ? (page - 1) * PAGE_SIZE + 1 : 0}–
+              {(page - 1) * PAGE_SIZE + products.length} of {total}
+            </p>
+            <SortSelect />
+          </div>
+
+          {products.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-border p-12 text-center">
+              <SearchX className="mx-auto h-8 w-8 text-muted-foreground" />
+              <h2 className="mt-3 text-base font-semibold">No products match</h2>
+              <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
+                {hasFilters
+                  ? "Try widening your filters or clearing the search."
+                  : "The catalog is empty. Run npm run db:seed to load sample products."}
+              </p>
+              {hasFilters && (
+                <Button asChild variant="outline" className="mt-4">
+                  <Link href="/products">Clear all filters</Link>
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+              {products.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+          )}
+
+          {totalPages > 1 && (
+            <nav
+              className="mt-8 flex items-center justify-center gap-2"
+              aria-label="Pagination"
+            >
+              <Button
+                asChild={page > 1}
+                variant="outline"
+                size="sm"
+                disabled={page <= 1}
+                className="tap"
+              >
+                {page > 1 ? (
+                  <Link href={buildQuery(searchParams, { page: String(page - 1) })}>
+                    Previous
+                  </Link>
+                ) : (
+                  <span>Previous</span>
+                )}
+              </Button>
+
+              <span className="px-2 text-sm text-muted-foreground">
+                Page {page} of {totalPages}
+              </span>
+
+              <Button
+                asChild={page < totalPages}
+                variant="outline"
+                size="sm"
+                disabled={page >= totalPages}
+                className="tap"
+              >
+                {page < totalPages ? (
+                  <Link href={buildQuery(searchParams, { page: String(page + 1) })}>
+                    Next
+                  </Link>
+                ) : (
+                  <span>Next</span>
+                )}
+              </Button>
+            </nav>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

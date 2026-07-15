@@ -1,0 +1,44 @@
+import { NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { getTracking } from "@/lib/shipping/usps";
+import { env } from "@/lib/env";
+
+/**
+ * Tracking sync. USPS tracking is pull-based, so instead of an inbound webhook
+ * we poll: this endpoint (wire it to a Vercel Cron, e.g. every 6h) walks all
+ * SHIPPED orders, pulls the latest USPS status, and flips the order to DELIVERED
+ * when USPS reports delivery.
+ *
+ * Protect with a bearer secret so only Vercel Cron / ops can trigger it.
+ */
+export async function GET(req: Request) {
+  const authz = req.headers.get("authorization");
+  if (env.AUTH_SECRET && authz !== `Bearer ${env.AUTH_SECRET}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const shipped = await db.order.findMany({
+    where: { status: "SHIPPED", trackingNumber: { not: null } },
+    select: { id: true, trackingNumber: true, orderNumber: true },
+    take: 200,
+  });
+
+  let updated = 0;
+  for (const order of shipped) {
+    if (!order.trackingNumber) continue;
+    try {
+      const t = await getTracking(order.trackingNumber);
+      if (/delivered/i.test(t.status)) {
+        await db.order.update({
+          where: { id: order.id },
+          data: { status: "DELIVERED", deliveredAt: new Date() },
+        });
+        updated++;
+      }
+    } catch {
+      // skip this order on transient errors; next run retries
+    }
+  }
+
+  return NextResponse.json({ ok: true, checked: shipped.length, delivered: updated });
+}
