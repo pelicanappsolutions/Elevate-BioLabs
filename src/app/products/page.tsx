@@ -113,9 +113,16 @@ export default async function ProductsPage({
 
   return (
     <div className="container-tight py-8 sm:py-12">
+      <nav className="mb-4 text-xs text-muted-foreground" aria-label="Breadcrumb">
+        <Link href="/" className="hover:text-foreground">
+          Home
+        </Link>{" "}
+        <span className="mx-1">/</span> Shop Peptides
+      </nav>
+
       <header className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-          {searchParams.q ? `Results for "${searchParams.q}"` : "Peptide catalog"}
+          {searchParams.q ? `Results for "${searchParams.q}"` : "Shop Research Peptides"}
         </h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
           {total} product{total === 1 ? "" : "s"} • All compounds supplied For Research

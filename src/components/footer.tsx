@@ -3,25 +3,31 @@ import { FlaskConical } from "lucide-react";
 
 import { NewsletterSignup } from "@/components/newsletter-signup";
 
-const SHOP_LINKS = [
-  { href: "/products", label: "Catalog" },
-  { href: "/products?category=peptides", label: "Peptides" },
+const CATEGORY_LINKS = [
+  { href: "/products?category=metabolic", label: "Metabolic" },
+  { href: "/products?category=recovery-repair", label: "Recovery & Repair" },
+  { href: "/products?category=growth-hormone", label: "Growth Hormone" },
+  { href: "/products?category=cognitive", label: "Cognitive" },
   { href: "/products?category=blends", label: "Blends" },
-  { href: "/products?category=accessories", label: "Accessories" },
+  { href: "/products?category=longevity", label: "Longevity" },
+];
+
+const SHOP_LINKS = [
+  { href: "/products/bpc-157-5mg", label: "BPC-157" },
+  { href: "/products/semaglutide-5mg", label: "Semaglutide" },
+  { href: "/products/tirzepatide-10mg", label: "Tirzepatide" },
+  { href: "/products/retatrutide-10mg", label: "Retatrutide" },
+  { href: "/products/klow-blend-80mg", label: "KLOW Blend" },
+  { href: "/products", label: "Shop all peptides →" },
 ];
 
 const SUPPORT_LINKS = [
-  { href: "/contact", label: "Contact" },
-  { href: "/compliance#shipping", label: "Shipping Policy" },
-  { href: "/compliance#refund", label: "Refund Policy" },
-  { href: "/orders/track", label: "Track Order" },
-];
-
-const COMPLIANCE_LINKS = [
-  { href: "/compliance", label: "RUO Policy" },
-  { href: "/compliance#legitscript", label: "LegitScript" },
-  { href: "/compliance#coa", label: "COA Lookup" },
-  { href: "/compliance#batch", label: "Batch/Lot Tracking" },
+  { href: "/dashboard", label: "Order Tracking" },
+  { href: "/certificates", label: "COA Library" },
+  { href: "/verify-coa", label: "Verify a COA" },
+  { href: "/compliance#shipping", label: "Shipping & Returns" },
+  { href: "/compliance#contact", label: "Contact Support" },
+  { href: "/compliance#about", label: "About Us" },
 ];
 
 const PAYMENT_RAILS = ["Card", "ACH", "Crypto", "Zelle"];
@@ -49,11 +55,19 @@ export function Footer() {
               <p className="mb-2 text-sm font-medium">Research updates &amp; COA releases</p>
               <NewsletterSignup />
             </div>
+
+            <div className="mt-6 flex items-start gap-2 text-xs text-muted-foreground">
+              <span className="font-medium text-foreground">Shipping:</span>
+              <span>
+                USPS tracked, ships same day on orders placed before 2pm CT. Domestic (US)
+                delivery only.
+              </span>
+            </div>
           </div>
 
-          <FooterColumn title="Shop" links={SHOP_LINKS} />
-          <FooterColumn title="Support" links={SUPPORT_LINKS} />
-          <FooterColumn title="Compliance" links={COMPLIANCE_LINKS} />
+          <FooterColumn title="Browse Categories" links={CATEGORY_LINKS} />
+          <FooterColumn title="Shop Peptides" links={SHOP_LINKS} />
+          <FooterColumn title="Resources & Support" links={SUPPORT_LINKS} />
         </div>
 
         <div className="mt-10 flex flex-col items-center gap-4 border-t border-border pt-6 text-xs text-muted-foreground sm:flex-row sm:justify-between">

@@ -36,7 +36,12 @@ export async function lookupBatch(
   if (!rl.success) return { ok: false, error: "Too many lookups. Try again shortly." };
 
   const coas = await db.cOA.findMany({
-    where: { batchLot: { contains: parsed.data.batchLot, mode: "insensitive" } },
+    where: {
+      OR: [
+        { batchLot: { contains: parsed.data.batchLot, mode: "insensitive" } },
+        { product: { name: { contains: parsed.data.batchLot, mode: "insensitive" } } },
+      ],
+    },
     include: { product: { select: { name: true, slug: true } } },
     orderBy: { createdAt: "desc" },
     take: 10,

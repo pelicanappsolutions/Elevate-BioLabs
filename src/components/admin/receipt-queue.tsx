@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { Check, ExternalLink, Inbox, Loader2, X } from "lucide-react";
 import type { PaymentRail } from "@prisma/client";
 
@@ -26,6 +27,7 @@ interface QueuedReceipt {
 
 export function ReceiptQueue({ receipts }: { receipts: QueuedReceipt[] }) {
   const { toast } = useToast();
+  const router = useRouter();
   const [busyId, setBusyId] = React.useState<string | null>(null);
 
   /** Approving flips the order to PAID, marks the payment SUCCEEDED, and fires
@@ -39,6 +41,7 @@ export function ReceiptQueue({ receipts }: { receipts: QueuedReceipt[] }) {
           title: "Payment approved",
           description: `${orderNumber} marked PAID — confirmation sent.`,
         });
+        router.refresh();
       } else {
         toast({ title: "Approval failed", description: res.error, variant: "destructive" });
       }
@@ -56,6 +59,7 @@ export function ReceiptQueue({ receipts }: { receipts: QueuedReceipt[] }) {
           title: "Receipt rejected",
           description: `${orderNumber} returned to PENDING_PAYMENT.`,
         });
+        router.refresh();
       } else {
         toast({ title: "Rejection failed", description: res.error, variant: "destructive" });
       }

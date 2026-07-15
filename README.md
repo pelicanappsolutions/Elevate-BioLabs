@@ -1,59 +1,50 @@
 # Elevate Bio-Labs
 
-A production-grade Next.js 14 e-commerce platform for research peptides — catalog, cart, multi-rail checkout, inventory with optimistic locking, USPS shipping, transactional + marketing email, and an admin back office.
+A production-grade Next.js 14 e-commerce platform for research peptides — catalog, cart, multi-rail checkout, inventory with optimistic locking, USPS shipping, transactional + marketing email, batch/COA verification, and a full admin back office.
 
 > **⚠️ FOR RESEARCH USE ONLY (RUO)**
-> All products listed on this platform are intended **strictly for laboratory and in-vitro research use**. They are **not drugs, foods, cosmetics, or dietary supplements**, are **not FDA-approved** for the diagnosis, treatment, cure, mitigation, or prevention of any disease, and are **not for human or veterinary consumption**. Purchasers must certify they are 18+ and qualified researchers. See `ComplianceDoc` (slug `ruo-policy`) for the full policy rendered in-app, plus the age gate and GDPR cookie consent enforced site-wide.
+> All products listed on this platform are intended **strictly for laboratory and in-vitro research use**. They are **not drugs, foods, cosmetics, or dietary supplements**, are **not FDA-approved** for the diagnosis, treatment, cure, mitigation, or prevention of any disease, and are **not for human or veterinary consumption**. Purchasers must certify they are 18+ and qualified researchers. See `/compliance` for the full policy rendered in-app, plus the age gate and cookie consent enforced site-wide.
 
 ---
 
 ## Table of Contents
 
-- [Value Proposition](#value-proposition)
 - [Features](#features)
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
 - [Quick Start](#quick-start)
 - [NPM Scripts](#npm-scripts)
-- [How It All Connects](#how-it-all-connects)
+- [Pages & Routes](#pages--routes)
+- [How Checkout Connects](#how-checkout-connects)
 - [Security Notes](#security-notes)
 - [Further Reading](#further-reading)
 
 ---
 
-## Value Proposition
-
-Elevate Bio-Labs is a batteries-included storefront built for a category (research peptides) with unusual operational demands: fragile card-processing relationships, chargeback-ratio sensitivity, batch/lot traceability, and a hard compliance layer. It solves this with:
-
-- A **swappable payment adapter pattern** so the business can add/drop high-risk-friendly rails (crypto, ACH, P2P) without touching checkout code.
-- **Optimistic-locked inventory** so concurrent checkouts never oversell.
-- **Mock-by-default integrations** — every third-party service (payments, shipping, email, storage) auto-detects missing credentials and falls back to a realistic mock, so the entire app — including checkout — runs locally with **zero external accounts**.
-- A compliance layer (RUO disclaimers, age gate, COA/batch tracking, chargeback-ratio monitoring) built in as first-class data models, not an afterthought.
-
 ## Features
 
-- Product catalog with categories, bulk price tiers, product images, and per-batch Certificates of Analysis (COA)
-- Cart with offline persistence (Zustand + localStorage) that survives refreshes and network loss
-- Multi-rail checkout: card, ACH, crypto, and manual P2P (Zelle/Venmo/Wire) with proof-of-payment upload
-- Optimistic-locked inventory (no overselling under concurrent checkouts)
-- Server-authoritative pricing (bulk tiers + destination sales tax — client cart prices are never trusted)
-- USPS live rates, label purchase, and tracking (OAuth2 client-credentials), with a full mock fallback
-- Transactional email (order confirmation, shipment tracking, password reset, welcome) via SendGrid
-- Marketing automation (welcome series, abandoned cart 24h/48h, post-purchase review, promotions) via Klaviyo
-- Auth.js v5 (Credentials + optional Google OAuth), JWT sessions, role-gated `/admin` and `/dashboard`
-- Admin console: order management, P2P proof-of-payment approval, inventory adjustments, COA uploads
-- Compliance module: RUO disclaimers, 18+ age gate, GDPR cookie consent, LegitScript readiness, VAMP/chargeback-ratio tracking
-- File storage via Vercel Blob (COAs, receipts, invoices) with a local `/public/uploads` dev fallback
-- Dashboard tools for customers: saved products, dosage log, order/tracking history
+- Product catalog (17 seeded compounds across 6 categories) with bulk price tiers, real product photography, filters, sort, and pagination
+- Product detail pages: image gallery, CAS/purity/molar-mass specs, reconstitution dosage calculator, bulk pricing, related products
+- Standalone **batch/COA verification** (`/verify-coa`) and a full **certificate archive** (`/certificates`) — search by batch/lot number or compound name
+- Cart with offline persistence (Zustand + localStorage) that survives refreshes and network loss, with swipe-to-remove on mobile
+- Multi-rail checkout: card (NexaPay), ACH (SeamlessChex), crypto (Coinbase), and manual P2P (Zelle/Venmo/Wire) with proof-of-payment upload
+- Optimistic-locked inventory (`Product.version`) — verified under concurrent load, never oversells
+- Server-authoritative pricing (bulk tiers + destination sales tax); the client cart price is never trusted
+- USPS live rates, label purchase, and tracking, with a full mock fallback for local dev
+- Transactional email (order confirmation, shipment tracking, password reset) via SendGrid; marketing automation via Klaviyo
+- Auth.js v5 (Credentials + optional Google OAuth), JWT sessions, split Edge-safe/Node auth config, role-gated `/admin` and `/dashboard`
+- Admin console: product CRUD (with photo upload), inventory adjustments, order management, P2P receipt approval, COA upload, email campaigns, compliance/LegitScript readiness dashboard (read-only reporting — no doc editor yet)
+- Compliance module: RUO disclaimers, 18+ age gate, cookie consent, LegitScript-readiness copy
+- Mock-by-default integrations — every third-party service (payments, shipping, email, storage) auto-detects missing credentials and falls back to a realistic mock, so the entire app — including checkout — runs locally with **zero external accounts**
 
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
 | Framework | Next.js 14 (App Router), TypeScript (strict) |
-| Styling / UI | Tailwind CSS, shadcn/ui (Radix primitives) |
+| Styling / UI | Tailwind CSS, shadcn/ui (Radix primitives) — light theme, blue brand accent |
 | Client state | Zustand (`persist` middleware → localStorage) |
-| Database | PostgreSQL (Neon or Supabase) |
+| Database | PostgreSQL (Neon, Supabase, or local Docker) |
 | ORM | Prisma (with `Product.version` optimistic locking) |
 | Auth | Auth.js / NextAuth v5 (beta) — Credentials (bcrypt) + optional Google OAuth, JWT sessions |
 | Payments | Adapter pattern: NexaPay, SeamlessChex/AllayPay, PayRam, Stripe, Coinbase Commerce, P2P (Zelle/Venmo/Wire) |
@@ -69,75 +60,54 @@ Elevate Bio-Labs is a batteries-included storefront built for a category (resear
 ```
 elevate-bio-labs/
 ├─ prisma/
-│  ├─ schema.prisma          # User, Account, Session, VerificationToken, Address,
-│  │                         # Category, Product(+version), ProductImage, PriceTier,
-│  │                         # COA, Order, OrderItem, Payment, PaymentReceipt,
-│  │                         # InventoryLog, SavedProduct, DosageLog, AuditLog,
-│  │                         # CampaignEvent, ComplianceDoc, ChargebackMetric
-│  └─ seed.ts                # admin user, 4 categories, 8 peptides w/ tiers+COAs, compliance docs
+│  ├─ schema.prisma          # User, Order, Product(+version), Category, ProductImage,
+│  │                         # PriceTier, COA, Address, DosageLog, SavedProduct,
+│  │                         # InventoryLog, ComplianceDoc, and payment/shipping models
+│  └─ seed.ts                # admin user, 6 categories, 17 products (10 with real photos), COAs
 │
 ├─ src/
-│  ├─ app/                                    # App Router
-│  │  ├─ (marketing)/                         # landing, category, product detail pages
-│  │  ├─ (shop)/cart/, checkout/              # cart + multi-rail checkout flow
-│  │  ├─ dashboard/                           # customer account area (role: CUSTOMER+)
-│  │  ├─ admin/                               # admin console (role: ADMIN, middleware-guarded)
+│  ├─ app/                              # App Router
+│  │  ├─ page.tsx                       # landing: hero, stats, how-it-works, featured products
+│  │  ├─ products/                      # catalog (filters/sort/pagination) + [slug] detail page
+│  │  ├─ cart/, checkout/                # cart + 4-step multi-rail checkout flow
+│  │  ├─ verify-coa/, certificates/      # batch/COA lookup + full certificate archive
+│  │  ├─ login/, register/               # split-screen auth pages (auth-split-layout.tsx)
+│  │  ├─ dashboard/                      # customer account area (orders, dosage log, addresses)
+│  │  ├─ admin/                          # admin console (role: ADMIN, middleware-guarded)
+│  │  ├─ compliance/                     # RUO policy, shipping/refund policy, about, contact
 │  │  ├─ api/
-│  │  │  ├─ auth/[...nextauth]/route.ts       # Auth.js handler
-│  │  │  └─ webhooks/payment/[rail]/route.ts  # single payment webhook endpoint (all rails)
-│  │  ├─ layout.tsx / providers.tsx / globals.css
+│  │  │  ├─ auth/[...nextauth]/route.ts # Auth.js handler
+│  │  │  └─ webhooks/payment/[rail]/route.ts
+│  │  └─ layout.tsx / providers.tsx / globals.css
 │  │
 │  ├─ components/
-│  │  ├─ ui/            # shadcn/ui primitives (button, card, dialog, sheet, tabs, toast, ...)
-│  │  ├─ landing/        # hero, trust badges, featured products
-│  │  ├─ catalog/        # category grid, filters (Sheet on mobile), product cards
-│  │  ├─ product/        # gallery, price tiers, COA viewer, dosage calculator
-│  │  ├─ cart/           # cart drawer, line items, sticky mobile CTA
-│  │  ├─ checkout/       # address form, rail selector, P2P proof upload
-│  │  ├─ dashboard/      # order history, saved products, dosage log
-│  │  ├─ admin/          # order table, receipt approval, inventory, COA upload
-│  │  └─ compliance/     # RUO banner, age gate modal, cookie consent
+│  │  ├─ ui/                # shadcn/ui primitives (button, card, dialog, sheet, tabs, toast, ...)
+│  │  ├─ auth/               # login/register forms, auth-split-layout.tsx
+│  │  ├─ products/           # gallery, filters, add-to-cart, dosage calculator
+│  │  ├─ cart/               # swipe-to-remove line items, sticky checkout CTA
+│  │  ├─ checkout/           # step flow, payment rail selector, P2P proof upload
+│  │  ├─ dashboard/          # order history, dosage log, address book
+│  │  ├─ admin/              # products, orders, receipt queue, COA uploader
+│  │  ├─ compliance/         # batch lookup (with suggestion chips), contact form
+│  │  ├─ navbar.tsx / footer.tsx / age-gate.tsx / cookie-consent.tsx
 │  │
 │  ├─ lib/
-│  │  ├─ payments/       # types.ts, index.ts (router: getAdapter/verifyWebhook),
-│  │  │                  # nexapay.ts, seamlesschex.ts, payram.ts, stripe.ts, coinbase.ts, p2p.ts
-│  │  ├─ shipping/
-│  │  │  └─ usps.ts      # OAuth2 token cache, getRates, createLabel, getTracking (+ MOCK)
-│  │  ├─ email/
-│  │  │  ├─ index.ts     # facade: sendTransactional, trackMarketing, subscribeNewsletter
-│  │  │  ├─ sendgrid.ts  # transactional templates + send
-│  │  │  └─ klaviyo.ts   # events + list subscription
-│  │  ├─ db.ts           # Prisma client singleton
-│  │  ├─ auth.ts         # NextAuth() config — providers, JWT callbacks
-│  │  ├─ env.ts          # centralized env access + isConfigured.* (MOCK/LIVE detection)
-│  │  ├─ utils.ts        # cn(), resolveUnitPrice(), formatting helpers
-│  │  ├─ validations.ts  # Zod schemas (login, checkout, admin forms, ...)
-│  │  ├─ inventory.ts    # decrementStock() / adjustStock() — optimistic locking
-│  │  ├─ pricing.ts      # priceCart() — server-authoritative tiers + tax
-│  │  ├─ rate-limit.ts   # sliding-window limiter (swap-in for Upstash Redis in prod)
-│  │  └─ storage.ts      # uploadFile() — Vercel Blob or local /public/uploads
+│  │  ├─ payments/           # index.ts (router), meta.ts (client-safe), per-rail adapters
+│  │  ├─ shipping/usps.ts    # OAuth2 token cache, getRates, createLabel, getTracking (+ MOCK)
+│  │  ├─ email/              # sendgrid.ts, klaviyo.ts, index.ts facade
+│  │  ├─ auth.ts / auth.config.ts   # Node config + Edge-safe JWT/session config
+│  │  ├─ db.ts, env.ts, utils.ts, validations.ts, inventory.ts, pricing.ts, rate-limit.ts, storage.ts
 │  │
-│  ├─ actions/           # Server Actions (mutations)
-│  │  ├─ auth.ts         # register, login, password reset
-│  │  ├─ checkout.ts     # priceCart → createCharge → create Order/Payment
-│  │  ├─ proof.ts        # P2P proof-of-payment upload
-│  │  ├─ admin.ts        # order status, receipt approval, inventory, COA upload
-│  │  ├─ dashboard.ts    # saved products, dosage log entries
-│  │  └─ newsletter.ts   # subscribeNewsletter()
-│  │
-│  ├─ store/
-│  │  └─ cart.ts         # useCart — Zustand + persist(localStorage), offline-safe
-│  │
-│  └─ middleware.ts       # guards /admin (role=ADMIN) and /dashboard via Auth.js
+│  ├─ actions/               # Server Actions: auth, checkout, coa, dashboard, admin, newsletter
+│  ├─ store/cart.ts          # Zustand cart, persist(localStorage)
+│  └─ middleware.ts          # Edge-safe auth guard for /admin and /dashboard
 │
 ├─ public/
-│  ├─ manifest.json       # PWA manifest
-│  └─ uploads/            # local dev fallback for Blob storage
+│  ├─ manifest.json
+│  └─ images/products/       # real product photography (10 vials)
 │
-├─ docs/
-│  └─ MOBILE.md
 ├─ .env.example
-├─ README.md / DEPLOYMENT.md / CONNECTIONS.md
+├─ README.md / DEPLOYMENT.md / PROJECT_CONTEXT.md
 └─ package.json / tsconfig.json / tailwind.config.ts / next.config.mjs
 ```
 
@@ -162,7 +132,7 @@ cp .env.example .env
 # 3. Create the schema
 npx prisma migrate dev
 
-# 4. Seed sample data (admin user, categories, 8 peptides, compliance docs)
+# 4. Seed sample data (admin user, 6 categories, 17 products, COAs, compliance docs)
 npm run db:seed
 
 # 5. Run the dev server
@@ -170,6 +140,11 @@ npm run dev
 ```
 
 App runs at `http://localhost:3000`.
+
+> **Port already in use?** If something else is already running on 3000, start on another port
+> (`npm run dev -- -p 3001`) and update `NEXTAUTH_URL` / `NEXT_PUBLIC_SITE_URL` in `.env` to match
+> — Auth.js redirects (login, OAuth callback) use that value and will send you to the wrong port
+> if it's stale.
 
 **Option: local Postgres via Docker**
 
@@ -201,6 +176,16 @@ persists in the container's volume.
 
 > Change this password (or the seed script) before deploying anywhere reachable by the public.
 
+**Production build**
+
+```bash
+npm run build   # prisma generate && next build
+npm run start   # serve the production build
+```
+
+If you've been running a dev server on the same port, stop it first — Next.js won't warn you if
+a stale process is still holding the port; it'll just silently keep serving the old build.
+
 ## NPM Scripts
 
 | Script | Purpose |
@@ -217,79 +202,63 @@ persists in the container's volume.
 | `npm run db:seed` | Run `prisma/seed.ts` |
 | `postinstall` | Auto-runs `prisma generate` after `npm install` |
 
-## How It All Connects
+## Pages & Routes
+
+| Route | Description |
+|---|---|
+| `/` | Landing page — hero, trust badges, stats, how-it-works, featured products, newsletter |
+| `/products` | Catalog — filter by category/form/price/stock, sort, paginate |
+| `/products/[slug]` | Product detail — gallery, specs, COA, dosage calculator, bulk tiers |
+| `/cart` | Cart — swipe-to-remove, order summary |
+| `/checkout` | 4-step checkout — address → delivery → payment rail → review |
+| `/checkout/success` | Order confirmation + payment instructions |
+| `/verify-coa` | Search a batch/lot number or compound name for its Certificate of Analysis |
+| `/certificates` | Full archive of every published COA |
+| `/login`, `/register` | Split-screen auth pages |
+| `/dashboard` | Customer account — orders, tracking, saved products, dosage log, addresses (auth required) |
+| `/admin` | Admin console — products, orders, P2P queue, COAs, email, compliance (ADMIN role required) |
+| `/compliance` | RUO policy, shipping/refund policy, about, contact form |
+
+## How Checkout Connects
 
 ```
-┌─────────────┐      Server Actions / Server Components      ┌──────────────────┐
-│  Frontend    │ ───────────────────────────────────────────▶ │  Prisma  ↔  DB   │
-│ App Router   │ ◀─────────────────────────────────────────── │  (PostgreSQL)    │
-│ + Zustand    │              read models directly            └──────────────────┘
-└──────┬───────┘
-       │ checkout (Server Action)
-       ▼
-┌────────────────────┐   createCharge()   ┌───────────────────────────────┐
-│ src/actions/        │ ─────────────────▶ │ Payment Gateway (adapter)      │
-│ checkout.ts         │                     │ NexaPay / SeamlessChex /       │
-│  priceCart() →       │                     │ PayRam / Stripe / Coinbase /   │
-│  Order+Payment(INITIATED)                  │ P2P (Zelle/Venmo/Wire)        │
-└────────────────────┘                     └───────────────┬───────────────┘
-                                                             │ redirect / instructions
-                                                             ▼
-                                                   customer pays externally
-                                                             │
-                                                             ▼
-                                        POST /api/webhooks/payment/{rail}
-                                                             │ verifyWebhook() — signature check
-                                                             ▼
-                                    ┌───────────────────────────────────────────┐
-                                    │ Update Payment.status + Order.status       │
-                                    │ decrementStock() — OPTIMISTIC LOCKING       │
-                                    │   (Product.version guards the race)         │
-                                    │ sendTransactional("ORDER_CONFIRMATION")     │
-                                    └───────────────────────┬─────────────────────┘
-                                                             │ (idempotent, retry-safe)
-                                                             ▼
-                                                   ┌───────────────────┐
-                                                   │ SendGrid           │
-                                                   │ (transactional)    │
-                                                   └───────────────────┘
-
-Admin fulfillment:
-  admin action → USPS getRates()/createLabel() → trackingNumber+labelUrl saved to Order
-                → sendTransactional("SHIPMENT_TRACKING")
-
-Marketing (async, non-blocking):
-  order events → trackMarketing() → Klaviyo (abandoned cart, post-purchase review, promos)
-                → CampaignEvent row logged
+Frontend (App Router + Zustand cart)
+   │  checkout (Server Action)
+   ▼
+src/actions/checkout.ts
+   priceCart() [server-authoritative bulk tiers + tax]
+   → createCharge() via src/lib/payments/{rail}.ts adapter
+   → Order + Payment row created
+   ▼
+customer pays externally (card/ACH/crypto) or follows P2P instructions
+   ▼
+POST /api/webhooks/payment/{rail}
+   verifyWebhook() — signature check before any DB write
+   → Order.status / Payment.status updated
+   → decrementStock() — optimistic locking via Product.version
+   → sendTransactional("ORDER_CONFIRMATION") via SendGrid
 ```
 
-**P2P (Zelle / Venmo / Wire) flow** — no webhook exists for these rails; approval is manual:
+**P2P (Zelle / Venmo / Wire)** has no webhook — approval is manual:
 
 ```
-checkout selects P2P rail
-   → p2pAdapter.createCharge() returns { instructions: { handle, memo, note } }, status=MANUAL_REVIEW
-   → Order created as PENDING_PAYMENT, Payment as MANUAL_REVIEW
-customer sends funds externally, then uploads proof
-   → src/actions/proof.ts → storage.uploadFile() (Vercel Blob / local) → PaymentReceipt row
-admin reviews in /admin
-   → src/actions/admin.ts approves receipt → PaymentReceipt.approved=true
-   → decrementStock() (optimistic locking) → Order.status=PAID
-   → sendTransactional("ORDER_CONFIRMATION")
-   → AuditLog row records the approval (who, when, order)
+checkout selects P2P rail → Order created PENDING_PAYMENT, instructions shown (handle + memo)
+customer sends funds externally, then uploads a screenshot/receipt (src/actions/proof.ts)
+admin reviews the receipt queue in /admin
+   → approves → decrementStock() → Order.status = PAID → confirmation email sent
 ```
 
 ## Security Notes
 
 - **Input validation** — all Server Action and API inputs are parsed with Zod schemas (`src/lib/validations.ts`) before touching the DB.
-- **Rate limiting** — `src/lib/rate-limit.ts` sliding-window limiter guards auth (login/register) and payment-initiation endpoints; swap the in-memory `Map` for Upstash Redis when running multi-region.
-- **Webhook signature verification** — every payment webhook is verified against its provider's signing secret in the adapter's `verifyAndParse()` before any DB write; invalid signatures short-circuit with a 400 and touch nothing.
-- **Optimistic locking** — inventory decrements are guarded by `Product.version` (`src/lib/inventory.ts`); a lost race retries against fresh data instead of overselling or table-locking.
-- **Auth** — bcrypt-hashed passwords, JWT sessions, middleware-enforced role gates on `/admin` (ADMIN only) and `/dashboard` (any authenticated user).
-- **Compliance-as-code** — RUO disclaimers and the 18+ age gate are enforced site-wide (`AGE_GATE_ENABLED`), GDPR cookie consent is shown before non-essential cookies fire, and `ChargebackMetric` tracks each rail against the 2026 Visa VAMP 1.5% threshold.
+- **Rate limiting** — `src/lib/rate-limit.ts` sliding-window limiter guards auth and the public batch/COA lookup; swap the in-memory `Map` for Upstash Redis when running multi-region.
+- **Webhook signature verification** — every payment webhook is verified against its provider's signing secret before any DB write; invalid signatures short-circuit with a 400 and touch nothing.
+- **Optimistic locking** — inventory decrements are guarded by `Product.version` (`src/lib/inventory.ts`); a lost race retries against fresh data instead of overselling.
+- **Auth** — bcrypt-hashed passwords, JWT sessions, middleware-enforced role gates on `/admin` (ADMIN only) and `/dashboard` (any authenticated user). Auth config is split (`auth.ts` for Node/bcrypt, `auth.config.ts` for the Edge-safe middleware) so bcrypt never gets bundled into the Edge Runtime.
+- **Compliance-as-code** — RUO disclaimers and the 18+ age gate are enforced site-wide, cookie consent is shown before non-essential cookies fire.
 - **Secrets hygiene** — `.env` is git-ignored; `.env.example` documents every variable without values; MOCK mode means local dev never needs real secrets at all.
 
 ## Further Reading
 
 - [`DEPLOYMENT.md`](./DEPLOYMENT.md) — Vercel + Neon/Supabase deployment checklist, env var setup, webhook configuration, go-live checklist
-- [`CONNECTIONS.md`](./CONNECTIONS.md) — per-integration setup, MOCK→LIVE switch, and testing instructions
-- [`docs/MOBILE.md`](./docs/MOBILE.md) — mobile/web performance and UX implementation notes
+- [`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md) — full build history, schema reference, and the infrastructure-ownership handoff model for client work

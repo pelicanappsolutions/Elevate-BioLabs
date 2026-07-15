@@ -9,20 +9,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatDate } from "@/lib/utils";
 
-export function BatchLookup() {
+export function BatchLookup({ suggestions }: { suggestions?: string[] }) {
   const [query, setQuery] = React.useState("");
   const [pending, setPending] = React.useState(false);
   const [results, setResults] = React.useState<CoaLookupResult[] | null>(null);
   const [error, setError] = React.useState<string | null>(null);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!query.trim()) return;
-
+  async function runLookup(term: string) {
+    if (!term.trim()) return;
     setError(null);
     setPending(true);
     try {
-      const res = await lookupBatch({ batchLot: query.trim() });
+      const res = await lookupBatch({ batchLot: term.trim() });
       if (!res.ok) {
         setError(res.error);
         setResults(null);
@@ -34,6 +32,16 @@ export function BatchLookup() {
     } finally {
       setPending(false);
     }
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    void runLookup(query);
+  }
+
+  function handleSuggestion(term: string) {
+    setQuery(term);
+    void runLookup(term);
   }
 
   return (
@@ -55,6 +63,22 @@ export function BatchLookup() {
         </Button>
       </form>
 
+      {suggestions && suggestions.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          <span className="text-xs text-muted-foreground">Try:</span>
+          {suggestions.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => handleSuggestion(s)}
+              className="tap rounded-full border border-border px-3 py-1 text-xs font-medium transition-colors hover:border-primary/50 hover:text-primary"
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
+
       {error && (
         <p role="alert" className="mt-3 text-sm text-destructive">
           {error}
@@ -64,9 +88,9 @@ export function BatchLookup() {
       {results && results.length === 0 && (
         <p className="mt-3 text-sm text-muted-foreground">
           No COA found for &ldquo;{query}&rdquo;. Check the number on your vial label, or{" "}
-          <a href="#contact" className="text-primary hover:underline">
+          <Link href="/compliance#contact" className="text-primary hover:underline">
             contact us
-          </a>{" "}
+          </Link>{" "}
           and we&apos;ll pull the report manually.
         </p>
       )}

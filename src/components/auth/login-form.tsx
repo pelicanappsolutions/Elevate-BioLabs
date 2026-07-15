@@ -7,6 +7,7 @@ import { signIn } from "next-auth/react";
 import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -42,6 +43,7 @@ export function LoginForm() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [remember, setRemember] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -109,6 +111,17 @@ export function LoginForm() {
           />
         </div>
 
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="remember"
+            checked={remember}
+            onCheckedChange={(v) => setRemember(v === true)}
+          />
+          <Label htmlFor="remember" className="cursor-pointer text-sm font-normal">
+            Remember me
+          </Label>
+        </div>
+
         {error && (
           <p role="alert" className="text-sm text-destructive">
             {error}
@@ -117,7 +130,7 @@ export function LoginForm() {
 
         <Button type="submit" className="w-full" disabled={loading}>
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
-          Sign in
+          Sign In
         </Button>
       </form>
 

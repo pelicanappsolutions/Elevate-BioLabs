@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { FileText, Loader2, Truck } from "lucide-react";
 import type { OrderStatus, PaymentRail } from "@prisma/client";
 
@@ -56,6 +57,7 @@ const VARIANT: Record<OrderStatus, "default" | "secondary" | "outline" | "destru
 
 export function AdminOrders({ orders }: { orders: AdminOrder[] }) {
   const { toast } = useToast();
+  const router = useRouter();
   const [filter, setFilter] = React.useState<string>("ALL");
   const [busyId, setBusyId] = React.useState<string | null>(null);
 
@@ -66,8 +68,12 @@ export function AdminOrders({ orders }: { orders: AdminOrder[] }) {
     setBusyId(orderId);
     try {
       const res = await updateOrderStatus({ orderId, status });
-      if (res.ok) toast({ title: "Status updated", description: status.replace(/_/g, " ") });
-      else toast({ title: "Update failed", description: res.error, variant: "destructive" });
+      if (res.ok) {
+        toast({ title: "Status updated", description: status.replace(/_/g, " ") });
+        router.refresh();
+      } else {
+        toast({ title: "Update failed", description: res.error, variant: "destructive" });
+      }
     } finally {
       setBusyId(null);
     }
@@ -84,6 +90,7 @@ export function AdminOrders({ orders }: { orders: AdminOrder[] }) {
           title: "Label created",
           description: `Tracking ${res.trackingNumber} — customer notified.`,
         });
+        router.refresh();
       } else {
         toast({ title: "Label failed", description: res.error, variant: "destructive" });
       }

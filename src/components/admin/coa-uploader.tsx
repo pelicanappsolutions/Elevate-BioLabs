@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { FileCheck2, Loader2, Upload } from "lucide-react";
 
 import { uploadCoa } from "@/actions/admin";
@@ -25,6 +26,7 @@ interface CoaProduct {
 
 export function CoaUploader({ products }: { products: CoaProduct[] }) {
   const { toast } = useToast();
+  const router = useRouter();
   const formRef = React.useRef<HTMLFormElement>(null);
   const [productId, setProductId] = React.useState("");
   const [pending, setPending] = React.useState(false);
@@ -53,6 +55,7 @@ export function CoaUploader({ products }: { products: CoaProduct[] }) {
       });
       formRef.current?.reset();
       setProductId("");
+      router.refresh();
     } finally {
       setPending(false);
     }

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { Loader2, Mail, Send } from "lucide-react";
 
 import { triggerCampaign } from "@/actions/admin";
@@ -73,6 +74,7 @@ export function EmailCampaignManager({
   recentCampaigns: CampaignStat[];
 }) {
   const { toast } = useToast();
+  const router = useRouter();
   const [confirming, setConfirming] = React.useState<(typeof CAMPAIGNS)[number] | null>(
     null
   );
@@ -98,6 +100,7 @@ export function EmailCampaignManager({
           description: `${res.count} recipient${res.count === 1 ? "" : "s"} queued via Klaviyo.`,
         });
         setConfirming(null);
+        router.refresh();
       } else {
         toast({ title: "Send failed", description: res.error, variant: "destructive" });
       }

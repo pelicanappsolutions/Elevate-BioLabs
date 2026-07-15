@@ -2,9 +2,10 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { Loader2, PackagePlus, Pencil, Plus, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { FlaskConical, ImageUp, Loader2, PackagePlus, Pencil, Plus, Trash2 } from "lucide-react";
 
-import { deleteProduct, restockProduct, upsertProduct } from "@/actions/admin";
+import { deleteProduct, restockProduct, uploadProductImage, upsertProduct } from "@/actions/admin";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -73,6 +74,7 @@ interface FormState {
   categoryId: string;
   active: boolean;
   featured: boolean;
+  imageUrl: string | null;
 }
 
 const EMPTY: FormState = {
@@ -93,6 +95,7 @@ const EMPTY: FormState = {
   categoryId: "",
   active: true,
   featured: false,
+  imageUrl: null,
 };
 
 export function AdminProducts({
@@ -103,12 +106,15 @@ export function AdminProducts({
   categories: { id: string; name: string }[];
 }) {
   const { toast } = useToast();
+  const router = useRouter();
   const [open, setOpen] = React.useState(false);
   const [form, setForm] = React.useState<FormState>(EMPTY);
   const [pending, setPending] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [busyId, setBusyId] = React.useState<string | null>(null);
   const [restockOpen, setRestockOpen] = React.useState<AdminProduct | null>(null);
+  const [imageUploading, setImageUploading] = React.useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   function openNew() {
     setForm(EMPTY);
@@ -136,6 +142,7 @@ export function AdminProducts({
       categoryId: p.categoryId ?? "",
       active: p.active,
       featured: p.featured,
+      imageUrl: p.imageUrl,
     });
     setError(null);
     setOpen(true);
@@ -174,8 +181,33 @@ export function AdminProducts({
       }
       setOpen(false);
       toast({ title: form.id ? "Product updated" : "Product created" });
+      router.refresh();
     } finally {
       setPending(false);
+    }
+  }
+
+  async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file later
+    if (!file || !form.id) return;
+
+    setImageUploading(true);
+    try {
+      const fd = new FormData();
+      fd.set("productId", form.id);
+      fd.set("slug", form.slug);
+      fd.set("file", file);
+      const res = await uploadProductImage(fd);
+      if (!res.ok) {
+        toast({ variant: "destructive", title: "Upload failed", description: res.error });
+        return;
+      }
+      setForm((f) => ({ ...f, imageUrl: res.url ?? f.imageUrl }));
+      toast({ title: "Photo updated" });
+      router.refresh();
+    } finally {
+      setImageUploading(false);
     }
   }
 
@@ -187,6 +219,7 @@ export function AdminProducts({
         title: "Product deactivated",
         description: "Hidden from the catalog; order history is preserved.",
       });
+      router.refresh();
     } finally {
       setBusyId(null);
     }
@@ -302,6 +335,49 @@ export function AdminProducts({
             </DialogHeader>
 
             <div className="mt-4 grid max-h-[60vh] gap-3 overflow-y-auto pr-1 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <Label className="text-xs">Product photo</Label>
+                <div className="mt-1 flex items-center gap-3">
+                  <span className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md border border-border bg-secondary">
+                    {form.imageUrl ? (
+                      <Image src={form.imageUrl} alt="" fill sizes="64px" className="object-cover" />
+                    ) : (
+                      <span className="flex h-full w-full items-center justify-center">
+                        <FlaskConical className="h-6 w-6 text-primary/40" aria-hidden="true" />
+                      </span>
+                    )}
+                  </span>
+                  <div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageChange}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={!form.id || imageUploading}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      {imageUploading ? (
+                        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <ImageUp className="mr-1.5 h-3.5 w-3.5" />
+                      )}
+                      {form.imageUrl ? "Replace photo" : "Upload photo"}
+                    </Button>
+                    {!form.id && (
+                      <p className="mt-1.5 text-xs text-muted-foreground">
+                        Save the product first, then add a photo.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <T label="SKU" required value={form.sku} onChange={(v) => setForm((f) => ({ ...f, sku: v }))} />
               <T label="Name" required value={form.name} onChange={(v) => setForm((f) => ({ ...f, name: v }))} />
               <T label="Slug (auto if blank)" value={form.slug} onChange={(v) => setForm((f) => ({ ...f, slug: v }))} />
@@ -448,6 +524,7 @@ function RestockDialog({
   onClose: () => void;
   onDone: (name: string, delta: number) => void;
 }) {
+  const router = useRouter();
   const [delta, setDelta] = React.useState("");
   const [note, setNote] = React.useState("");
   const [pending, setPending] = React.useState(false);
@@ -480,6 +557,7 @@ function RestockDialog({
       }
       onDone(product.name, Number(delta));
       onClose();
+      router.refresh();
     } finally {
       setPending(false);
     }

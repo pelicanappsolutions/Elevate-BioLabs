@@ -1,6 +1,15 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, FlaskConical, FileCheck2, Truck, Beaker, ChevronRight } from "lucide-react";
+import {
+  ArrowRight,
+  FlaskConical,
+  FileCheck2,
+  Truck,
+  Beaker,
+  ChevronRight,
+  PackageCheck,
+  Search,
+} from "lucide-react";
 
 import { db } from "@/lib/db";
 import { Button } from "@/components/ui/button";
@@ -14,8 +23,33 @@ import { NewsletterSignup } from "@/components/newsletter-signup";
 // stay fresh without paying for a DB read on every request.
 export const revalidate = 300;
 
+// Hero product shots — real vial photography, staggered like a product-line shot.
+const HERO_VIALS = [
+  { src: "/images/products/tirzepatide-10mg.png", alt: "Tirzepatide 10mg vial", offset: "mt-10" },
+  { src: "/images/products/klow-blend-80mg.png", alt: "KLOW Blend 80mg vial", offset: "mt-0" },
+  { src: "/images/products/ghk-cu-50mg.png", alt: "GHK-Cu 50mg vial", offset: "mt-12" },
+];
+
+const HOW_IT_WORKS = [
+  {
+    icon: Search,
+    title: "Select your compounds",
+    body: "Browse the catalog — every peptide is third-party tested with a publicly downloadable COA.",
+  },
+  {
+    icon: PackageCheck,
+    title: "Packed & shipped from the USA",
+    body: "Orders confirmed before 2pm CT ship the same day, cold-chain packed with full dispatch-to-delivery tracking.",
+  },
+  {
+    icon: Truck,
+    title: "Delivered in 2–3 days",
+    body: "Standard USPS delivery in insulated, discreet packaging that protects compound stability in transit.",
+  },
+];
+
 async function getHomeData() {
-  const [featured, categories] = await Promise.all([
+  const [featured, categories, productCount] = await Promise.all([
     db.product.findMany({
       where: { active: true, featured: true },
       include: { images: { orderBy: { sortOrder: "asc" }, take: 1 } },
@@ -27,12 +61,13 @@ async function getHomeData() {
       include: { _count: { select: { products: { where: { active: true } } } } },
       take: 6,
     }),
+    db.product.count({ where: { active: true } }),
   ]);
-  return { featured, categories };
+  return { featured, categories, productCount };
 }
 
 export default async function HomePage() {
-  const { featured, categories } = await getHomeData();
+  const { featured, categories, productCount } = await getHomeData();
 
   return (
     <>
@@ -42,41 +77,55 @@ export default async function HomePage() {
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_50%_at_50%_0%,hsl(var(--primary)/0.18),transparent_70%)]"
         />
-        <div className="container-tight relative py-14 sm:py-20 lg:py-28">
-          <div className="mx-auto max-w-3xl text-center">
-            <Badge variant="outline" className="mb-5 border-primary/40 text-primary">
-              <FlaskConical className="mr-1.5 h-3.5 w-3.5" />
-              Third-party tested • Batch tracked
-            </Badge>
+        <div className="container-tight relative py-14 sm:py-20 lg:py-24">
+          <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-8">
+            <div className="mx-auto max-w-xl text-center lg:mx-0 lg:text-left">
+              <Badge variant="outline" className="mb-5 border-primary/40 text-primary">
+                <FlaskConical className="mr-1.5 h-3.5 w-3.5" />
+                Third-party tested • Batch tracked
+              </Badge>
 
-            <h1 className="text-balance text-3xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
-              Research peptides you can{" "}
-              <span className="text-primary">actually verify</span>
-            </h1>
+              <h1 className="text-balance text-3xl font-bold leading-tight tracking-tight sm:text-5xl">
+                Research peptides you can{" "}
+                <span className="text-primary">actually verify</span>
+              </h1>
 
-            <p className="mx-auto mt-5 max-w-2xl text-pretty text-base text-muted-foreground sm:text-lg">
-              Every vial ships with a downloadable Certificate of Analysis, HPLC purity
-              ≥99%, and a traceable batch/lot number. Cold-chain packed, USPS tracked,
-              and dispatched same-day on orders placed before 2pm CT.
-            </p>
+              <p className="mx-auto mt-5 max-w-lg text-pretty text-base text-muted-foreground sm:text-lg lg:mx-0">
+                Every vial ships with a downloadable Certificate of Analysis, HPLC purity
+                ≥99%, and a traceable batch/lot number. Cold-chain packed, USPS tracked,
+                and dispatched same-day on orders placed before 2pm CT.
+              </p>
 
-            {/* Mobile-optimized CTA: full-width stacked on phones, inline on desktop */}
-            <div className="mx-auto mt-8 flex w-full max-w-md flex-col gap-3 sm:max-w-none sm:flex-row sm:justify-center">
-              <Button asChild size="lg" className="tap w-full sm:w-auto">
-                <Link href="/products">
-                  Browse catalog
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-              <Button asChild size="lg" variant="outline" className="tap w-full sm:w-auto">
-                <Link href="/compliance#coa">View a sample COA</Link>
-              </Button>
+              <div className="mx-auto mt-8 flex w-full max-w-md flex-col gap-3 sm:max-w-none sm:flex-row lg:mx-0 lg:justify-start">
+                <Button asChild size="lg" className="tap w-full sm:w-auto">
+                  <Link href="/products">
+                    Browse catalog
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button asChild size="lg" variant="outline" className="tap w-full sm:w-auto">
+                  <Link href="/verify-coa">Verify a COA</Link>
+                </Button>
+              </div>
+
+              <p className="mt-6 text-xs text-muted-foreground">
+                For Research Use Only. Not for human or veterinary consumption. Not
+                approved by the FDA for therapeutic use.
+              </p>
             </div>
 
-            <p className="mt-6 text-xs text-muted-foreground">
-              For Research Use Only. Not for human or veterinary consumption. Not
-              approved by the FDA for therapeutic use.
-            </p>
+            {/* Real product photography — staggered bottle line, hidden below lg to
+                keep the mobile hero short and text-first. */}
+            <div className="hidden items-end justify-center gap-4 lg:flex">
+              {HERO_VIALS.map((v) => (
+                <div
+                  key={v.src}
+                  className={`relative h-64 w-32 shrink-0 drop-shadow-2xl ${v.offset}`}
+                >
+                  <Image src={v.src} alt={v.alt} fill sizes="140px" className="object-contain" />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -85,6 +134,48 @@ export default async function HomePage() {
       <section className="border-b border-border bg-card/30">
         <div className="container-tight py-8 sm:py-10">
           <TrustBadges />
+        </div>
+      </section>
+
+      {/* ───────────────────────── Stats ──────────────────────── */}
+      <section className="container-tight py-10 sm:py-12">
+        <div className="grid gap-4 sm:grid-cols-3">
+          {[
+            { label: "Tested before release", value: "Every batch" },
+            { label: "Research compounds", value: `${productCount}+` },
+            { label: "HPLC purity spec", value: "≥99%" },
+          ].map((stat) => (
+            <div
+              key={stat.label}
+              className="rounded-lg border border-border bg-card p-6 text-center"
+            >
+              <p className="text-3xl font-bold tracking-tight">{stat.value}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ───────────────────── How it works ───────────────────── */}
+      <section className="border-y border-border bg-card/30">
+        <div className="container-tight py-12 sm:py-16">
+          <h2 className="text-center text-2xl font-semibold tracking-tight sm:text-3xl">
+            How it works
+          </h2>
+          <div className="mt-8 grid gap-4 sm:grid-cols-3">
+            {HOW_IT_WORKS.map((step) => (
+              <div
+                key={step.title}
+                className="flex flex-col items-center rounded-lg border border-border bg-card p-6 text-center"
+              >
+                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10">
+                  <step.icon className="h-5 w-5 text-primary" aria-hidden="true" />
+                </span>
+                <h3 className="mt-4 text-base font-semibold">{step.title}</h3>
+                <p className="mt-1.5 text-sm text-muted-foreground">{step.body}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -207,7 +298,7 @@ export default async function HomePage() {
               icon: FileCheck2,
               title: "Batch & COA lookup",
               body: "Every lot has a downloadable third-party HPLC and mass-spec report. Search by batch number.",
-              href: "/compliance#coa",
+              href: "/verify-coa",
               cta: "Look up a batch",
             },
             {
@@ -238,13 +329,17 @@ export default async function HomePage() {
       </section>
 
       {/* ───────────────────── Newsletter ─────────────────────── */}
-      <section className="border-t border-border bg-card/30">
-        <div className="container-tight py-12 sm:py-16">
+      <section className="relative overflow-hidden bg-[#050a14] text-white">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(50%_60%_at_85%_100%,hsl(var(--primary)/0.25),transparent_70%)]"
+        />
+        <div className="container-tight relative py-12 sm:py-16">
           <div className="mx-auto max-w-xl text-center">
             <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
               New batches, restocks, and research notes
             </h2>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="mt-2 text-sm text-white/70">
               One email when something you care about comes back in stock. No spam,
               unsubscribe anytime.
             </p>

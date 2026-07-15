@@ -3,7 +3,8 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FlaskConical, Menu, Search, ShoppingCart, User } from "lucide-react";
+import { signOut, useSession } from "next-auth/react";
+import { FlaskConical, LayoutDashboard, LogOut, Menu, Search, ShieldCheck, ShoppingCart, User } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { useCart } from "@/store/cart";
@@ -20,7 +21,8 @@ import {
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
-  { href: "/products", label: "Catalog" },
+  { href: "/products", label: "Shop" },
+  { href: "/verify-coa", label: "Verify COA" },
   { href: "/compliance", label: "Compliance" },
   { href: "/compliance#about", label: "About" },
 ];
@@ -75,6 +77,9 @@ function SearchForm({
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = React.useState(false);
+  const { data: session, status } = useSession();
+  const isAuthed = status === "authenticated";
+  const isAdmin = session?.user?.role === "ADMIN";
 
   return (
     <div className="relative z-40">
@@ -119,16 +124,47 @@ export function Navbar() {
               <CartBadgeCount />
             </Link>
 
-            <Link
-              href="/login"
-              className="tap hidden h-11 items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground sm:inline-flex"
-            >
-              <User className="h-4 w-4" />
-              Login
-            </Link>
-            <Button asChild size="sm" className="hidden sm:inline-flex">
-              <Link href="/dashboard">Dashboard</Link>
-            </Button>
+            {isAuthed ? (
+              <>
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    className="tap hidden h-11 items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground sm:inline-flex"
+                  >
+                    <ShieldCheck className="h-4 w-4" />
+                    Admin
+                  </Link>
+                )}
+                <Button asChild size="sm" className="hidden sm:inline-flex">
+                  <Link href="/dashboard">
+                    <LayoutDashboard className="mr-1.5 h-4 w-4" />
+                    Dashboard
+                  </Link>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Sign out"
+                  className="hidden sm:inline-flex"
+                  onClick={() => signOut({ callbackUrl: "/" })}
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="tap hidden h-11 items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground sm:inline-flex"
+                >
+                  <User className="h-4 w-4" />
+                  Login
+                </Link>
+                <Button asChild size="sm" className="hidden sm:inline-flex">
+                  <Link href="/register">Sign up</Link>
+                </Button>
+              </>
+            )}
 
             {/* Mobile menu trigger */}
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -166,20 +202,50 @@ export function Navbar() {
                 </nav>
 
                 <div className="mt-auto flex flex-col gap-2 border-t border-border pt-4">
-                  <SheetClose asChild>
-                    <Link
-                      href="/login"
-                      className="tap flex items-center gap-2 rounded-lg px-3 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                    >
-                      <User className="h-4 w-4" />
-                      Login
-                    </Link>
-                  </SheetClose>
-                  <SheetClose asChild>
-                    <Button asChild>
-                      <Link href="/dashboard">Dashboard</Link>
-                    </Button>
-                  </SheetClose>
+                  {isAuthed ? (
+                    <>
+                      {isAdmin && (
+                        <SheetClose asChild>
+                          <Link
+                            href="/admin"
+                            className="tap flex items-center gap-2 rounded-lg px-3 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                          >
+                            <ShieldCheck className="h-4 w-4" />
+                            Admin
+                          </Link>
+                        </SheetClose>
+                      )}
+                      <SheetClose asChild>
+                        <Button asChild>
+                          <Link href="/dashboard">Dashboard</Link>
+                        </Button>
+                      </SheetClose>
+                      <Button
+                        variant="outline"
+                        onClick={() => signOut({ callbackUrl: "/" })}
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Sign out
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <SheetClose asChild>
+                        <Link
+                          href="/login"
+                          className="tap flex items-center gap-2 rounded-lg px-3 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                        >
+                          <User className="h-4 w-4" />
+                          Login
+                        </Link>
+                      </SheetClose>
+                      <SheetClose asChild>
+                        <Button asChild>
+                          <Link href="/register">Sign up</Link>
+                        </Button>
+                      </SheetClose>
+                    </>
+                  )}
                 </div>
               </SheetContent>
             </Sheet>

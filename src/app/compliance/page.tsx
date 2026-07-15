@@ -3,10 +3,9 @@ import Link from "next/link";
 import { AlertTriangle, FileCheck2, PackageCheck, RotateCcw, Truck } from "lucide-react";
 
 import { db } from "@/lib/db";
-import { formatDate } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
 import { ContactForm } from "@/components/compliance/contact-form";
-import { BatchLookup } from "@/components/compliance/batch-lookup";
 
 export const metadata: Metadata = {
   title: "Compliance & Policies",
@@ -18,7 +17,7 @@ export const revalidate = 3600;
 
 const SECTIONS = [
   { id: "ruo", label: "Research Use Only" },
-  { id: "coa", label: "Batch & COA lookup" },
+  { id: "coa", label: "Verify a COA" },
   { id: "shipping", label: "Shipping policy" },
   { id: "returns", label: "Returns & refunds" },
   { id: "about", label: "About us" },
@@ -29,12 +28,6 @@ export default async function CompliancePage() {
   // DB-backed policy docs override the built-in copy when an admin publishes one.
   const docs = await db.complianceDoc.findMany({ where: { active: true } });
   const docFor = (category: string) => docs.find((d) => d.category === category);
-
-  const recentCoas = await db.cOA.findMany({
-    include: { product: { select: { name: true, slug: true } } },
-    orderBy: { createdAt: "desc" },
-    take: 6,
-  });
 
   return (
     <div className="container-tight py-8 sm:py-12">
@@ -114,66 +107,22 @@ export default async function CompliancePage() {
       <section id="coa" className="mt-10 scroll-mt-28">
         <div className="flex items-center gap-2">
           <FileCheck2 className="h-5 w-5 text-primary" />
-          <h2 className="text-lg font-semibold">Batch & COA lookup</h2>
+          <h2 className="text-lg font-semibold">Verify a COA</h2>
         </div>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
           Every lot is tested by an independent third-party lab using HPLC and mass
-          spectrometry. Enter a batch number from your vial label to pull its report.
+          spectrometry. Search by batch number or compound name to pull the report, or
+          browse the full certificate archive.
         </p>
 
-        <div className="mt-4">
-          <BatchLookup />
+        <div className="mt-4 flex flex-wrap gap-3">
+          <Button asChild>
+            <Link href="/verify-coa">Verify a batch</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/certificates">Browse certificate archive</Link>
+          </Button>
         </div>
-
-        {recentCoas.length > 0 && (
-          <div className="mt-6">
-            <h3 className="text-sm font-semibold">Recently published COAs</h3>
-            <div className="mt-3 overflow-x-auto rounded-lg border border-border">
-              <table className="w-full min-w-[520px] text-sm">
-                <thead className="bg-secondary/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <tr>
-                    <th className="px-3 py-2 font-medium">Batch / lot</th>
-                    <th className="px-3 py-2 font-medium">Compound</th>
-                    <th className="px-3 py-2 font-medium">Purity</th>
-                    <th className="px-3 py-2 font-medium">Tested</th>
-                    <th className="px-3 py-2 font-medium">Report</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentCoas.map((coa) => (
-                    <tr key={coa.id} className="border-t border-border">
-                      <td className="px-3 py-2 font-mono text-xs">{coa.batchLot}</td>
-                      <td className="px-3 py-2">
-                        <Link
-                          href={`/products/${coa.product.slug}`}
-                          className="font-medium hover:text-primary"
-                        >
-                          {coa.product.name}
-                        </Link>
-                      </td>
-                      <td className="px-3 py-2 text-muted-foreground">
-                        {coa.purity ?? "—"}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">
-                        {coa.testedOn ? formatDate(coa.testedOn) : "—"}
-                      </td>
-                      <td className="px-3 py-2">
-                        <a
-                          href={coa.fileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline"
-                        >
-                          Download PDF
-                        </a>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
       </section>
 
       <Separator className="my-10" />

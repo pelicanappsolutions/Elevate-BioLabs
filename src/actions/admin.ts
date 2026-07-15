@@ -49,6 +49,40 @@ export async function upsertProduct(input: unknown): Promise<{ ok: boolean; erro
   return { ok: true };
 }
 
+export async function uploadProductImage(
+  formData: FormData
+): Promise<{ ok: boolean; url?: string; error?: string }> {
+  const admin = await requireAdmin().catch(() => null);
+  if (!admin) return { ok: false, error: "Unauthorized" };
+
+  const productId = String(formData.get("productId") ?? "");
+  const slug = String(formData.get("slug") ?? "");
+  const file = formData.get("file");
+
+  if (!productId) return { ok: false, error: "Missing product." };
+  if (!(file instanceof File) || file.size === 0) return { ok: false, error: "Choose an image file." };
+  if (!file.type.startsWith("image/")) return { ok: false, error: "File must be an image." };
+  if (file.size > 8 * 1024 * 1024) return { ok: false, error: "Image must be under 8MB." };
+
+  const uploaded = await uploadFile(file, file.name, "products");
+
+  // Single primary photo per product in this admin UI — replace rather than append,
+  // so "edit the picture" behaves the way an admin expects.
+  await db.$transaction([
+    db.productImage.deleteMany({ where: { productId } }),
+    db.productImage.create({
+      data: { productId, url: uploaded.url, sortOrder: 0 },
+    }),
+  ]);
+
+  await audit(admin.id, "PRODUCT_IMAGE_UPDATED", "Product", productId, { url: uploaded.url });
+  revalidatePath("/admin");
+  revalidatePath("/products");
+  revalidatePath("/");
+  if (slug) revalidatePath(`/products/${slug}`);
+  return { ok: true, url: uploaded.url };
+}
+
 export async function deleteProduct(id: string): Promise<{ ok: boolean }> {
   const admin = await requireAdmin().catch(() => null);
   if (!admin) return { ok: false };

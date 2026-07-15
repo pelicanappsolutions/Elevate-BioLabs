@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 
 import "./globals.css";
 import Providers from "./providers";
+import { auth } from "@/lib/auth";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { AgeGate } from "@/components/age-gate";
@@ -25,14 +26,19 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
-  themeColor: "#052e2b",
+  themeColor: "#ffffff",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Fetched once here (Server Component) and seeded into SessionProvider so the
+  // navbar renders the correct signed-in/out state on first paint instead of
+  // flashing "logged out" while useSession() does its own client-side fetch.
+  const session = await auth();
+
   return (
-    <html lang="en" className={`dark ${inter.variable}`} suppressHydrationWarning>
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
       <body className="font-sans">
-        <Providers>
+        <Providers session={session}>
           <AgeGate />
           <Navbar />
           <main className="min-h-[70vh]">{children}</main>
