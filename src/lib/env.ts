@@ -44,7 +44,7 @@ export const env = {
     webhookSecret: process.env.COINBASE_COMMERCE_WEBHOOK_SECRET ?? "",
   },
   p2p: {
-    zelle: process.env.P2P_ZELLE_HANDLE ?? "pay@elevatebiolabs.com",
+    zelle: process.env.P2P_ZELLE_HANDLE ?? "pay@elevatebiolab.com",
     venmo: process.env.P2P_VENMO_HANDLE ?? "@ElevateBioLabs",
     wire: process.env.P2P_WIRE_INSTRUCTIONS ?? "Contact support for wire details",
   },
@@ -63,7 +63,7 @@ export const env = {
   },
   sendgrid: {
     apiKey: process.env.SENDGRID_API_KEY ?? "",
-    fromEmail: process.env.SENDGRID_FROM_EMAIL ?? "orders@elevatebiolabs.com",
+    fromEmail: process.env.SENDGRID_FROM_EMAIL ?? "orders@elevatebiolab.com",
     fromName: process.env.SENDGRID_FROM_NAME ?? "Elevate Bio-Labs",
   },
   klaviyo: {
