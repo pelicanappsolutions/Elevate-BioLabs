@@ -63,6 +63,9 @@ export function ProductCard({ product }: { product: ProductCardProduct }) {
 
       <div className="flex flex-1 flex-col gap-2 p-4">
         <div className="flex flex-wrap gap-1.5">
+          <Badge variant="outline" className="font-normal text-muted-foreground">
+            RUO
+          </Badge>
           {product.purity && (
             <Badge variant="success" className="font-normal">
               {product.purity} purity

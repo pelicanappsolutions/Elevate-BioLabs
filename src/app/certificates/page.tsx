@@ -8,7 +8,7 @@ import { formatDate, variantDisplayName } from "@/lib/utils";
 export const metadata: Metadata = {
   title: "Certificate Archive",
   description:
-    "The full archive of Certificates of Analysis for every batch Elevate Bio-Labs has shipped.",
+    "The full archive of Certificates of Analysis for every batch Elevate Bio-Labs has shipped. For Research Use Only — not for human consumption.",
 };
 
 export const revalidate = 300;
@@ -42,6 +42,10 @@ export default async function CertificatesPage() {
             The full archive of Certificates of Analysis for every batch Elevate
             Bio-Labs has shipped. Each entry links to its source report with HPLC purity,
             mass identification, and test date for that lot.
+          </p>
+          <p className="mt-3 max-w-xl text-xs text-white/50">
+            All compounds are supplied strictly For Research Use Only (RUO) and are not
+            for human or veterinary consumption.
           </p>
         </div>
       </section>

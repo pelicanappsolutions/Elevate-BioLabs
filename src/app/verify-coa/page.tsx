@@ -6,7 +6,7 @@ import { BatchLookup } from "@/components/compliance/batch-lookup";
 export const metadata: Metadata = {
   title: "Verify a COA",
   description:
-    "Search by batch/lot number or compound name to retrieve the third-party Certificate of Analysis for your vial.",
+    "Search by batch/lot number or compound name to retrieve the third-party Certificate of Analysis for your vial. For Research Use Only — not for human consumption.",
 };
 
 const SUGGESTIONS = ["BPC-157", "NAD+", "KLOW Blend"];
@@ -37,6 +37,10 @@ export default function VerifyCoaPage() {
             Search by compound name or batch/lot number to retrieve the latest
             Certificate of Analysis — HPLC purity, mass identification, and test date for
             that batch.
+          </p>
+          <p className="mt-3 max-w-xl text-xs text-white/50">
+            All compounds are supplied strictly For Research Use Only (RUO) and are not
+            for human or veterinary consumption.
           </p>
 
           <div className="mt-8 max-w-md rounded-lg border border-white/10 bg-white/5 p-4 backdrop-blur">
