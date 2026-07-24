@@ -13,26 +13,26 @@ async function requireUser() {
 }
 
 export async function toggleSavedProduct(
-  productId: string
+  variantId: string
 ): Promise<{ ok: boolean; saved: boolean }> {
   const user = await requireUser().catch(() => null);
   if (!user) return { ok: false, saved: false };
 
   const existing = await db.savedProduct.findUnique({
-    where: { userId_productId: { userId: user.id, productId } },
+    where: { userId_variantId: { userId: user.id, variantId } },
   });
   if (existing) {
     await db.savedProduct.delete({ where: { id: existing.id } });
     revalidatePath("/dashboard");
     return { ok: true, saved: false };
   }
-  await db.savedProduct.create({ data: { userId: user.id, productId } });
+  await db.savedProduct.create({ data: { userId: user.id, variantId } });
   revalidatePath("/dashboard");
   return { ok: true, saved: true };
 }
 
 const doseSchema = z.object({
-  productId: z.string().optional(),
+  variantId: z.string().optional(),
   doseMcg: z.coerce.number().positive(),
   volumeMl: z.coerce.number().positive().optional(),
   note: z.string().max(500).optional(),
@@ -47,7 +47,7 @@ export async function logDose(input: unknown): Promise<{ ok: boolean; error?: st
   await db.dosageLog.create({
     data: {
       userId: user.id,
-      productId: parsed.data.productId || null,
+      variantId: parsed.data.variantId || null,
       doseMcg: parsed.data.doseMcg,
       volumeMl: parsed.data.volumeMl,
       note: parsed.data.note,
@@ -57,17 +57,37 @@ export async function logDose(input: unknown): Promise<{ ok: boolean; error?: st
   return { ok: true };
 }
 
-export async function updateProfile(input: {
-  name?: string;
-}): Promise<{ ok: boolean; error?: string }> {
+export async function updateDose(id: string, input: unknown): Promise<{ ok: boolean; error?: string }> {
   const user = await requireUser().catch(() => null);
   if (!user) return { ok: false, error: "Unauthorized" };
-  const name = z.string().min(2).max(80).optional().safeParse(input.name);
-  if (!name.success) return { ok: false, error: "Invalid name" };
-  await db.user.update({ where: { id: user.id }, data: { name: input.name } });
+  const parsed = doseSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Invalid dose entry" };
+
+  // updateMany with the userId filter enforces ownership in one atomic query.
+  const r = await db.dosageLog.updateMany({
+    where: { id, userId: user.id },
+    data: {
+      variantId: parsed.data.variantId || null,
+      doseMcg: parsed.data.doseMcg,
+      volumeMl: parsed.data.volumeMl ?? null,
+      note: parsed.data.note ?? null,
+    },
+  });
+  if (r.count === 0) return { ok: false, error: "Entry not found." };
   revalidatePath("/dashboard");
   return { ok: true };
 }
+
+export async function deleteDose(id: string): Promise<{ ok: boolean }> {
+  const user = await requireUser().catch(() => null);
+  if (!user) return { ok: false };
+  await db.dosageLog.deleteMany({ where: { id, userId: user.id } });
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+// Account name/email/password/avatar editing moved to src/actions/account.ts
+// (shared by customers and admins).
 
 export async function saveAddress(input: unknown): Promise<{ ok: boolean; error?: string }> {
   const user = await requireUser().catch(() => null);

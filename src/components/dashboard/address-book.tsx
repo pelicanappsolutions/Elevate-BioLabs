@@ -7,6 +7,7 @@ import type { Address } from "@prisma/client";
 import { deleteAddress, saveAddress } from "@/actions/dashboard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -203,7 +204,17 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
                 <F label="State" required value={form.state} onChange={(v) => setForm((f) => ({ ...f, state: v.toUpperCase().slice(0, 2) }))} autoComplete="address-level1" />
                 <F label="ZIP" required value={form.zip} onChange={(v) => setForm((f) => ({ ...f, zip: v }))} autoComplete="postal-code" />
               </div>
-              <F label="Phone" value={form.phone} onChange={(v) => setForm((f) => ({ ...f, phone: v }))} autoComplete="tel" />
+              <div>
+                <Label className="text-xs">
+                  Phone <span className="text-destructive">*</span>
+                </Label>
+                <PhoneInput
+                  value={form.phone}
+                  onChange={(v) => setForm((f) => ({ ...f, phone: v }))}
+                  autoComplete="tel"
+                  className="mt-1"
+                />
+              </div>
 
               <label className="flex cursor-pointer items-center gap-2">
                 <Checkbox

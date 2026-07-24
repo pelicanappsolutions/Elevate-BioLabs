@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { FileText, Loader2, Truck } from "lucide-react";
 import type { OrderStatus, PaymentRail } from "@prisma/client";
 
+import Link from "next/link";
+
 import { createShippingLabel, updateOrderStatus } from "@/actions/admin";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { formatDate, formatPrice } from "@/lib/utils";
+import { ORDER_STATUSES, ORDER_STATUS_VARIANT } from "@/lib/order-status";
 
 interface AdminOrder {
   id: string;
@@ -33,27 +36,8 @@ interface AdminOrder {
   items: { id: string; name: string; quantity: number; totalCents: number }[];
 }
 
-const STATUSES: OrderStatus[] = [
-  "PENDING_PAYMENT",
-  "AWAITING_REVIEW",
-  "PAID",
-  "PROCESSING",
-  "SHIPPED",
-  "DELIVERED",
-  "CANCELLED",
-  "REFUNDED",
-];
-
-const VARIANT: Record<OrderStatus, "default" | "secondary" | "outline" | "destructive" | "success"> = {
-  PENDING_PAYMENT: "outline",
-  AWAITING_REVIEW: "secondary",
-  PAID: "success",
-  PROCESSING: "default",
-  SHIPPED: "default",
-  DELIVERED: "success",
-  CANCELLED: "destructive",
-  REFUNDED: "destructive",
-};
+const STATUSES = ORDER_STATUSES;
+const VARIANT = ORDER_STATUS_VARIANT;
 
 export function AdminOrders({ orders }: { orders: AdminOrder[] }) {
   const { toast } = useToast();
@@ -160,6 +144,10 @@ export function AdminOrders({ orders }: { orders: AdminOrder[] }) {
               </div>
 
               <div className="mt-3 flex flex-wrap items-center gap-2">
+                <Button asChild size="sm" variant="outline">
+                  <Link href={`/admin/orders/${order.id}`}>View</Link>
+                </Button>
+
                 <Select
                   value={order.status}
                   onValueChange={(v) => changeStatus(order.id, v)}

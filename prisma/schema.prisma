@@ -88,6 +88,7 @@ model User {
   image         String?
   role          Role      @default(CUSTOMER)
   ageVerified   Boolean   @default(false)
+  marketingOptIn Boolean  @default(false) // customer email/marketing consent toggle
 
   accounts      Account[]
   sessions      Session[]
@@ -177,41 +178,32 @@ model Category {
 
 model Product {
   id          String      @id @default(cuid())
-  sku         String      @unique
-  name        String
-  slug        String      @unique
+  name        String // compound name only, e.g. "Tirzepatide" — no mg
+  slug        String      @unique // "tirzepatide"
   description String      @db.Text
   cas         String? // CAS registry number
-  purity      String? // e.g. ">=99%"
+  purity      String? // nominal/spec value, e.g. ">=99%" — actual per-batch value lives on COA.purity
   molarMass   Float?
   sequence    String? // amino-acid sequence
   form        ProductForm @default(LYOPHILIZED)
   storageInfo String?     @db.Text
   researchUse Boolean     @default(true) // RUO flag
+  currency    String      @default("USD")
 
-  priceCents Int // base unit price
-  compareAtCents Int? // strike-through price
-  currency   String @default("USD")
+  // Denormalized catalog-performance fields — kept in sync by
+  // recomputeProductAggregates() whenever a variant's price/stock/active changes.
+  minPriceCents Int?
+  maxPriceCents Int?
+  inStock       Boolean @default(false)
 
-  // Inventory + OPTIMISTIC LOCKING
-  stock     Int @default(0)
-  reserved  Int @default(0) // held during checkout
-  lowStockThreshold Int @default(10)
-  version   Int @default(0) // bumped on every stock mutation
-
-  active     Boolean @default(true)
+  active     Boolean @default(true) // parent-level kill switch — hides the whole compound
   featured   Boolean @default(false)
 
   categoryId String?
   category   Category? @relation(fields: [categoryId], references: [id])
 
-  images       ProductImage[]
-  priceTiers   PriceTier[]
-  coas         COA[]
-  orderItems   OrderItem[]
-  inventoryLogs InventoryLog[]
-  savedBy      SavedProduct[]
-  dosageLogs   DosageLog[]
+  variants   ProductVariant[]
+  orderItems OrderItem[] // reporting/display convenience — variant is the authoritative purchased SKU
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -221,41 +213,85 @@ model Product {
   @@index([slug])
 }
 
+// One strength/SKU of a compound, e.g. Tirzepatide 10mg.
+model ProductVariant {
+  id                String  @id @default(cuid())
+  productId         String
+  sku               String  @unique
+  strengthMg        Float // vial strength, e.g. 10, 20
+  priceCents        Int // base unit price
+  compareAtCents    Int? // strike-through price
+
+  // Standard bacteriostatic-water reconstitution volume for this vial — an
+  // admin-recorded fact, NOT a customer-facing purchase choice. Drives the
+  // reconstitution calculator's math; not shown to the shopper as a unit.
+  // Industry-standard default is 3mL; a handful of products (larger-format
+  // vials like NAD+ 1000mg) use more.
+  reconstitutionVolumeMl Float @default(3)
+
+  // Inventory + OPTIMISTIC LOCKING
+  stock             Int @default(0)
+  reserved          Int @default(0) // held during checkout
+  lowStockThreshold Int @default(10)
+  version           Int @default(0) // bumped on every stock mutation
+
+  active    Boolean @default(true) // can discontinue one strength independently
+  sortOrder Int     @default(0)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  images        ProductImage[]
+  priceTiers    PriceTier[]
+  coas          COA[]
+  orderItems    OrderItem[]
+  inventoryLogs InventoryLog[]
+  savedBy       SavedProduct[]
+  dosageLogs    DosageLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([productId, strengthMg])
+  @@index([productId])
+  @@index([productId, active])
+}
+
 model ProductImage {
-  id        String  @id @default(cuid())
-  productId String
+  id        String         @id @default(cuid())
+  variantId String
   url       String
   alt       String?
-  sortOrder Int     @default(0)
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sortOrder Int            @default(0)
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
 
-  @@index([productId])
+  @@index([variantId])
 }
 
 // Bulk pricing: buy >= minQty, pay unitPriceCents
 model PriceTier {
-  id            String  @id @default(cuid())
-  productId     String
-  minQty        Int
+  id             String         @id @default(cuid())
+  variantId      String
+  minQty         Int
   unitPriceCents Int
-  product       Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant        ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
 
-  @@unique([productId, minQty])
+  @@unique([variantId, minQty])
 }
 
-// Certificate of Analysis PDF
+// Certificate of Analysis PDF — per batch, hence per variant (different
+// strengths of the same compound are independently tested/lot-tracked).
 model COA {
-  id        String   @id @default(cuid())
-  productId String
+  id        String         @id @default(cuid())
+  variantId String
   batchLot  String
   fileUrl   String
   testedOn  DateTime?
-  purity    String?
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  purity    String? // actual tested-per-batch value (distinct from Product.purity spec)
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 
-  @@index([productId])
+  @@index([variantId])
   @@index([batchLot])
 }
 
@@ -306,19 +342,22 @@ model Order {
 model OrderItem {
   id         String  @id @default(cuid())
   orderId    String
-  productId  String
+  productId  String // parent — display/nav/reporting convenience
+  variantId  String // the SKU actually purchased
   // frozen snapshot at purchase
-  name       String
+  name       String // e.g. "Tirzepatide 10mg" (compound + strength combined)
   sku        String
   quantity   Int
   unitPriceCents Int
   totalCents Int
 
-  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id])
+  order   Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product        @relation(fields: [productId], references: [id])
+  variant ProductVariant @relation(fields: [variantId], references: [id])
 
   @@index([orderId])
   @@index([productId])
+  @@index([variantId])
 }
 
 model Payment {
@@ -364,46 +403,46 @@ model PaymentReceipt {
 
 model InventoryLog {
   id        String          @id @default(cuid())
-  productId String
+  variantId String
   reason    InventoryReason
   delta     Int // +restock / -sale
   before    Int
   after     Int
   orderId   String?
   note      String?
-  product   Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant   ProductVariant  @relation(fields: [variantId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 
-  @@index([productId])
+  @@index([variantId])
   @@index([createdAt])
 }
 
 // ============================ CUSTOMER TOOLS ============================
 
 model SavedProduct {
-  id        String  @id @default(cuid())
+  id        String         @id @default(cuid())
   userId    String
-  productId String
-  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variantId String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 
-  @@unique([userId, productId])
+  @@unique([userId, variantId])
   @@index([userId])
 }
 
 model DosageLog {
-  id         String   @id @default(cuid())
+  id         String          @id @default(cuid())
   userId     String
-  productId  String?
-  dateTaken  DateTime @default(now())
+  variantId  String?
+  dateTaken  DateTime        @default(now())
   doseMcg    Float
   volumeMl   Float?
   note       String?
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  product    Product? @relation(fields: [productId], references: [id])
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  variant    ProductVariant? @relation(fields: [variantId], references: [id])
 
   @@index([userId])
 }

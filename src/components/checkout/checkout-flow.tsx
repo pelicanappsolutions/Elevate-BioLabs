@@ -24,6 +24,7 @@ import { cn, formatPrice } from "@/lib/utils";
 import { useCart } from "@/store/cart";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -64,17 +65,6 @@ const EMPTY_ADDRESS: AddressForm = {
   phone: "",
 };
 
-const RAIL_ORDER: PaymentRail[] = [
-  "NEXAPAY",
-  "SEAMLESSCHEX",
-  "COINBASE",
-  "PAYRAM",
-  "STRIPE",
-  "P2P_ZELLE",
-  "P2P_VENMO",
-  "P2P_WIRE",
-];
-
 const RAIL_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   card: CreditCard,
   ach: Landmark,
@@ -87,9 +77,13 @@ const STEPS = ["Shipping", "Delivery", "Payment", "Review"] as const;
 export function CheckoutFlow({
   defaultEmail,
   savedAddresses,
+  availableRails,
 }: {
   defaultEmail: string;
   savedAddresses: SavedAddress[];
+  /** Server-computed — only rails with real credentials (or P2P, which needs
+   *  none) ever reach this component, so nothing unconfigured is selectable. */
+  availableRails: PaymentRail[];
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -121,7 +115,7 @@ export function CheckoutFlow({
   const [rates, setRates] = React.useState<ShippingRate[]>([]);
   const [loadingRates, setLoadingRates] = React.useState(false);
   const [shipService, setShipService] = React.useState<string>("");
-  const [rail, setRail] = React.useState<PaymentRail>("NEXAPAY");
+  const [rail, setRail] = React.useState<PaymentRail>(availableRails[0] ?? "P2P_WIRE");
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -138,7 +132,7 @@ export function CheckoutFlow({
       const res = await getShippingQuote({
         toZip: address.zip,
         toState: address.state,
-        items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+        items: items.map((i) => ({ variantId: i.variantId, quantity: i.quantity })),
       });
       setRates(res.rates);
       setShipService((prev) =>
@@ -162,6 +156,7 @@ export function CheckoutFlow({
     if (address.city.trim().length < 2) return "Enter a city.";
     if (!/^[A-Za-z]{2}$/.test(address.state)) return "Enter a 2-letter state code.";
     if (!/^\d{5}(-\d{4})?$/.test(address.zip)) return "Enter a valid US ZIP code.";
+    if (address.phone.replace(/\D/g, "").length !== 10) return "Enter a 10-digit phone number.";
     return null;
   }
 
@@ -205,7 +200,7 @@ export function CheckoutFlow({
           country: "US",
           phone: address.phone || undefined,
         },
-        items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+        items: items.map((i) => ({ variantId: i.variantId, quantity: i.quantity })),
         rail,
         shipService,
       });
@@ -372,14 +367,18 @@ export function CheckoutFlow({
                   autoComplete="postal-code"
                 />
               </div>
-              <Field
-                id="phone"
-                label="Phone (optional, for carrier updates)"
-                value={address.phone}
-                onChange={(v) => setAddress((a) => ({ ...a, phone: v }))}
-                inputMode="tel"
-                autoComplete="tel"
-              />
+              <div>
+                <Label htmlFor="phone" className="text-xs">
+                  Phone (required, for carrier updates)
+                </Label>
+                <PhoneInput
+                  id="phone"
+                  value={address.phone}
+                  onChange={(v) => setAddress((a) => ({ ...a, phone: v }))}
+                  autoComplete="tel"
+                  className="mt-1"
+                />
+              </div>
             </div>
           )}
 
@@ -435,7 +434,7 @@ export function CheckoutFlow({
             <div className="flex flex-col gap-4">
               <h2 className="text-lg font-semibold">Payment method</h2>
               <div className="flex flex-col gap-2" role="radiogroup">
-                {RAIL_ORDER.map((r) => {
+                {availableRails.map((r) => {
                   const meta = PAYMENT_RAIL_META[r];
                   const Icon = RAIL_ICONS[meta.type] ?? CreditCard;
                   return (
@@ -580,7 +579,7 @@ export function CheckoutFlow({
           <h2 className="text-base font-semibold">Order summary</h2>
           <ul className="mt-3 flex flex-col gap-3">
             {items.map((i) => (
-              <li key={i.productId} className="flex justify-between gap-3 text-sm">
+              <li key={i.variantId} className="flex justify-between gap-3 text-sm">
                 <span className="min-w-0">
                   <span className="line-clamp-1 font-medium">{i.name}</span>
                   <span className="text-xs text-muted-foreground">

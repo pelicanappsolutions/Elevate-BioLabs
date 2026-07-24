@@ -3,7 +3,7 @@ import Link from "next/link";
 import { FileCheck2 } from "lucide-react";
 
 import { db } from "@/lib/db";
-import { formatDate } from "@/lib/utils";
+import { formatDate, variantDisplayName } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Certificate Archive",
@@ -15,7 +15,7 @@ export const revalidate = 300;
 
 export default async function CertificatesPage() {
   const coas = await db.cOA.findMany({
-    include: { product: { select: { name: true, slug: true } } },
+    include: { variant: { include: { product: { select: { name: true, slug: true } } } } },
     orderBy: { createdAt: "desc" },
     take: 60,
   });
@@ -91,7 +91,7 @@ export default async function CertificatesPage() {
                 </div>
 
                 <h2 className="mt-3 text-base font-semibold transition-colors group-hover:text-primary">
-                  {coa.product.name}
+                  {variantDisplayName(coa.variant.product.name, coa.variant.strengthMg)}
                 </h2>
                 <p className="mt-1 font-mono text-xs text-muted-foreground">
                   {coa.batchLot}

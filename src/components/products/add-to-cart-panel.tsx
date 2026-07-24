@@ -16,9 +16,10 @@ interface Tier {
 }
 
 interface PanelProduct {
-  id: string;
+  variantId: string;
+  productId: string;
   slug: string;
-  name: string;
+  name: string; // combined display name, e.g. "Tirzepatide 10mg"
   sku: string;
   priceCents: number;
   stock: number;
@@ -37,6 +38,13 @@ export function AddToCartPanel({
   const add = useCart((s) => s.add);
   const [qty, setQty] = React.useState(1);
 
+  // Switching strength on the parent detail page swaps `product` — without
+  // this, a qty picked for one strength could silently carry over to another
+  // (e.g. clamped to a different, wrong maxStock instead of resetting).
+  React.useEffect(() => {
+    setQty(1);
+  }, [product.variantId]);
+
   const outOfStock = product.stock <= 0;
   // Mirrors the server's tier resolution so the displayed price matches what
   // checkout will re-compute authoritatively.
@@ -47,7 +55,8 @@ export function AddToCartPanel({
     if (outOfStock) return;
     add(
       {
-        productId: product.id,
+        variantId: product.variantId,
+        productId: product.productId,
         slug: product.slug,
         name: product.name,
         sku: product.sku,
@@ -127,14 +136,26 @@ export function AddToCartPanel({
             <Minus className="h-4 w-4" />
           </button>
           <input
-            type="number"
+            type="text"
             inputMode="numeric"
             value={qty}
-            min={1}
-            max={Math.max(1, product.stock)}
             aria-label="Quantity"
+            onKeyDown={(e) => {
+              const navKeys = ["Backspace", "Delete", "Tab", "Escape", "Enter", "ArrowLeft", "ArrowRight", "Home", "End"];
+              if (e.ctrlKey || e.metaKey || e.altKey || navKeys.includes(e.key)) return;
+              if (/^[0-9]$/.test(e.key)) return;
+              e.preventDefault();
+            }}
+            onPaste={(e) => {
+              e.preventDefault();
+              const digits = e.clipboardData.getData("text").replace(/[^0-9]/g, "");
+              if (!digits) return;
+              setQty(Math.max(1, Math.min(Number(digits), product.stock)));
+            }}
             onChange={(e) => {
-              const next = Number(e.target.value);
+              const digits = e.target.value.replace(/[^0-9]/g, "");
+              if (!digits) return;
+              const next = Number(digits);
               if (!Number.isFinite(next)) return;
               setQty(Math.max(1, Math.min(next, product.stock)));
             }}

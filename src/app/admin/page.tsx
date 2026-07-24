@@ -4,7 +4,11 @@ import { AlertTriangle, DollarSign, Package, ShoppingBag } from "lucide-react";
 
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, variantDisplayName } from "@/lib/utils";
+import { getAnalyticsData } from "@/lib/analytics";
+import { AdminAnalytics } from "@/components/admin/admin-analytics";
+import { AdminCustomers } from "@/components/admin/admin-customers";
+import { AdminActivity } from "@/components/admin/admin-activity";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminProducts } from "@/components/admin/admin-products";
 import { AdminOrders } from "@/components/admin/admin-orders";
@@ -12,6 +16,8 @@ import { ReceiptQueue } from "@/components/admin/receipt-queue";
 import { CoaUploader } from "@/components/admin/coa-uploader";
 import { EmailCampaignManager } from "@/components/admin/email-campaign-manager";
 import { ComplianceTracker } from "@/components/admin/compliance-tracker";
+import { SendGridTrialAlert } from "@/components/admin/sendgrid-trial-alert";
+import { AccountSettings } from "@/components/account/account-settings";
 
 export const metadata: Metadata = {
   title: "Admin",
@@ -41,12 +47,23 @@ export default async function AdminPage() {
     chargebackMetrics,
     complianceDocs,
     recentCampaigns,
+    currentUser,
+    analytics,
+    customerRows,
+    customerSpend,
+    auditLogs,
+    inventoryLogs,
   ] = await Promise.all([
     db.product.findMany({
       include: {
         category: true,
-        images: { orderBy: { sortOrder: "asc" }, take: 1 },
-        _count: { select: { coas: true } },
+        variants: {
+          orderBy: [{ sortOrder: "asc" }, { strengthMg: "asc" }],
+          include: {
+            images: { orderBy: { sortOrder: "asc" }, take: 1 },
+            _count: { select: { coas: true } },
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
       take: 100,
@@ -67,9 +84,9 @@ export default async function AdminPage() {
       where: { status: { in: [...PAID_STATUSES] }, createdAt: { gte: thirtyDaysAgo } },
     }),
     db.order.count({ where: { createdAt: { gte: thirtyDaysAgo } } }),
-    db.product.findMany({
+    db.productVariant.findMany({
       where: { active: true, stock: { lte: 10 } },
-      select: { id: true, name: true, sku: true, stock: true },
+      select: { id: true, sku: true, stock: true, strengthMg: true, product: { select: { name: true } } },
       orderBy: { stock: "asc" },
       take: 10,
     }),
@@ -80,7 +97,73 @@ export default async function AdminPage() {
       _count: { _all: true },
       where: { createdAt: { gte: thirtyDaysAgo } },
     }),
+    db.user.findUnique({
+      where: { id: session.user.id },
+      select: {
+        name: true,
+        email: true,
+        image: true,
+        marketingOptIn: true,
+        passwordHash: true,
+        createdAt: true,
+      },
+    }),
+    getAnalyticsData(),
+    db.user.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 500,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true,
+        _count: { select: { orders: true } },
+      },
+    }),
+    db.order.groupBy({
+      by: ["userId"],
+      _sum: { totalCents: true },
+      where: { status: { in: [...PAID_STATUSES] } },
+    }),
+    db.auditLog.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 500,
+      include: { user: { select: { email: true } } },
+    }),
+    db.inventoryLog.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 500,
+      include: {
+        variant: { select: { strengthMg: true, product: { select: { name: true } } } },
+      },
+    }),
   ]);
+
+  // InventoryLog.orderId is a plain scalar (no relation), so resolve order
+  // numbers for the ones that reference an order in one batched lookup.
+  const invOrderIds = Array.from(
+    new Set(inventoryLogs.map((i) => i.orderId).filter((x): x is string => x != null))
+  );
+  const invOrders = invOrderIds.length
+    ? await db.order.findMany({ where: { id: { in: invOrderIds } }, select: { id: true, orderNumber: true } })
+    : [];
+  const orderNumberById = new Map(invOrders.map((o) => [o.id, o.orderNumber]));
+
+  const spendByUser = new Map(
+    customerSpend
+      .filter((s) => s.userId != null)
+      .map((s) => [s.userId as string, s._sum.totalCents ?? 0])
+  );
+  const customers = customerRows.map((u) => ({
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    role: u.role,
+    joinedAt: u.createdAt.toISOString(),
+    orderCount: u._count.orders,
+    lifetimeSpendCents: spendByUser.get(u.id) ?? 0,
+  }));
 
   const revenue = revenueAgg._sum.totalCents ?? 0;
 
@@ -117,7 +200,7 @@ export default async function AdminPage() {
         />
         <Kpi
           icon={AlertTriangle}
-          label="Active products"
+          label="Active compounds"
           value={String(products.filter((p) => p.active).length)}
           hint={`${products.length} total`}
         />
@@ -127,22 +210,30 @@ export default async function AdminPage() {
         <div className="mt-4 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
           <p className="text-xs font-semibold text-destructive">Low stock alert</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            {lowStock.map((p) => `${p.name} (${p.stock})`).join(" • ")}
+            {lowStock
+              .map((v) => `${variantDisplayName(v.product.name, v.strengthMg)} (${v.stock})`)
+              .join(" • ")}
           </p>
         </div>
       )}
+
+      <SendGridTrialAlert />
 
       <Tabs defaultValue="orders" className="mt-6">
         <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
           <TabsList className="inline-flex w-auto">
             <TabsTrigger value="orders">Orders</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="customers">Customers</TabsTrigger>
             <TabsTrigger value="receipts">
               P2P queue{pendingReceipts.length > 0 ? ` (${pendingReceipts.length})` : ""}
             </TabsTrigger>
             <TabsTrigger value="products">Products</TabsTrigger>
             <TabsTrigger value="coa">COAs</TabsTrigger>
             <TabsTrigger value="email">Email</TabsTrigger>
+            <TabsTrigger value="activity">Activity</TabsTrigger>
             <TabsTrigger value="compliance">Compliance</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
         </div>
 
@@ -170,6 +261,14 @@ export default async function AdminPage() {
           />
         </TabsContent>
 
+        <TabsContent value="analytics" className="mt-6">
+          <AdminAnalytics data={analytics} />
+        </TabsContent>
+
+        <TabsContent value="customers" className="mt-6">
+          <AdminCustomers customers={customers} currentAdminId={session.user.id} />
+        </TabsContent>
+
         <TabsContent value="receipts" className="mt-6">
           <ReceiptQueue
             receipts={pendingReceipts.map((r) => ({
@@ -192,7 +291,6 @@ export default async function AdminPage() {
           <AdminProducts
             products={products.map((p) => ({
               id: p.id,
-              sku: p.sku,
               name: p.name,
               slug: p.slug,
               description: p.description,
@@ -202,16 +300,24 @@ export default async function AdminPage() {
               sequence: p.sequence,
               form: p.form,
               storageInfo: p.storageInfo,
-              priceCents: p.priceCents,
-              compareAtCents: p.compareAtCents,
-              stock: p.stock,
-              lowStockThreshold: p.lowStockThreshold,
               categoryId: p.categoryId,
               categoryName: p.category?.name ?? null,
               active: p.active,
               featured: p.featured,
-              coaCount: p._count.coas,
-              imageUrl: p.images[0]?.url ?? null,
+              variants: p.variants.map((v) => ({
+                id: v.id,
+                sku: v.sku,
+                strengthMg: v.strengthMg,
+                priceCents: v.priceCents,
+                compareAtCents: v.compareAtCents,
+                stock: v.stock,
+                lowStockThreshold: v.lowStockThreshold,
+                active: v.active,
+                sortOrder: v.sortOrder,
+                coaCount: v._count.coas,
+                imageUrl: v.images[0]?.url ?? null,
+                reconstitutionVolumeMl: v.reconstitutionVolumeMl,
+              })),
             }))}
             categories={categories.map((c) => ({ id: c.id, name: c.name }))}
           />
@@ -219,12 +325,14 @@ export default async function AdminPage() {
 
         <TabsContent value="coa" className="mt-6">
           <CoaUploader
-            products={products.map((p) => ({
-              id: p.id,
-              name: p.name,
-              sku: p.sku,
-              coaCount: p._count.coas,
-            }))}
+            products={products.flatMap((p) =>
+              p.variants.map((v) => ({
+                id: v.id,
+                name: variantDisplayName(p.name, v.strengthMg),
+                sku: v.sku,
+                coaCount: v._count.coas,
+              }))
+            )}
           />
         </TabsContent>
 
@@ -234,6 +342,33 @@ export default async function AdminPage() {
               type: c.type,
               status: c.status,
               count: c._count._all,
+            }))}
+          />
+        </TabsContent>
+
+        <TabsContent value="activity" className="mt-6">
+          <AdminActivity
+            audit={auditLogs.map((a) => ({
+              id: a.id,
+              userEmail: a.user?.email ?? "system",
+              action: a.action,
+              entity: a.entity,
+              entityId: a.entityId,
+              meta: a.meta,
+              ip: a.ip,
+              createdAt: a.createdAt.toISOString(),
+            }))}
+            inventory={inventoryLogs.map((i) => ({
+              id: i.id,
+              variantName: variantDisplayName(i.variant.product.name, i.variant.strengthMg),
+              reason: i.reason,
+              delta: i.delta,
+              before: i.before,
+              after: i.after,
+              orderId: i.orderId,
+              orderNumber: i.orderId ? orderNumberById.get(i.orderId) ?? null : null,
+              note: i.note,
+              createdAt: i.createdAt.toISOString(),
             }))}
           />
         </TabsContent>
@@ -260,6 +395,18 @@ export default async function AdminPage() {
               fileUrl: d.fileUrl,
               updatedAt: d.updatedAt.toISOString(),
             }))}
+          />
+        </TabsContent>
+
+        <TabsContent value="settings" className="mt-6">
+          <AccountSettings
+            name={currentUser?.name ?? ""}
+            email={currentUser?.email ?? session.user.email ?? ""}
+            image={currentUser?.image ?? null}
+            marketingOptIn={currentUser?.marketingOptIn ?? false}
+            memberSince={currentUser?.createdAt?.toISOString() ?? null}
+            hasPassword={!!currentUser?.passwordHash}
+            showMarketing={false}
           />
         </TabsContent>
       </Tabs>

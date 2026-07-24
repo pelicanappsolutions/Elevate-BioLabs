@@ -4,8 +4,8 @@
   "description": "Research-grade peptides. For Research Use Only.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0b0f17",
-  "theme_color": "#0b0f17",
+  "background_color": "#ffffff",
+  "theme_color": "#094cb9",
   "orientation": "portrait-primary",
   "categories": ["shopping", "science"],
   "icons": [

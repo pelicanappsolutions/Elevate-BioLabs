@@ -21,8 +21,8 @@ const PAGE_SIZE = 12;
 
 const SORTS = {
   newest: { createdAt: "desc" },
-  "price-asc": { priceCents: "asc" },
-  "price-desc": { priceCents: "desc" },
+  "price-asc": { minPriceCents: "asc" },
+  "price-desc": { minPriceCents: "desc" },
   name: { name: "asc" },
 } satisfies Record<string, Prisma.ProductOrderByWithRelationInput>;
 
@@ -47,19 +47,21 @@ function buildWhere(sp: SearchParams): Prisma.ProductWhereInput {
   if (sp.q) {
     where.OR = [
       { name: { contains: sp.q, mode: "insensitive" } },
-      { sku: { contains: sp.q, mode: "insensitive" } },
       { cas: { contains: sp.q, mode: "insensitive" } },
       { description: { contains: sp.q, mode: "insensitive" } },
+      { variants: { some: { sku: { contains: sp.q, mode: "insensitive" } } } },
     ];
   }
   if (sp.category) where.category = { slug: sp.category };
   if (sp.form) where.form = sp.form as ProductForm;
-  if (sp.inStock === "1") where.stock = { gt: 0 };
+  if (sp.inStock === "1") where.inStock = true;
 
+  // Matches if the compound's cheapest variant falls in range — same "From $X"
+  // semantics as the price badge shown on cards.
   const min = sp.minPrice ? Math.round(Number(sp.minPrice) * 100) : undefined;
   const max = sp.maxPrice ? Math.round(Number(sp.maxPrice) * 100) : undefined;
   if (Number.isFinite(min) || Number.isFinite(max)) {
-    where.priceCents = {
+    where.minPriceCents = {
       ...(Number.isFinite(min) ? { gte: min } : {}),
       ...(Number.isFinite(max) ? { lte: max } : {}),
     };
@@ -89,10 +91,18 @@ export default async function ProductsPage({
 
   const where = buildWhere(searchParams);
 
-  const [products, total, categories] = await Promise.all([
+  const [rawProducts, total, categories] = await Promise.all([
     db.product.findMany({
       where,
-      include: { images: { orderBy: { sortOrder: "asc" }, take: 1 } },
+      include: {
+        variants: {
+          where: { active: true },
+          orderBy: [{ sortOrder: "asc" }, { strengthMg: "asc" }],
+          take: 1,
+          include: { images: { orderBy: { sortOrder: "asc" }, take: 1 } },
+        },
+        _count: { select: { variants: { where: { active: true } } } },
+      },
       orderBy: SORTS[sortKey],
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
@@ -100,6 +110,12 @@ export default async function ProductsPage({
     db.product.count({ where }),
     db.category.findMany({ orderBy: { sortOrder: "asc" } }),
   ]);
+
+  const products = rawProducts.map((p) => ({
+    ...p,
+    images: p.variants[0]?.images ?? [],
+    variantCount: p._count.variants,
+  }));
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const hasFilters = Boolean(

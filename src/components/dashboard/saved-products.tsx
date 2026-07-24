@@ -5,23 +5,23 @@ import Link from "next/link";
 import { Heart, Loader2 } from "lucide-react";
 
 import { toggleSavedProduct } from "@/actions/dashboard";
-import { ProductCard, type ProductCardProduct } from "@/components/product-card";
+import { SavedVariantCard, type SavedVariantData } from "@/components/dashboard/saved-variant-card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 
 interface SavedItem {
   id: string;
-  product: ProductCardProduct;
+  variant: SavedVariantData;
 }
 
 export function SavedProducts({ items }: { items: SavedItem[] }) {
   const { toast } = useToast();
   const [pendingId, setPendingId] = React.useState<string | null>(null);
 
-  async function unsave(productId: string, name: string) {
-    setPendingId(productId);
+  async function unsave(variantId: string, name: string) {
+    setPendingId(variantId);
     try {
-      const res = await toggleSavedProduct(productId);
+      const res = await toggleSavedProduct(variantId);
       if (res.ok) toast({ title: "Removed", description: `${name} unsaved.` });
     } finally {
       setPendingId(null);
@@ -47,15 +47,17 @@ export function SavedProducts({ items }: { items: SavedItem[] }) {
     <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
       {items.map((item) => (
         <div key={item.id} className="flex flex-col gap-2">
-          <ProductCard product={item.product} />
+          <SavedVariantCard variant={item.variant} />
           <Button
             variant="ghost"
             size="sm"
-            disabled={pendingId === item.product.id}
-            onClick={() => unsave(item.product.id, item.product.name)}
+            disabled={pendingId === item.variant.variantId}
+            onClick={() =>
+              unsave(item.variant.variantId, `${item.variant.productName} ${item.variant.strengthMg}mg`)
+            }
             className="text-muted-foreground hover:text-destructive"
           >
-            {pendingId === item.product.id ? (
+            {pendingId === item.variant.variantId ? (
               <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
             ) : (
               <Heart className="mr-1.5 h-3.5 w-3.5 fill-current" />

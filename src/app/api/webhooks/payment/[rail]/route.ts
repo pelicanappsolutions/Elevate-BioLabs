@@ -93,7 +93,7 @@ export async function POST(
     });
     await db.order.update({ where: { id: order.id }, data: { status: "CANCELLED" } });
     for (const item of order.items) {
-      await adjustStock(item.productId, item.quantity, "RESERVATION_RELEASE", `Failed payment ${order.orderNumber}`).catch(
+      await adjustStock(item.variantId, item.quantity, "RESERVATION_RELEASE", `Failed payment ${order.orderNumber}`).catch(
         () => {}
       );
     }

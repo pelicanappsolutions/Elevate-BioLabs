@@ -1,11 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { Calculator, Loader2, Save } from "lucide-react";
+import { Calculator, Droplet, Loader2, Save } from "lucide-react";
 
 import { logDose } from "@/actions/dashboard";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/ui/numeric-input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -39,21 +39,27 @@ function reconstitute(vialMg: number, diluentMl: number, doseMcg: number) {
 }
 
 export function DosageCalculator({
-  productId,
+  variantId,
   productName,
+  vialMg,
+  reconstitutionVolumeMl,
 }: {
-  productId?: string;
+  variantId?: string;
   productName?: string;
+  /** The selected variant's actual strength — a fact, not editable here. */
+  vialMg: number;
+  /** Standard bac-water volume set by admin for this vial — a fact, not
+   *  a customer choice. Following standard peptide reconstitution protocol,
+   *  this is fixed per product/batch, not something a shopper should guess. */
+  reconstitutionVolumeMl: number;
 }) {
   const { toast } = useToast();
-  const [vialMg, setVialMg] = React.useState("5");
-  const [diluentMl, setDiluentMl] = React.useState("2");
   const [doseMcg, setDoseMcg] = React.useState("250");
   const [saving, setSaving] = React.useState(false);
 
   const result = React.useMemo(
-    () => reconstitute(Number(vialMg), Number(diluentMl), Number(doseMcg)),
-    [vialMg, diluentMl, doseMcg]
+    () => reconstitute(vialMg, reconstitutionVolumeMl, Number(doseMcg)),
+    [vialMg, reconstitutionVolumeMl, doseMcg]
   );
 
   async function handleSave() {
@@ -61,7 +67,7 @@ export function DosageCalculator({
     setSaving(true);
     try {
       const res = await logDose({
-        productId,
+        variantId,
         doseMcg: Number(doseMcg),
         volumeMl: Number(result.drawMl.toFixed(4)),
         note: productName ? `Reconstitution plan — ${productName}` : undefined,
@@ -90,59 +96,31 @@ export function DosageCalculator({
         <h3 className="text-sm font-semibold">Reconstitution calculator</h3>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div>
-          <Label htmlFor="vialMg" className="text-xs">
-            Vial strength (mg)
-          </Label>
-          <Input
-            id="vialMg"
-            type="number"
-            inputMode="decimal"
-            min={0}
-            step="0.1"
-            value={vialMg}
-            onChange={(e) => setVialMg(e.target.value)}
-            className="mt-1"
-          />
-        </div>
-        <div>
-          <Label htmlFor="diluentMl" className="text-xs">
-            Diluent (mL)
-          </Label>
-          <Input
-            id="diluentMl"
-            type="number"
-            inputMode="decimal"
-            min={0}
-            step="0.1"
-            value={diluentMl}
-            onChange={(e) => setDiluentMl(e.target.value)}
-            className="mt-1"
-          />
-        </div>
-        <div>
-          <Label htmlFor="doseMcg" className="text-xs">
-            Target dose (mcg)
-          </Label>
-          <Input
-            id="doseMcg"
-            type="number"
-            inputMode="decimal"
-            min={0}
-            step="1"
-            value={doseMcg}
-            onChange={(e) => setDoseMcg(e.target.value)}
-            className="mt-1"
-          />
-        </div>
+      {/* Standard bac-water instruction — a fixed fact for this vial, not a
+          customer choice, per standard peptide reconstitution protocol. */}
+      <div className="flex items-center gap-2 rounded-md border border-primary/30 bg-primary/5 p-3">
+        <Droplet className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+        <p className="text-sm">
+          Add <span className="font-semibold text-primary">{reconstitutionVolumeMl}mL</span> of
+          Bacteriostatic Water to this {vialMg}mg vial.
+        </p>
+      </div>
+
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <Fact label="Vial strength" value={`${vialMg}mg`} />
+        <Fact label="Bac water to add" value={`${reconstitutionVolumeMl}mL`} />
+      </div>
+
+      <div className="mt-3">
+        <Label htmlFor="doseMcg" className="text-xs">
+          Your target dose (mcg)
+        </Label>
+        <NumericInput id="doseMcg" value={doseMcg} onChange={setDoseMcg} className="mt-1" />
       </div>
 
       <div className="mt-4 rounded-md bg-secondary/60 p-3">
         {!result ? (
-          <p className="text-sm text-muted-foreground">
-            Enter all three values to calculate.
-          </p>
+          <p className="text-sm text-muted-foreground">Enter a target dose to calculate.</p>
         ) : result.error ? (
           <p className="text-sm text-destructive">{result.error}</p>
         ) : (
@@ -181,6 +159,15 @@ export function DosageCalculator({
 
 function round(n: number, dp = 2) {
   return Number(n.toFixed(dp)).toLocaleString("en-US");
+}
+
+function Fact({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-border bg-secondary/40 px-3 py-2">
+      <p className="text-[11px] text-muted-foreground">{label}</p>
+      <p className="text-sm font-semibold">{value}</p>
+    </div>
+  );
 }
 
 function Stat({

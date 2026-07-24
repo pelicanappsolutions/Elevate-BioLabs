@@ -17,30 +17,81 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 
-interface CoaProduct {
-  id: string;
-  name: string;
+interface CoaVariant {
+  id: string; // ProductVariant id
+  name: string; // combined display name, e.g. "Tirzepatide 10mg"
   sku: string;
   coaCount: number;
 }
 
-export function CoaUploader({ products }: { products: CoaProduct[] }) {
+export function CoaUploader({ products }: { products: CoaVariant[] }) {
   const { toast } = useToast();
   const router = useRouter();
   const formRef = React.useRef<HTMLFormElement>(null);
-  const [productId, setProductId] = React.useState("");
+  const [variantId, setVariantId] = React.useState("");
+  const [batchLot, setBatchLot] = React.useState("");
+  const [purity, setPurity] = React.useState("");
+  const [testedOn, setTestedOn] = React.useState("");
+  const [fileName, setFileName] = React.useState("");
   const [pending, setPending] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+
+  const selectedVariant = products.find((p) => p.id === variantId);
+
+  // Live filename preview — update as form fields change
+  React.useEffect(() => {
+    if (selectedVariant && batchLot && purity) {
+      const purityNum = purity.replace("%", "").trim();
+      const filename = `${selectedVariant.name}_${batchLot}_${purityNum}_COA.pdf`;
+      setFileName(filename);
+    } else {
+      setFileName("");
+    }
+  }, [selectedVariant, batchLot, purity]);
+
+  // Validate form fields
+  function validateForm(): string | null {
+    if (!variantId) return "Choose a product.";
+    if (!batchLot.trim()) return "Enter batch/lot number.";
+    if (!purity.trim()) return "Enter purity percentage.";
+    if (!testedOn) return "Select test date.";
+
+    const purityNum = parseFloat(purity.replace("%", "").trim());
+    if (isNaN(purityNum) || purityNum < 0 || purityNum > 100) {
+      return "Purity must be a number between 0-100.";
+    }
+
+    const testDate = new Date(testedOn);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    if (testDate > today) {
+      return "Test date cannot be in the future.";
+    }
+
+    return null;
+  }
+
+  // fileName is just the display preview (product+batch+purity) — it says nothing
+  // about whether a file was actually picked, so it must not gate validity. The
+  // file input's `required` attribute plus the server-side check in uploadCoa
+  // are what actually enforce a file is attached.
+  const isFormValid = !validateForm();
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
 
-    const formData = new FormData(e.currentTarget);
-    // The Select isn't a native input, so its value has to be injected by hand.
-    formData.set("productId", productId);
+    const validationError = validateForm();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
 
-    if (!productId) return setError("Choose a product.");
+    const formData = new FormData(e.currentTarget);
+    formData.set("variantId", variantId);
+    formData.set("batchLot", batchLot);
+    formData.set("purity", purity);
+    formData.set("testedOn", testedOn);
 
     setPending(true);
     try {
@@ -51,10 +102,13 @@ export function CoaUploader({ products }: { products: CoaProduct[] }) {
       }
       toast({
         title: "COA published",
-        description: "It's now downloadable on the product page.",
+        description: `Saved as: ${fileName}`,
       });
       formRef.current?.reset();
-      setProductId("");
+      setVariantId("");
+      setBatchLot("");
+      setPurity("");
+      setTestedOn("");
       router.refresh();
     } finally {
       setPending(false);
@@ -72,7 +126,7 @@ export function CoaUploader({ products }: { products: CoaProduct[] }) {
 
         <div>
           <Label className="text-xs">Product</Label>
-          <Select value={productId} onValueChange={setProductId}>
+          <Select value={variantId} onValueChange={setVariantId}>
             <SelectTrigger className="mt-1">
               <SelectValue placeholder="Choose a product" />
             </SelectTrigger>
@@ -93,6 +147,8 @@ export function CoaUploader({ products }: { products: CoaProduct[] }) {
           <Input
             id="batchLot"
             name="batchLot"
+            value={batchLot}
+            onChange={(e) => setBatchLot(e.target.value)}
             required
             placeholder="EBL-2026-0417"
             className="mt-1"
@@ -101,21 +157,34 @@ export function CoaUploader({ products }: { products: CoaProduct[] }) {
 
         <div>
           <Label htmlFor="coa-purity" className="text-xs">
-            Tested purity
+            Tested purity <span className="text-destructive">*</span>
           </Label>
-          <Input id="coa-purity" name="purity" placeholder="99.4%" className="mt-1" />
+          <Input
+            id="coa-purity"
+            value={purity}
+            onChange={(e) => setPurity(e.target.value)}
+            placeholder="99.4 or 99.4%"
+            className="mt-1"
+          />
+          <p className="mt-0.5 text-[10px] text-muted-foreground">Number 0-100, optional % sign</p>
         </div>
 
         <div>
           <Label htmlFor="testedOn" className="text-xs">
-            Test date
+            Test date <span className="text-destructive">*</span>
           </Label>
-          <Input id="testedOn" name="testedOn" type="date" className="mt-1" />
+          <Input
+            id="testedOn"
+            type="date"
+            value={testedOn}
+            onChange={(e) => setTestedOn(e.target.value)}
+            className="mt-1"
+          />
         </div>
 
         <div>
           <Label htmlFor="coa-file" className="text-xs">
-            COA PDF
+            COA PDF <span className="text-destructive">*</span>
           </Label>
           <Input
             id="coa-file"
@@ -127,6 +196,13 @@ export function CoaUploader({ products }: { products: CoaProduct[] }) {
           />
         </div>
 
+        {fileName && (
+          <div className="rounded-md border border-primary/40 bg-primary/5 p-2.5">
+            <p className="text-xs font-medium text-primary">Filename preview:</p>
+            <p className="mt-1 break-words font-mono text-xs text-foreground">{fileName}</p>
+          </div>
+        )}
+
         {error && (
           <p
             role="alert"
@@ -136,7 +212,7 @@ export function CoaUploader({ products }: { products: CoaProduct[] }) {
           </p>
         )}
 
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" disabled={pending || !isFormValid}>
           {pending ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (

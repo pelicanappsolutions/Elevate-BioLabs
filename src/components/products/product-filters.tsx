@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SlidersHorizontal, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/ui/numeric-input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -32,9 +32,18 @@ export function ProductFilters({ categories }: { categories: CategoryOption[] })
   const [open, setOpen] = React.useState(false);
 
   // Price inputs are local state so typing doesn't refetch on every keystroke;
-  // they commit to the URL on Apply.
+  // they commit to the URL on Apply (button click or Enter).
   const [minPrice, setMinPrice] = React.useState(searchParams.get("minPrice") ?? "");
   const [maxPrice, setMaxPrice] = React.useState(searchParams.get("maxPrice") ?? "");
+
+  // Re-sync local price state whenever the URL's price params change for any
+  // reason other than this component's own Apply click — e.g. the page's
+  // "Clear all filters" link, or browser back/forward — otherwise the boxes
+  // can keep showing a stale value even after the filter itself has cleared.
+  React.useEffect(() => {
+    setMinPrice(searchParams.get("minPrice") ?? "");
+    setMaxPrice(searchParams.get("maxPrice") ?? "");
+  }, [searchParams]);
 
   const activeCategory = searchParams.get("category");
   const activeForm = searchParams.get("form");
@@ -60,6 +69,11 @@ export function ProductFilters({ categories }: { categories: CategoryOption[] })
     },
     [pathname, router, searchParams]
   );
+
+  function applyPrice(e: React.FormEvent) {
+    e.preventDefault();
+    setParam({ minPrice: minPrice || null, maxPrice: maxPrice || null });
+  }
 
   function clearAll() {
     setMinPrice("");
@@ -131,46 +145,36 @@ export function ProductFilters({ categories }: { categories: CategoryOption[] })
       {/* Price */}
       <fieldset>
         <legend className="mb-2 text-sm font-semibold">Price (USD)</legend>
-        <div className="flex items-center gap-2">
-          <div className="flex-1">
-            <Label htmlFor="minPrice" className="sr-only">
-              Minimum price
-            </Label>
-            <Input
-              id="minPrice"
-              type="number"
-              inputMode="decimal"
-              min={0}
-              placeholder="Min"
-              value={minPrice}
-              onChange={(e) => setMinPrice(e.target.value)}
-            />
+        <form onSubmit={applyPrice}>
+          <div className="flex items-center gap-2">
+            <div className="flex-1">
+              <Label htmlFor="minPrice" className="sr-only">
+                Minimum price
+              </Label>
+              <NumericInput
+                id="minPrice"
+                placeholder="Min"
+                value={minPrice}
+                onChange={setMinPrice}
+              />
+            </div>
+            <span className="text-muted-foreground">–</span>
+            <div className="flex-1">
+              <Label htmlFor="maxPrice" className="sr-only">
+                Maximum price
+              </Label>
+              <NumericInput
+                id="maxPrice"
+                placeholder="Max"
+                value={maxPrice}
+                onChange={setMaxPrice}
+              />
+            </div>
           </div>
-          <span className="text-muted-foreground">–</span>
-          <div className="flex-1">
-            <Label htmlFor="maxPrice" className="sr-only">
-              Maximum price
-            </Label>
-            <Input
-              id="maxPrice"
-              type="number"
-              inputMode="decimal"
-              min={0}
-              placeholder="Max"
-              value={maxPrice}
-              onChange={(e) => setMaxPrice(e.target.value)}
-            />
-          </div>
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="mt-2 w-full"
-          onClick={() => setParam({ minPrice: minPrice || null, maxPrice: maxPrice || null })}
-        >
-          Apply price
-        </Button>
+          <Button type="submit" variant="outline" size="sm" className="mt-2 w-full">
+            Apply price
+          </Button>
+        </form>
       </fieldset>
 
       {/* Availability */}

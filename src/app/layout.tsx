@@ -26,7 +26,12 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
-  themeColor: "#ffffff",
+  // Matches the mobile browser chrome color to the OS light/dark preference —
+  // same dark navy already used for the site's dark hero sections.
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#050a14" },
+  ],
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

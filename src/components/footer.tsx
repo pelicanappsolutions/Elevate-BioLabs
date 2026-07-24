@@ -13,11 +13,11 @@ const CATEGORY_LINKS = [
 ];
 
 const SHOP_LINKS = [
-  { href: "/products/bpc-157-5mg", label: "BPC-157" },
-  { href: "/products/semaglutide-5mg", label: "Semaglutide" },
-  { href: "/products/tirzepatide-10mg", label: "Tirzepatide" },
-  { href: "/products/retatrutide-10mg", label: "Retatrutide" },
-  { href: "/products/klow-blend-80mg", label: "KLOW Blend" },
+  { href: "/products/bpc-157", label: "BPC-157" },
+  { href: "/products/semaglutide", label: "Semaglutide" },
+  { href: "/products/tirzepatide", label: "Tirzepatide" },
+  { href: "/products/retatrutide", label: "Retatrutide" },
+  { href: "/products/klow-blend", label: "KLOW Blend" },
   { href: "/products", label: "Shop all peptides →" },
 ];
 

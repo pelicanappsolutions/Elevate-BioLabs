@@ -8,7 +8,7 @@ import { ArrowRight, FlaskConical, ShoppingBag, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, FREE_SHIPPING_THRESHOLD_CENTS } from "@/lib/utils";
 import { useCart, type CartItem } from "@/store/cart";
 
 export function CartView() {
@@ -16,6 +16,8 @@ export function CartView() {
   const items = useCart((s) => s.items);
   const subtotal = useCart((s) => s.subtotalCents());
   const clear = useCart((s) => s.clear);
+  const qualifiesForFreeShipping = subtotal >= FREE_SHIPPING_THRESHOLD_CENTS;
+  const remainingForFreeShipping = FREE_SHIPPING_THRESHOLD_CENTS - subtotal;
 
   // The cart lives in localStorage, so the server render has no items. Render a
   // skeleton until rehydration lands to avoid a hydration mismatch + CLS jump.
@@ -54,7 +56,7 @@ export function CartView() {
           Tip: swipe a row left to remove it.
         </p>
         {items.map((item) => (
-          <CartLineItem key={item.productId} item={item} />
+          <CartLineItem key={item.variantId} item={item} />
         ))}
 
         <div className="flex justify-between pt-2">
@@ -76,6 +78,13 @@ export function CartView() {
       <div className="lg:sticky lg:top-8">
         <div className="rounded-lg border border-border bg-card p-4">
           <h2 className="text-base font-semibold">Order summary</h2>
+
+          <p className="mt-2 text-xs text-primary">
+            {qualifiesForFreeShipping
+              ? "You've unlocked free shipping!"
+              : `Add ${formatPrice(remainingForFreeShipping)} more for free shipping`}
+          </p>
+
           <dl className="mt-4 flex flex-col gap-2 text-sm">
             <div className="flex justify-between">
               <dt className="text-muted-foreground">Subtotal</dt>
@@ -83,7 +92,9 @@ export function CartView() {
             </div>
             <div className="flex justify-between">
               <dt className="text-muted-foreground">Shipping</dt>
-              <dd className="text-muted-foreground">Calculated at checkout</dd>
+              <dd className={qualifiesForFreeShipping ? "font-medium text-primary" : "text-muted-foreground"}>
+                {qualifiesForFreeShipping ? "Free" : "Calculated at checkout"}
+              </dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-muted-foreground">Tax</dt>
@@ -144,7 +155,7 @@ function CartLineItem({ item }: { item: CartItem }) {
     setOffset(Math.min(0, touchX - startX.current));
   }
   function onTouchEnd() {
-    if (offset < -SWIPE_THRESHOLD) remove(item.productId);
+    if (offset < -SWIPE_THRESHOLD) remove(item.variantId);
     setOffset(0);
     startX.current = null;
   }
@@ -196,7 +207,7 @@ function CartLineItem({ item }: { item: CartItem }) {
               <button
                 type="button"
                 aria-label={`Decrease quantity of ${item.name}`}
-                onClick={() => setQty(item.productId, item.quantity - 1)}
+                onClick={() => setQty(item.variantId, item.quantity - 1)}
                 className="flex h-9 w-9 items-center justify-center text-lg leading-none transition-colors hover:bg-accent"
               >
                 −
@@ -206,7 +217,7 @@ function CartLineItem({ item }: { item: CartItem }) {
                 type="button"
                 aria-label={`Increase quantity of ${item.name}`}
                 disabled={item.quantity >= item.maxStock}
-                onClick={() => setQty(item.productId, item.quantity + 1)}
+                onClick={() => setQty(item.variantId, item.quantity + 1)}
                 className="flex h-9 w-9 items-center justify-center text-lg leading-none transition-colors hover:bg-accent disabled:opacity-40"
               >
                 +
@@ -220,7 +231,7 @@ function CartLineItem({ item }: { item: CartItem }) {
               <button
                 type="button"
                 aria-label={`Remove ${item.name} from cart`}
-                onClick={() => remove(item.productId)}
+                onClick={() => remove(item.variantId)}
                 className="hidden h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive sm:flex"
               >
                 <Trash2 className="h-4 w-4" />

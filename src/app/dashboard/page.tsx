@@ -3,13 +3,14 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { variantDisplayName } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SignOutButton } from "@/components/dashboard/sign-out-button";
 import { OrderHistory } from "@/components/dashboard/order-history";
 import { SavedProducts } from "@/components/dashboard/saved-products";
 import { DosageLogPanel } from "@/components/dashboard/dosage-log-panel";
 import { AddressBook } from "@/components/dashboard/address-book";
-import { ProfileSettings } from "@/components/dashboard/profile-settings";
+import { AccountSettings } from "@/components/account/account-settings";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -36,13 +37,18 @@ export default async function DashboardPage() {
     db.savedProduct.findMany({
       where: { userId },
       include: {
-        product: { include: { images: { orderBy: { sortOrder: "asc" }, take: 1 } } },
+        variant: {
+          include: {
+            images: { orderBy: { sortOrder: "asc" }, take: 1 },
+            product: { select: { id: true, slug: true, name: true } },
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
     }),
     db.dosageLog.findMany({
       where: { userId },
-      include: { product: { select: { name: true } } },
+      include: { variant: { select: { strengthMg: true, product: { select: { name: true } } } } },
       orderBy: { dateTaken: "desc" },
       take: 50,
     }),
@@ -52,13 +58,34 @@ export default async function DashboardPage() {
     }),
     db.user.findUnique({
       where: { id: userId },
-      select: { name: true, email: true, createdAt: true },
+      select: {
+        name: true,
+        email: true,
+        createdAt: true,
+        image: true,
+        marketingOptIn: true,
+        passwordHash: true,
+      },
     }),
   ]);
 
   const activeOrders = orders.filter(
     (o) => !["DELIVERED", "CANCELLED", "REFUNDED"].includes(o.status)
   ).length;
+
+  // Variant options for linking a dosage-log entry — drawn from what the user
+  // has purchased (OrderItem carries the frozen display name) plus saved items.
+  const variantOptionMap = new Map<string, string>();
+  for (const o of orders) {
+    for (const it of o.items) variantOptionMap.set(it.variantId, it.name);
+  }
+  for (const s of saved) {
+    variantOptionMap.set(
+      s.variant.id,
+      variantDisplayName(s.variant.product.name, s.variant.strengthMg)
+    );
+  }
+  const variantOptions = [...variantOptionMap.entries()].map(([id, label]) => ({ id, label }));
 
   return (
     <div className="container-tight py-8 sm:py-12">
@@ -95,18 +122,17 @@ export default async function DashboardPage() {
           <SavedProducts
             items={saved.map((s) => ({
               id: s.id,
-              product: {
-                id: s.product.id,
-                slug: s.product.slug,
-                name: s.product.name,
-                sku: s.product.sku,
-                priceCents: s.product.priceCents,
-                compareAtCents: s.product.compareAtCents,
-                purity: s.product.purity,
-                cas: s.product.cas,
-                form: s.product.form,
-                stock: s.product.stock,
-                images: s.product.images.map((i) => ({ url: i.url, alt: i.alt })),
+              variant: {
+                variantId: s.variant.id,
+                productId: s.variant.product.id,
+                productSlug: s.variant.product.slug,
+                productName: s.variant.product.name,
+                strengthMg: s.variant.strengthMg,
+                sku: s.variant.sku,
+                priceCents: s.variant.priceCents,
+                compareAtCents: s.variant.compareAtCents,
+                stock: s.variant.stock,
+                images: s.variant.images.map((i) => ({ url: i.url, alt: i.alt })),
               },
             }))}
           />
@@ -114,13 +140,17 @@ export default async function DashboardPage() {
 
         <TabsContent value="doses" className="mt-6">
           <DosageLogPanel
+            variantOptions={variantOptions}
             logs={doseLogs.map((l) => ({
               id: l.id,
               dateTaken: l.dateTaken.toISOString(),
+              variantId: l.variantId,
               doseMcg: l.doseMcg,
               volumeMl: l.volumeMl,
               note: l.note,
-              productName: l.product?.name ?? null,
+              productName: l.variant
+                ? variantDisplayName(l.variant.product.name, l.variant.strengthMg)
+                : null,
             }))}
           />
         </TabsContent>
@@ -130,10 +160,14 @@ export default async function DashboardPage() {
         </TabsContent>
 
         <TabsContent value="profile" className="mt-6">
-          <ProfileSettings
+          <AccountSettings
             name={user?.name ?? ""}
             email={user?.email ?? ""}
+            image={user?.image ?? null}
+            marketingOptIn={user?.marketingOptIn ?? false}
             memberSince={user?.createdAt?.toISOString() ?? null}
+            hasPassword={!!user?.passwordHash}
+            showMarketing
           />
         </TabsContent>
       </Tabs>

@@ -9,7 +9,7 @@ import { decrementStock, InsufficientStockError } from "@/lib/inventory";
 import { getRates, type ShippingRate } from "@/lib/shipping/usps";
 import { createCharge } from "@/lib/payments/index";
 import { trackMarketing } from "@/lib/email/index";
-import { generateOrderNumber } from "@/lib/utils";
+import { generateOrderNumber, FREE_SHIPPING_THRESHOLD_CENTS } from "@/lib/utils";
 import { rateLimit } from "@/lib/rate-limit";
 import type { PaymentRail, PaymentStatus } from "@prisma/client";
 
@@ -22,15 +22,26 @@ function computeWeightOz(items: { quantity: number }[]) {
 export async function getShippingQuote(input: {
   toZip: string;
   toState?: string;
-  items: { productId: string; quantity: number }[];
-}): Promise<{ rates: ShippingRate[] }> {
-  if (!input.toZip || input.items.length === 0) return { rates: [] };
-  const rates = await getRates({
-    toZip: input.toZip,
-    toState: input.toState,
-    weightOz: computeWeightOz(input.items),
-  });
-  return { rates };
+  items: { variantId: string; quantity: number }[];
+}): Promise<{ rates: ShippingRate[]; freeShipping: boolean }> {
+  if (!input.toZip || input.items.length === 0) return { rates: [], freeShipping: false };
+  const [rates, priced] = await Promise.all([
+    getRates({
+      toZip: input.toZip,
+      toState: input.toState,
+      weightOz: computeWeightOz(input.items),
+    }),
+    // Subtotal-only pass (no shippingCents passed in) just to check the
+    // free-shipping threshold for the live quote — placeOrder re-derives this
+    // authoritatively itself, so this is display-only, not enforcement.
+    priceCart(input.items).catch(() => null),
+  ]);
+
+  const freeShipping = (priced?.subtotalCents ?? 0) >= FREE_SHIPPING_THRESHOLD_CENTS;
+  return {
+    rates: freeShipping ? rates.map((r) => ({ ...r, amountCents: 0 })) : rates,
+    freeShipping,
+  };
 }
 
 type PlaceOrderResult =
@@ -55,7 +66,11 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
   const rl = rateLimit(`checkout:${data.email}`, { limit: 8, windowMs: 60_000 });
   if (!rl.success) return { ok: false, error: "Too many checkout attempts. Slow down." };
 
+  // Require an account — every order must attribute to a trackable customer.
   const session = await auth();
+  if (!session?.user?.id) {
+    return { ok: false, error: "Please sign in to complete your order." };
+  }
   const rail = data.rail as PaymentRail;
   const isP2P = P2P_RAILS.includes(rail);
 
@@ -85,8 +100,8 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
       const created = await tx.order.create({
         data: {
           orderNumber,
-          userId: session?.user?.id ?? null,
-          guestEmail: session?.user?.id ? null : data.email,
+          userId: session.user.id,
+          guestEmail: null,
           status: "PENDING_PAYMENT",
           shipTo: data.address as object,
           subtotalCents: priced.subtotalCents,
@@ -97,6 +112,7 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
           items: {
             create: priced.lines.map((l) => ({
               productId: l.productId,
+              variantId: l.variantId,
               name: l.name,
               sku: l.sku,
               quantity: l.quantity,
@@ -116,7 +132,7 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
 
       // reserve stock — throws InsufficientStockError / retries on version race
       for (const line of priced.lines) {
-        await decrementStock(tx, line.productId, line.quantity, created.id);
+        await decrementStock(tx, line.variantId, line.quantity, created.id);
       }
       return created;
     });

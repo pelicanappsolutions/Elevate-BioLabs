@@ -1,8 +1,9 @@
 import { db } from "@/lib/db";
-import { resolveUnitPrice } from "@/lib/utils";
+import { resolveUnitPrice, variantDisplayName, FREE_SHIPPING_THRESHOLD_CENTS } from "@/lib/utils";
 
 export interface PricedLine {
   productId: string;
+  variantId: string;
   name: string;
   sku: string;
   quantity: number;
@@ -16,6 +17,7 @@ export interface PricedCart {
   shippingCents: number;
   taxCents: number;
   totalCents: number;
+  freeShipping: boolean;
 }
 
 // Simple destination-based sales-tax table (extend as nexus grows).
@@ -31,24 +33,25 @@ const TAX_RATES: Record<string, number> = {
  * the DB, apply bulk tiers, then layer shipping + tax. Called by checkout.
  */
 export async function priceCart(
-  items: { productId: string; quantity: number }[],
+  items: { variantId: string; quantity: number }[],
   opts: { state?: string; shippingCents?: number } = {}
 ): Promise<PricedCart> {
-  const ids = items.map((i) => i.productId);
-  const products = await db.product.findMany({
-    where: { id: { in: ids }, active: true },
-    include: { priceTiers: true },
+  const ids = items.map((i) => i.variantId);
+  const variants = await db.productVariant.findMany({
+    where: { id: { in: ids }, active: true, product: { active: true } },
+    include: { priceTiers: true, product: { select: { id: true, name: true } } },
   });
 
   const lines: PricedLine[] = [];
   for (const item of items) {
-    const p = products.find((x) => x.id === item.productId);
-    if (!p) throw new Error(`Product ${item.productId} unavailable`);
-    const unit = resolveUnitPrice(p.priceCents, p.priceTiers, item.quantity);
+    const v = variants.find((x) => x.id === item.variantId);
+    if (!v) throw new Error(`Product ${item.variantId} unavailable`);
+    const unit = resolveUnitPrice(v.priceCents, v.priceTiers, item.quantity);
     lines.push({
-      productId: p.id,
-      name: p.name,
-      sku: p.sku,
+      productId: v.product.id,
+      variantId: v.id,
+      name: variantDisplayName(v.product.name, v.strengthMg),
+      sku: v.sku,
       quantity: item.quantity,
       unitPriceCents: unit,
       totalCents: unit * item.quantity,
@@ -56,10 +59,13 @@ export async function priceCart(
   }
 
   const subtotalCents = lines.reduce((s, l) => s + l.totalCents, 0);
-  const shippingCents = opts.shippingCents ?? 0;
+  // Authoritative — enforced here regardless of what the client/quote passed in,
+  // so this can't be bypassed by an ordering flow that skips the quote step.
+  const freeShipping = subtotalCents >= FREE_SHIPPING_THRESHOLD_CENTS;
+  const shippingCents = freeShipping ? 0 : (opts.shippingCents ?? 0);
   const rate = opts.state ? TAX_RATES[opts.state.toUpperCase()] ?? 0 : 0;
   const taxCents = Math.round(subtotalCents * rate);
   const totalCents = subtotalCents + shippingCents + taxCents;
 
-  return { lines, subtotalCents, shippingCents, taxCents, totalCents };
+  return { lines, subtotalCents, shippingCents, taxCents, totalCents, freeShipping };
 }

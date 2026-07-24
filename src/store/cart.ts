@@ -4,9 +4,10 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
 export interface CartItem {
-  productId: string;
+  variantId: string; // identity key — the addressable SKU actually purchased
+  productId: string; // parent compound — nav/display only
   slug: string;
-  name: string;
+  name: string; // combined display name, e.g. "Tirzepatide 10mg"
   sku: string;
   imageUrl?: string;
   priceCents: number; // base unit price (server re-prices with tiers at checkout)
@@ -18,8 +19,8 @@ interface CartState {
   items: CartItem[];
   hydrated: boolean;
   add: (item: Omit<CartItem, "quantity">, qty?: number) => void;
-  remove: (productId: string) => void;
-  setQty: (productId: string, qty: number) => void;
+  remove: (variantId: string) => void;
+  setQty: (variantId: string, qty: number) => void;
   clear: () => void;
   setHydrated: () => void;
   // selectors
@@ -34,12 +35,12 @@ export const useCart = create<CartState>()(
       hydrated: false,
       add: (item, qty = 1) =>
         set((state) => {
-          const existing = state.items.find((i) => i.productId === item.productId);
+          const existing = state.items.find((i) => i.variantId === item.variantId);
           if (existing) {
             const nextQty = Math.min(existing.quantity + qty, item.maxStock);
             return {
               items: state.items.map((i) =>
-                i.productId === item.productId ? { ...i, quantity: nextQty } : i
+                i.variantId === item.variantId ? { ...i, quantity: nextQty } : i
               ),
             };
           }
@@ -47,13 +48,13 @@ export const useCart = create<CartState>()(
             items: [...state.items, { ...item, quantity: Math.min(qty, item.maxStock) }],
           };
         }),
-      remove: (productId) =>
-        set((state) => ({ items: state.items.filter((i) => i.productId !== productId) })),
-      setQty: (productId, qty) =>
+      remove: (variantId) =>
+        set((state) => ({ items: state.items.filter((i) => i.variantId !== variantId) })),
+      setQty: (variantId, qty) =>
         set((state) => ({
           items: state.items
             .map((i) =>
-              i.productId === productId
+              i.variantId === variantId
                 ? { ...i, quantity: Math.max(1, Math.min(qty, i.maxStock)) }
                 : i
             )
@@ -66,7 +67,10 @@ export const useCart = create<CartState>()(
         get().items.reduce((sum, i) => sum + i.priceCents * i.quantity, 0),
     }),
     {
-      name: "ebl-cart",
+      // Bumped from "ebl-cart" — CartItem now requires variantId, so any
+      // stale pre-migration cart in localStorage is dropped cleanly instead
+      // of rehydrating into an invalid (undefined variantId) state.
+      name: "ebl-cart-v2",
       // localStorage today; swap for an IndexedDB adapter (idb-keyval) for larger
       // offline carts without touching call sites.
       storage: createJSONStorage(() => localStorage),

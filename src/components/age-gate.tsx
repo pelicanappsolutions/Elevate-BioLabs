@@ -3,6 +3,7 @@
 import * as React from "react";
 import { FlaskConical } from "lucide-react";
 
+import { logAgeConfirmation } from "@/actions/consent";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -32,6 +33,9 @@ export function AgeGate() {
     } catch {
       // ignore
     }
+    // Record the attestation (IP + timestamp) to the audit log. Fire-and-forget:
+    // a logging failure must never block the visitor from entering the site.
+    void logAgeConfirmation().catch(() => {});
     setOpen(false);
   }
 

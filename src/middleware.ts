@@ -21,6 +21,9 @@ export default auth((req) => {
 
   const isAdminRoute = nextUrl.pathname.startsWith("/admin");
   const isDashboardRoute = nextUrl.pathname.startsWith("/dashboard");
+  // Checkout requires an account so every order attributes to a trackable
+  // customer (no anonymous guest orders). Any authenticated role is fine.
+  const isCheckoutRoute = nextUrl.pathname.startsWith("/checkout");
 
   if (isAdminRoute) {
     if (!isLoggedIn) return redirectToLogin(nextUrl);
@@ -29,7 +32,7 @@ export default auth((req) => {
     }
   }
 
-  if (isDashboardRoute && !isLoggedIn) {
+  if ((isDashboardRoute || isCheckoutRoute) && !isLoggedIn) {
     return redirectToLogin(nextUrl);
   }
 
@@ -44,5 +47,5 @@ function redirectToLogin(nextUrl: NextRequest["nextUrl"]) {
 
 export const config = {
   // Skip static assets and the NextAuth API itself.
-  matcher: ["/admin/:path*", "/dashboard/:path*"],
+  matcher: ["/admin/:path*", "/dashboard/:path*", "/checkout/:path*"],
 };

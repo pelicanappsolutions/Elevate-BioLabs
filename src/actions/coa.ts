@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { db } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
+import { variantDisplayName } from "@/lib/utils";
 
 const lookupSchema = z.object({
   batchLot: z.string().min(2).max(64),
@@ -39,10 +40,10 @@ export async function lookupBatch(
     where: {
       OR: [
         { batchLot: { contains: parsed.data.batchLot, mode: "insensitive" } },
-        { product: { name: { contains: parsed.data.batchLot, mode: "insensitive" } } },
+        { variant: { product: { name: { contains: parsed.data.batchLot, mode: "insensitive" } } } },
       ],
     },
-    include: { product: { select: { name: true, slug: true } } },
+    include: { variant: { include: { product: { select: { name: true, slug: true } } } } },
     orderBy: { createdAt: "desc" },
     take: 10,
   });
@@ -54,8 +55,8 @@ export async function lookupBatch(
       fileUrl: c.fileUrl,
       purity: c.purity,
       testedOn: c.testedOn ? c.testedOn.toISOString() : null,
-      productName: c.product.name,
-      productSlug: c.product.slug,
+      productName: variantDisplayName(c.variant.product.name, c.variant.strengthMg),
+      productSlug: c.variant.product.slug,
     })),
   };
 }

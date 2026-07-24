@@ -49,10 +49,18 @@ const HOW_IT_WORKS = [
 ];
 
 async function getHomeData() {
-  const [featured, categories, productCount] = await Promise.all([
+  const [rawFeatured, categories, productCount] = await Promise.all([
     db.product.findMany({
       where: { active: true, featured: true },
-      include: { images: { orderBy: { sortOrder: "asc" }, take: 1 } },
+      include: {
+        variants: {
+          where: { active: true },
+          orderBy: [{ sortOrder: "asc" }, { strengthMg: "asc" }],
+          take: 1,
+          include: { images: { orderBy: { sortOrder: "asc" }, take: 1 } },
+        },
+        _count: { select: { variants: { where: { active: true } } } },
+      },
       orderBy: { createdAt: "desc" },
       take: 8,
     }),
@@ -63,6 +71,11 @@ async function getHomeData() {
     }),
     db.product.count({ where: { active: true } }),
   ]);
+  const featured = rawFeatured.map((p) => ({
+    ...p,
+    images: p.variants[0]?.images ?? [],
+    variantCount: p._count.variants,
+  }));
   return { featured, categories, productCount };
 }
 

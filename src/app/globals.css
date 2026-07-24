@@ -27,8 +27,38 @@
     --radius: 0.65rem;
   }
 
+  /* Automatic dark mode — follows the OS/browser preference, no toggle.
+     Same values as .dark below; kept as a real media query (not just a
+     class) so the page repaints live if the user flips their system theme
+     while the tab is open, with zero JS involved. */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --background: 222 47% 6%;
+      --foreground: 210 40% 96%;
+      --card: 222 40% 9%;
+      --card-foreground: 210 40% 96%;
+      --popover: 222 40% 9%;
+      --popover-foreground: 210 40% 96%;
+      --primary: 217 91% 60%;
+      --primary-foreground: 222 47% 6%;
+      --secondary: 217 33% 17%;
+      --secondary-foreground: 210 40% 96%;
+      --muted: 217 33% 15%;
+      --muted-foreground: 215 20% 65%;
+      --accent: 217 80% 64%;
+      --accent-foreground: 222 47% 6%;
+      --destructive: 0 72% 51%;
+      --destructive-foreground: 210 40% 98%;
+      --border: 217 33% 18%;
+      --input: 217 33% 18%;
+      --ring: 217 91% 60%;
+      --radius: 0.65rem;
+    }
+  }
+
+  /* Manual override class — unused today (no toggle UI), kept so a future
+     explicit light/dark switch can be added without touching this file. */
   .dark {
-    /* Dark theme — deep navy + electric blue, the site default */
     --background: 222 47% 6%;
     --foreground: 210 40% 96%;
     --card: 222 40% 9%;

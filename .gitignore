@@ -38,3 +38,6 @@ yarn-error.log*
 
 # uploads (local dev fallback for blob storage)
 /public/uploads
+
+# backend service credentials (NEVER commit)
+BACKEND_CREDENTIALS.md

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { Loader2 } from "lucide-react";
 
@@ -14,6 +14,8 @@ import { registerUser } from "@/actions/auth";
 
 export function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
   const { toast } = useToast();
 
   const [name, setName] = useState("");
@@ -49,11 +51,11 @@ export function RegisterForm() {
       const signInRes = await signIn("credentials", { email, password, redirect: false });
       if (signInRes?.ok) {
         toast({ title: "Account created", description: "Welcome to Elevate Bio-Labs." });
-        router.push("/dashboard");
+        router.push(callbackUrl);
         router.refresh();
       } else {
         toast({ title: "Account created", description: "Please sign in." });
-        router.push("/login");
+        router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       }
     } finally {
       setLoading(false);

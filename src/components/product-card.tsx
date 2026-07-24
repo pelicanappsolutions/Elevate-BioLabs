@@ -1,55 +1,38 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
-import { FlaskConical, ShoppingCart } from "lucide-react";
+import { FlaskConical } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
 import { formatPrice } from "@/lib/utils";
-import { useCart } from "@/store/cart";
 
 export interface ProductCardProduct {
   id: string;
   slug: string;
   name: string;
-  sku: string;
-  priceCents: number;
-  compareAtCents?: number | null;
+  minPriceCents: number | null;
+  maxPriceCents: number | null;
+  inStock: boolean;
+  variantCount: number;
   purity?: string | null;
   cas?: string | null;
   form: string;
-  stock: number;
   images?: { url: string; alt?: string | null }[];
 }
 
-const LOW_STOCK_THRESHOLD = 10;
-
+// No strength context exists on a card (catalog grid, related, homepage
+// featured, dashboard saved-products all reuse this) — the shopper picks a
+// specific mg strength on the product page instead, so this stays a plain
+// server-rendered link rather than an add-to-cart action.
 export function ProductCard({ product }: { product: ProductCardProduct }) {
-  const { toast } = useToast();
-  const add = useCart((s) => s.add);
-
   const image = product.images?.[0];
-  const isOutOfStock = product.stock === 0;
-  const isLowStock = !isOutOfStock && product.stock <= LOW_STOCK_THRESHOLD;
-
-  function handleAddToCart() {
-    if (isOutOfStock) return;
-    add({
-      productId: product.id,
-      slug: product.slug,
-      name: product.name,
-      sku: product.sku,
-      imageUrl: image?.url,
-      priceCents: product.priceCents,
-      maxStock: product.stock,
-    });
-    toast({
-      title: "Added to cart",
-      description: `${product.name} (${product.sku})`,
-    });
-  }
+  const isOutOfStock = !product.inStock;
+  const priceRange =
+    product.minPriceCents != null && product.maxPriceCents != null
+      ? product.minPriceCents === product.maxPriceCents
+        ? formatPrice(product.minPriceCents)
+        : `From ${formatPrice(product.minPriceCents)}`
+      : null;
 
   return (
     <div className="group flex h-full flex-col overflow-hidden rounded-lg border border-border bg-card transition-colors hover:border-primary/40">
@@ -76,11 +59,6 @@ export function ProductCard({ product }: { product: ProductCardProduct }) {
             Out of stock
           </Badge>
         )}
-        {isLowStock && (
-          <Badge variant="destructive" className="absolute left-2 top-2">
-            Low stock
-          </Badge>
-        )}
       </Link>
 
       <div className="flex flex-1 flex-col gap-2 p-4">
@@ -103,28 +81,22 @@ export function ProductCard({ product }: { product: ProductCardProduct }) {
           </h3>
         </Link>
 
-        <p className="text-xs text-muted-foreground">SKU {product.sku}</p>
+        <p className="text-xs text-muted-foreground">
+          {product.variantCount} strength{product.variantCount === 1 ? "" : "s"} available
+        </p>
 
         <div className="mt-auto flex items-center justify-between gap-2 pt-2">
           <div className="flex items-baseline gap-2">
-            <span className="text-base font-semibold sm:text-lg">
-              {formatPrice(product.priceCents)}
-            </span>
-            {product.compareAtCents != null && product.compareAtCents > product.priceCents && (
-              <span className="text-xs text-muted-foreground line-through">
-                {formatPrice(product.compareAtCents)}
-              </span>
+            {priceRange && (
+              <span className="text-base font-semibold sm:text-lg">{priceRange}</span>
             )}
           </div>
         </div>
 
-        <Button
-          onClick={handleAddToCart}
-          disabled={isOutOfStock}
-          className="mt-1 w-full"
-        >
-          <ShoppingCart className="mr-1.5 h-4 w-4" />
-          {isOutOfStock ? "Out of stock" : "Add to cart"}
+        <Button asChild disabled={isOutOfStock} className="mt-1 w-full">
+          <Link href={`/products/${product.slug}`}>
+            {isOutOfStock ? "Out of stock" : "View options"}
+          </Link>
         </Button>
       </div>
     </div>

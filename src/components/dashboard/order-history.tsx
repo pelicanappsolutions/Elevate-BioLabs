@@ -3,22 +3,13 @@ import { ExternalLink, Package, Truck } from "lucide-react";
 import type { Order, OrderItem, OrderStatus } from "@prisma/client";
 
 import { formatDate, formatPrice } from "@/lib/utils";
+import { ORDER_STATUS_VARIANT as STATUS_VARIANT } from "@/lib/order-status";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { BuyAgainButton } from "@/components/dashboard/buy-again-button";
 
 type OrderWithItems = Order & { items: OrderItem[] };
-
-const STATUS_VARIANT: Record<OrderStatus, "default" | "secondary" | "outline" | "destructive" | "success"> = {
-  PENDING_PAYMENT: "outline",
-  AWAITING_REVIEW: "secondary",
-  PAID: "success",
-  PROCESSING: "default",
-  SHIPPED: "default",
-  DELIVERED: "success",
-  CANCELLED: "destructive",
-  REFUNDED: "destructive",
-};
 
 const STATUS_HELP: Partial<Record<OrderStatus, string>> = {
   PENDING_PAYMENT: "Waiting on payment to clear.",
@@ -103,13 +94,20 @@ export function OrderHistory({ orders }: { orders: OrderWithItems[] }) {
             </>
           )}
 
-          {order.status === "PENDING_PAYMENT" && (
-            <Button asChild variant="outline" size="sm" className="mt-3 w-full sm:w-auto">
-              <Link href={`/checkout/success?order=${order.orderNumber}`}>
-                Complete payment
-              </Link>
+          <Separator className="my-3" />
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link href={`/dashboard/orders/${order.id}`}>View details</Link>
             </Button>
-          )}
+            <BuyAgainButton orderId={order.id} />
+            {order.status === "PENDING_PAYMENT" && (
+              <Button asChild size="sm">
+                <Link href={`/checkout/success?order=${order.orderNumber}`}>
+                  Complete payment
+                </Link>
+              </Button>
+            )}
+          </div>
         </div>
       ))}
     </div>

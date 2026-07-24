@@ -61,28 +61,112 @@ function stripHtml(html: string): string {
 
 // ---------------------------------------------------------------------------
 // Template builders (inline-styled, max-width 600, mobile-friendly)
+//
+// Design tokens (kept in sync across all templates):
+//   navy   #0f2e4c  brand / header
+//   accent #1e6fd9  links + primary buttons
+//   green  #15803d  order-confirmed accent
+//   ink    #1a2b3c  body text
+//   muted  #6b7a89  secondary text
+//   line   #e6ebf0  borders
+//   canvas #eef2f6  page background
+// Everything is table-based + inline-styled so it survives Outlook/Gmail.
 // ---------------------------------------------------------------------------
+
+const BRAND = {
+  navy: "#0f2e4c",
+  accent: "#1e6fd9",
+  green: "#15803d",
+  ink: "#1a2b3c",
+  muted: "#6b7a89",
+  line: "#e6ebf0",
+  canvas: "#eef2f6",
+  subtle: "#f5f8fb",
+};
+
+const SUPPORT_EMAIL = "support@elevatebiolab.com";
 
 function money(cents: unknown): string {
   const n = typeof cents === "number" ? cents : Number(cents ?? 0);
   return `$${(n / 100).toFixed(2)}`;
 }
 
-function shell(title: string, body: string): string {
+function formatDate(input: unknown): string {
+  try {
+    const d = input instanceof Date ? input : new Date(input as string);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  } catch {
+    return "";
+  }
+}
+
+/** Hidden inbox-preview text shown next to the subject in most clients. */
+function preheader(text: string): string {
+  return `<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:#eef2f6;opacity:0;">${escapeHtml(
+    text
+  )}</div>`;
+}
+
+/** Bulletproof (Outlook-safe) button. */
+function button(href: string, label: string, color: string = BRAND.accent): string {
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0;"><tr>
+    <td align="center" style="border-radius:8px;background:${color};">
+      <a href="${escapeHtml(href)}" style="display:inline-block;padding:13px 30px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:600;line-height:1;color:#ffffff;text-decoration:none;border-radius:8px;">${escapeHtml(
+        label
+      )}</a>
+    </td></tr></table>`;
+}
+
+/** Small colored status pill. */
+function pill(label: string, color: string): string {
+  return `<span style="display:inline-block;padding:5px 12px;border-radius:999px;background:${color}1a;color:${color};font-size:12px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase;">${escapeHtml(
+    label
+  )}</span>`;
+}
+
+/** Formats a frozen shipTo JSON snapshot into an address block. */
+function addressBlock(shipTo: any): string {
+  if (!shipTo || typeof shipTo !== "object") return "";
+  const line2 = shipTo.street2 ? `${escapeHtml(shipTo.street2)}<br/>` : "";
+  return `
+    <div style="font-size:14px;line-height:1.5;color:${BRAND.ink};">
+      ${shipTo.fullName ? `<strong>${escapeHtml(shipTo.fullName)}</strong><br/>` : ""}
+      ${shipTo.street1 ? `${escapeHtml(shipTo.street1)}<br/>` : ""}
+      ${line2}
+      ${escapeHtml(shipTo.city ?? "")}${shipTo.city ? ", " : ""}${escapeHtml(shipTo.state ?? "")} ${escapeHtml(
+        shipTo.zip ?? ""
+      )}
+    </div>`;
+}
+
+/** A light "info card" wrapper with an optional label. */
+function card(inner: string, label?: string): string {
+  return `
+    ${label ? `<div style="font-size:12px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:${BRAND.muted};margin:0 0 8px;">${escapeHtml(label)}</div>` : ""}
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${BRAND.subtle};border:1px solid ${BRAND.line};border-radius:10px;margin:0 0 22px;">
+      <tr><td style="padding:16px 18px;">${inner}</td></tr>
+    </table>`;
+}
+
+function shell(title: string, preview: string, body: string): string {
   return `<!-- ${title} -->
-<div style="margin:0;padding:0;background:#f4f6f8;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f8;padding:24px 12px;">
+${preheader(preview)}
+<div style="margin:0;padding:0;background:${BRAND.canvas};">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${BRAND.canvas};padding:28px 12px;">
     <tr><td align="center">
-      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1a2b3c;">
-        <tr><td style="background:#0f2e4c;padding:20px 28px;">
-          <span style="color:#ffffff;font-size:18px;font-weight:700;letter-spacing:0.3px;">Elevate Bio-Labs</span>
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid ${BRAND.line};font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:${BRAND.ink};">
+        <tr><td style="background:${BRAND.navy};padding:22px 28px;">
+          <span style="color:#ffffff;font-size:19px;font-weight:800;letter-spacing:1.5px;">ELEVATE BIO-LABS</span>
+          <div style="color:#9fb8cf;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;margin-top:3px;">Research Peptides · RUO</div>
         </td></tr>
-        <tr><td style="padding:28px;">
+        <tr><td style="padding:30px 28px 8px;">
           ${body}
         </td></tr>
-        <tr><td style="padding:20px 28px;background:#f4f6f8;color:#6b7a89;font-size:12px;line-height:1.5;">
-          Elevate Bio-Labs • For research use only.<br/>
-          You are receiving this email because you placed an order or created an account.
+        <tr><td style="padding:22px 28px;background:${BRAND.subtle};border-top:1px solid ${BRAND.line};color:${BRAND.muted};font-size:12px;line-height:1.6;">
+          <strong style="color:${BRAND.ink};">For Research Use Only (RUO)</strong> — not for human or veterinary use, food, or drug applications.<br/>
+          Questions? <a href="mailto:${SUPPORT_EMAIL}" style="color:${BRAND.accent};text-decoration:none;">${SUPPORT_EMAIL}</a><br/>
+          <span style="color:#9aa8b5;">You're receiving this because you placed an order or created an account with Elevate Bio-Labs.</span>
         </td></tr>
       </table>
     </td></tr>
@@ -92,85 +176,188 @@ function shell(title: string, body: string): string {
 
 export function orderConfirmationHtml(order: any): string {
   const items: any[] = Array.isArray(order?.items) ? order.items : [];
+  const orderNo = escapeHtml(order?.orderNumber ?? "");
+  const placed = formatDate(order?.createdAt);
+
   const rows = items
-    .map(
-      (it) => `
+    .map((it, i) => {
+      const qty = Number(it?.quantity ?? 1);
+      const unit = it?.unitPriceCents ?? it?.priceCents;
+      const lineTotal = it?.totalCents ?? (Number(unit ?? 0) * qty);
+      const border = i === 0 ? "" : `border-top:1px solid ${BRAND.line};`;
+      return `
       <tr>
-        <td style="padding:8px 0;border-bottom:1px solid #eef1f4;font-size:14px;">
-          ${escapeHtml(it?.name ?? it?.productName ?? "Item")} × ${it?.quantity ?? 1}
+        <td style="padding:12px 0;${border}font-size:14px;color:${BRAND.ink};vertical-align:top;">
+          <div style="font-weight:600;">${escapeHtml(it?.name ?? "Research compound")}</div>
+          <div style="color:${BRAND.muted};font-size:12px;margin-top:2px;">Qty ${qty} · ${money(unit)} each</div>
         </td>
-        <td style="padding:8px 0;border-bottom:1px solid #eef1f4;font-size:14px;text-align:right;">
-          ${money(it?.priceCents ?? it?.unitPriceCents)}
+        <td style="padding:12px 0;${border}font-size:14px;font-weight:600;text-align:right;color:${BRAND.ink};vertical-align:top;white-space:nowrap;">
+          ${money(lineTotal)}
         </td>
-      </tr>`
-    )
+      </tr>`;
+    })
     .join("");
 
-  const body = `
-    <h1 style="margin:0 0 12px;font-size:22px;">Thanks for your order!</h1>
-    <p style="margin:0 0 20px;font-size:15px;line-height:1.5;color:#3a4a5a;">
-      Order <strong>${escapeHtml(order?.orderNumber ?? "")}</strong> is confirmed. Here's a summary:
-    </p>
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
-      ${rows}
-      <tr>
-        <td style="padding:12px 0 0;font-size:16px;font-weight:700;">Total</td>
-        <td style="padding:12px 0 0;font-size:16px;font-weight:700;text-align:right;">${money(order?.totalCents)}</td>
-      </tr>
-    </table>
-    <p style="margin:0;font-size:14px;color:#6b7a89;">We'll email you tracking as soon as it ships.</p>`;
+  // Cost breakdown — only render discount row when there is one.
+  const discount = Number(order?.discountCents ?? 0);
+  const totalsRow = (label: string, value: string, opts: { bold?: boolean } = {}) => `
+    <tr>
+      <td style="padding:4px 0;font-size:${opts.bold ? "16px" : "14px"};color:${opts.bold ? BRAND.ink : BRAND.muted};font-weight:${opts.bold ? "700" : "400"};">${label}</td>
+      <td style="padding:4px 0;font-size:${opts.bold ? "16px" : "14px"};color:${BRAND.ink};font-weight:${opts.bold ? "700" : "400"};text-align:right;white-space:nowrap;">${value}</td>
+    </tr>`;
 
-  return shell("Order Confirmation", body);
+  const itemsCard = card(`
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rows}</table>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:10px;border-top:2px solid ${BRAND.line};padding-top:6px;">
+      <tr><td style="height:8px;"></td></tr>
+      ${totalsRow("Subtotal", money(order?.subtotalCents))}
+      ${totalsRow("Shipping", Number(order?.shippingCents ?? 0) === 0 ? "FREE" : money(order?.shippingCents))}
+      ${totalsRow("Tax", money(order?.taxCents))}
+      ${discount > 0 ? totalsRow("Discount", `−${money(discount)}`) : ""}
+      <tr><td colspan="2" style="border-top:1px solid ${BRAND.line};height:8px;"></td></tr>
+      ${totalsRow("Total", money(order?.totalCents), { bold: true })}
+    </table>
+  `, "Order summary");
+
+  const shipCard = order?.shipTo ? card(addressBlock(order.shipTo), "Shipping to") : "";
+
+  const nextSteps = card(`
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:${BRAND.ink};line-height:1.5;">
+      <tr><td style="padding:2px 0;"><strong style="color:${BRAND.accent};">1.</strong>&nbsp; We're preparing and QC-checking your order.</td></tr>
+      <tr><td style="padding:2px 0;"><strong style="color:${BRAND.accent};">2.</strong>&nbsp; You'll get a tracking email the moment it ships.</td></tr>
+      <tr><td style="padding:2px 0;"><strong style="color:${BRAND.accent};">3.</strong>&nbsp; Each vial ships with a batch-matched Certificate of Analysis.</td></tr>
+    </table>
+  `, "What happens next");
+
+  const body = `
+    <div style="margin:0 0 14px;">${pill("Order confirmed", BRAND.green)}</div>
+    <h1 style="margin:0 0 8px;font-size:24px;line-height:1.25;color:${BRAND.ink};">Thanks — your order is in.</h1>
+    <p style="margin:0 0 22px;font-size:15px;line-height:1.55;color:${BRAND.muted};">
+      Order <strong style="color:${BRAND.ink};">${orderNo}</strong>${placed ? ` · placed ${placed}` : ""}. Here's everything you ordered.
+    </p>
+    ${itemsCard}
+    ${shipCard}
+    ${nextSteps}
+    <p style="margin:14px 0 0;font-size:13px;color:${BRAND.muted};line-height:1.5;">
+      Need to make a change? Reply to this email or reach us at
+      <a href="mailto:${SUPPORT_EMAIL}" style="color:${BRAND.accent};text-decoration:none;">${SUPPORT_EMAIL}</a>.
+    </p>`;
+
+  return shell(
+    "Order Confirmation",
+    `Order ${order?.orderNumber ?? ""} confirmed — ${money(order?.totalCents)} total`,
+    body
+  );
 }
 
 export function shipmentTrackingHtml(order: any): string {
   const tracking = order?.trackingNumber ?? order?.tracking ?? "";
   const carrier = order?.carrier ?? "USPS";
+  const service = order?.shipService
+    ? String(order.shipService).replace(/_/g, " ").replace(/\bUSPS\b/i, "USPS")
+    : "";
   const url =
     order?.trackingUrl ??
-    (tracking ? `https://tools.usps.com/go/TrackConfirmAction?tLabels=${tracking}` : "");
+    (tracking ? `https://tools.usps.com/go/TrackConfirmAction?tLabels=${encodeURIComponent(tracking)}` : "");
 
-  const body = `
-    <h1 style="margin:0 0 12px;font-size:22px;">Your order is on the way!</h1>
-    <p style="margin:0 0 20px;font-size:15px;line-height:1.5;color:#3a4a5a;">
-      Order <strong>${escapeHtml(order?.orderNumber ?? "")}</strong> has shipped via ${escapeHtml(carrier)}.
-    </p>
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f8;border-radius:8px;margin-bottom:20px;">
-      <tr><td style="padding:16px;font-size:14px;">
-        <div style="color:#6b7a89;margin-bottom:4px;">Tracking number</div>
-        <div style="font-size:16px;font-weight:700;">${escapeHtml(tracking)}</div>
+  const items: any[] = Array.isArray(order?.items) ? order.items : [];
+  const itemsList = items.length
+    ? card(
+        items
+          .map(
+            (it, i) =>
+              `<div style="font-size:14px;color:${BRAND.ink};padding:${i === 0 ? "0" : "8px"} 0 0;${
+                i === 0 ? "" : `border-top:1px solid ${BRAND.line};margin-top:8px;`
+              }"><strong>${escapeHtml(it?.name ?? "Research compound")}</strong> <span style="color:${BRAND.muted};">× ${Number(
+                it?.quantity ?? 1
+              )}</span></div>`
+          )
+          .join(""),
+        "In this shipment"
+      )
+    : "";
+
+  const trackingCard = `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${BRAND.subtle};border:1px solid ${BRAND.line};border-radius:10px;margin:0 0 20px;">
+      <tr><td style="padding:20px;text-align:center;">
+        <div style="font-size:12px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:${BRAND.muted};margin-bottom:6px;">Tracking number</div>
+        <div style="font-size:20px;font-weight:800;letter-spacing:0.5px;color:${BRAND.ink};word-break:break-all;">${escapeHtml(
+          tracking || "Pending"
+        )}</div>
+        ${carrier || service ? `<div style="font-size:13px;color:${BRAND.muted};margin-top:6px;">${escapeHtml(carrier)}${service ? ` · ${escapeHtml(service)}` : ""}</div>` : ""}
       </td></tr>
     </table>
-    ${
-      url
-        ? `<a href="${escapeHtml(url)}" style="display:inline-block;background:#0f2e4c;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:15px;font-weight:600;">Track your package</a>`
-        : ""
-    }`;
+    ${url ? `<div style="text-align:center;margin:0 0 22px;">${button(url, "Track your package", BRAND.navy)}</div>` : ""}`;
 
-  return shell("Shipment Tracking", body);
+  const shipCard = order?.shipTo ? card(addressBlock(order.shipTo), "Delivering to") : "";
+
+  const body = `
+    <div style="margin:0 0 14px;">${pill("Shipped", BRAND.accent)}</div>
+    <h1 style="margin:0 0 8px;font-size:24px;line-height:1.25;color:${BRAND.ink};">Your order is on the way.</h1>
+    <p style="margin:0 0 22px;font-size:15px;line-height:1.55;color:${BRAND.muted};">
+      Order <strong style="color:${BRAND.ink};">${escapeHtml(order?.orderNumber ?? "")}</strong> has left our facility. Track it below.
+    </p>
+    ${trackingCard}
+    ${itemsList}
+    ${shipCard}
+    <p style="margin:14px 0 0;font-size:13px;color:${BRAND.muted};line-height:1.5;">
+      Tracking can take a few hours to show movement. Questions?
+      <a href="mailto:${SUPPORT_EMAIL}" style="color:${BRAND.accent};text-decoration:none;">${SUPPORT_EMAIL}</a>.
+    </p>`;
+
+  return shell(
+    "Shipment Tracking",
+    `Order ${order?.orderNumber ?? ""} has shipped${tracking ? ` — ${tracking}` : ""}`,
+    body
+  );
 }
 
 export function passwordResetHtml(url: string): string {
   const body = `
-    <h1 style="margin:0 0 12px;font-size:22px;">Reset your password</h1>
-    <p style="margin:0 0 20px;font-size:15px;line-height:1.5;color:#3a4a5a;">
-      We received a request to reset your password. Click the button below to choose a new one. This link expires in 1 hour.
+    <div style="margin:0 0 14px;">${pill("Security", BRAND.navy)}</div>
+    <h1 style="margin:0 0 8px;font-size:24px;line-height:1.25;color:${BRAND.ink};">Reset your password</h1>
+    <p style="margin:0 0 20px;font-size:15px;line-height:1.55;color:${BRAND.muted};">
+      We received a request to reset the password for your Elevate Bio-Labs account. Click below to choose a new one.
     </p>
-    <a href="${escapeHtml(url)}" style="display:inline-block;background:#0f2e4c;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:15px;font-weight:600;">Reset password</a>
-    <p style="margin:20px 0 0;font-size:13px;color:#6b7a89;">If you didn't request this, you can safely ignore this email.</p>`;
+    <div style="margin:0 0 18px;">${button(url, "Reset password")}</div>
+    ${card(
+      `<div style="font-size:13px;color:${BRAND.muted};line-height:1.5;">This link expires in <strong style="color:${BRAND.ink};">1 hour</strong>. If the button doesn't work, copy and paste this URL:<br/><a href="${escapeHtml(
+        url
+      )}" style="color:${BRAND.accent};word-break:break-all;">${escapeHtml(url)}</a></div>`
+    )}
+    <p style="margin:6px 0 0;font-size:13px;color:${BRAND.muted};line-height:1.5;">
+      Didn't request this? You can safely ignore this email — your password won't change.
+    </p>`;
 
-  return shell("Password Reset", body);
+  return shell("Password Reset", "Reset your Elevate Bio-Labs password (link expires in 1 hour)", body);
 }
 
 export function welcomeHtml(name: string): string {
-  const body = `
-    <h1 style="margin:0 0 12px;font-size:22px;">Welcome${name ? `, ${escapeHtml(name)}` : ""}!</h1>
-    <p style="margin:0 0 20px;font-size:15px;line-height:1.5;color:#3a4a5a;">
-      Thanks for joining Elevate Bio-Labs. You'll be the first to hear about new products, restocks, and research-grade offers.
-    </p>
-    <a href="${escapeHtml(env.SITE_URL)}" style="display:inline-block;background:#0f2e4c;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:15px;font-weight:600;">Start shopping</a>`;
+  const chips = ["Metabolic (GLP-1)", "Recovery & Repair", "Growth Hormone", "Blends"]
+    .map(
+      (c) =>
+        `<span style="display:inline-block;margin:0 6px 6px 0;padding:6px 12px;border:1px solid ${BRAND.line};border-radius:999px;background:${BRAND.subtle};font-size:12px;color:${BRAND.ink};">${escapeHtml(
+          c
+        )}</span>`
+    )
+    .join("");
 
-  return shell("Welcome", body);
+  const body = `
+    <div style="margin:0 0 14px;">${pill("Welcome", BRAND.green)}</div>
+    <h1 style="margin:0 0 8px;font-size:24px;line-height:1.25;color:${BRAND.ink};">Welcome${
+      name ? `, ${escapeHtml(name)}` : ""
+    }.</h1>
+    <p style="margin:0 0 20px;font-size:15px;line-height:1.55;color:${BRAND.muted};">
+      Thanks for joining Elevate Bio-Labs — your source for third-party tested, batch-tracked research peptides. Every order ships with a matching Certificate of Analysis.
+    </p>
+    ${card(`<div style="margin-bottom:2px;">${chips}</div>`, "Popular research categories")}
+    <div style="margin:0 0 18px;">${button(env.SITE_URL + "/products", "Browse the catalog")}</div>
+    <p style="margin:0;font-size:13px;color:${BRAND.muted};line-height:1.5;">
+      All products are <strong style="color:${BRAND.ink};">For Research Use Only</strong>. Questions? We're at
+      <a href="mailto:${SUPPORT_EMAIL}" style="color:${BRAND.accent};text-decoration:none;">${SUPPORT_EMAIL}</a>.
+    </p>`;
+
+  return shell("Welcome", "Welcome to Elevate Bio-Labs — research peptides with a COA on every order", body);
 }
 
 function escapeHtml(input: unknown): string {
