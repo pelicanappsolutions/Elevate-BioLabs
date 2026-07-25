@@ -1,4 +1,5 @@
 import { env, isConfigured } from "@/lib/env";
+import { put } from "@vercel/blob";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 
@@ -7,9 +8,9 @@ export type UploadResult = { url: string; pathname: string };
 /**
  * Uploads a file (COA PDF, payment receipt, invoice) to Vercel Blob when a token
  * is present; otherwise falls back to writing under /public/uploads for local dev.
- *
- * To use Vercel Blob, `npm i @vercel/blob` and set BLOB_READ_WRITE_TOKEN, then
- * uncomment the block below.
+ * The local fallback does NOT persist on Vercel — serverless functions get a
+ * fresh, ephemeral filesystem per invocation — so BLOB_READ_WRITE_TOKEN must be
+ * set in every deployed environment.
  */
 export async function uploadFile(
   file: File | Buffer,
@@ -19,15 +20,11 @@ export async function uploadFile(
   const safeName = `${folder}/${Date.now()}-${filename.replace(/[^\w.-]+/g, "_")}`;
 
   if (isConfigured.blob()) {
-    // --- Vercel Blob (production) ---
-    // import { put } from "@vercel/blob";
-    // const blob = await put(safeName, file, {
-    //   access: "public",
-    //   token: env.blob.token,
-    // });
-    // return { url: blob.url, pathname: blob.pathname };
-    // Until @vercel/blob is installed we still fall through to local so the
-    // build never breaks. Swap once the package is added.
+    const blob = await put(safeName, file, {
+      access: "public",
+      token: env.blob.token,
+    });
+    return { url: blob.url, pathname: blob.pathname };
   }
 
   // --- Local dev fallback ---
