@@ -33,18 +33,18 @@ const HERO_VIALS = [
 const HOW_IT_WORKS = [
   {
     icon: Search,
-    title: "Select your compounds",
-    body: "Browse the catalog — every peptide is third-party tested with a publicly downloadable COA.",
+    title: "Select your reference standards",
+    body: "Browse the catalog — every compound is third-party tested with a publicly downloadable COA.",
   },
   {
     icon: PackageCheck,
     title: "Packed & shipped from the USA",
-    body: "Orders confirmed before 2pm CT ship the same day, cold-chain packed with full dispatch-to-delivery tracking.",
+    body: "Orders confirmed before 2pm CT ship the same day, packed for laboratory receiving with full dispatch-to-delivery tracking.",
   },
   {
     icon: Truck,
     title: "Delivered in 2–3 days",
-    body: "Standard USPS delivery in insulated, discreet packaging that protects compound stability in transit.",
+    body: "Standard USPS delivery in insulated, plain packaging that protects compound stability in transit.",
   },
 ];
 
@@ -99,14 +99,14 @@ export default async function HomePage() {
               </Badge>
 
               <h1 className="text-balance text-3xl font-bold leading-tight tracking-tight sm:text-5xl">
-                Research peptides you can{" "}
+                Analytical standards you can{" "}
                 <span className="text-primary">actually verify</span>
               </h1>
 
               <p className="mx-auto mt-5 max-w-lg text-pretty text-base text-muted-foreground sm:text-lg lg:mx-0">
                 Every vial ships with a downloadable Certificate of Analysis, HPLC purity
-                ≥99%, and a traceable batch/lot number. Cold-chain packed, USPS tracked,
-                and dispatched same-day on orders placed before 2pm CT.
+                ≥99%, and a traceable batch/lot number. Packed for laboratory receiving,
+                USPS tracked, and dispatched same-day on orders placed before 2pm CT.
               </p>
 
               <div className="mx-auto mt-8 flex w-full max-w-md flex-col gap-3 sm:max-w-none sm:flex-row lg:mx-0 lg:justify-start">
@@ -122,8 +122,8 @@ export default async function HomePage() {
               </div>
 
               <p className="mt-6 text-xs text-muted-foreground">
-                For Research Use Only. Not for human or veterinary consumption. Not
-                approved by the FDA for therapeutic use.
+                For Research Use Only. Analytical reference materials — not for human or
+                veterinary consumption. Not approved by the FDA for therapeutic use.
               </p>
             </div>
 
@@ -201,7 +201,7 @@ export default async function HomePage() {
                 Shop by category
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Curated research compounds grouped by mechanism.
+                Curated analytical reference standards grouped by research area.
               </p>
             </div>
             <Link
@@ -254,10 +254,10 @@ export default async function HomePage() {
           <div className="mb-6 flex items-end justify-between gap-4">
             <div>
               <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-                Featured peptides
+                Featured analytical standards
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Our most requested research compounds, in stock now.
+                Our most requested reference compounds, in stock now.
               </p>
             </div>
             <Link
@@ -300,13 +300,13 @@ export default async function HomePage() {
       <section className="container-tight py-12 sm:py-16">
         <div className="grid gap-4 sm:grid-cols-3">
           {[
-            {
-              icon: Beaker,
-              title: "Reconstitution calculator",
-              body: "Enter vial strength, diluent volume, and target dose — get the exact draw in units and mL.",
-              href: "/products",
-              cta: "Try it on any product",
-            },
+          {
+            icon: Beaker,
+            title: "Analytical standard calculator",
+            body: "Enter vial strength, diluent volume, and analyte mass — get the reference concentration in mcg/mL.",
+            href: "/products",
+            cta: "Try it on any product",
+          },
             {
               icon: FileCheck2,
               title: "Batch & COA lookup",

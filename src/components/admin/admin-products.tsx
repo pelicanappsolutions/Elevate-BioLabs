@@ -76,6 +76,7 @@ interface AdminProduct {
   categoryName: string | null;
   active: boolean;
   featured: boolean;
+  highRisk: boolean;
   variants: AdminVariant[];
 }
 
@@ -95,6 +96,7 @@ interface CompoundFormState {
   categoryId: string;
   active: boolean;
   featured: boolean;
+  highRisk: boolean;
 }
 
 const EMPTY_COMPOUND: CompoundFormState = {
@@ -110,6 +112,7 @@ const EMPTY_COMPOUND: CompoundFormState = {
   categoryId: "",
   active: true,
   featured: false,
+  highRisk: false,
 };
 
 export function AdminProducts({
@@ -150,6 +153,7 @@ export function AdminProducts({
       categoryId: p.categoryId ?? "",
       active: p.active,
       featured: p.featured,
+      highRisk: p.highRisk,
     });
     setError(null);
     setOpen(true);
@@ -174,6 +178,7 @@ export function AdminProducts({
         categoryId: form.categoryId || undefined,
         active: form.active,
         featured: form.featured,
+        highRisk: form.highRisk,
       });
       if (!res.ok) {
         setError(res.error ?? "Couldn't save the product.");
@@ -273,6 +278,11 @@ export function AdminProducts({
                       {p.featured && (
                         <Badge variant="outline" className="font-normal">
                           Featured
+                        </Badge>
+                      )}
+                      {p.highRisk && (
+                        <Badge variant="destructive" className="font-normal">
+                          Category 3
                         </Badge>
                       )}
                     </div>
@@ -402,7 +412,7 @@ export function AdminProducts({
                 />
               </div>
 
-              <div className="flex gap-5 sm:col-span-2">
+              <div className="flex flex-wrap gap-5 sm:col-span-2">
                 <label className="flex cursor-pointer items-center gap-2">
                   <Checkbox
                     checked={form.active}
@@ -416,6 +426,13 @@ export function AdminProducts({
                     onCheckedChange={(v) => setForm((f) => ({ ...f, featured: Boolean(v) }))}
                   />
                   <span className="text-sm">Featured on homepage</span>
+                </label>
+                <label className="flex cursor-pointer items-center gap-2">
+                  <Checkbox
+                    checked={form.highRisk}
+                    onCheckedChange={(v) => setForm((f) => ({ ...f, highRisk: Boolean(v) }))}
+                  />
+                  <span className="text-sm">Category 3 (PCAC review)</span>
                 </label>
               </div>
 
@@ -473,8 +490,8 @@ interface VariantFormState {
   active: boolean;
   sortOrder: string;
   imageUrl: string | null;
-  /** Standard bac-water reconstitution volume — admin record, not shown to
-   *  customers as a purchase option. */
+  /** Default analytical dilution volume — admin record, not shown to
+   *  customers as a purchase option or sample-preparation protocol. */
   reconstitutionVolumeMl: string;
 }
 
@@ -648,7 +665,7 @@ function VariantsDialog({
                     <th className="px-3 py-2 font-medium">SKU</th>
                     <th className="px-3 py-2 font-medium">Price</th>
                     <th className="px-3 py-2 font-medium">Stock</th>
-                    <th className="px-3 py-2 font-medium">Bac water</th>
+                    <th className="px-3 py-2 font-medium">Dilution ref.</th>
                     <th className="px-3 py-2 font-medium">COAs</th>
                     <th className="px-3 py-2 font-medium">State</th>
                     <th className="px-3 py-2 font-medium">Actions</th>
@@ -751,7 +768,7 @@ function VariantsDialog({
               <T label="Low-stock threshold" type="number" allowDecimal={false} value={editing.lowStockThreshold} onChange={(v) => setEditing((f) => f && { ...f, lowStockThreshold: v })} />
               <T label="Sort order" type="number" allowDecimal={false} value={editing.sortOrder} onChange={(v) => setEditing((f) => f && { ...f, sortOrder: v })} />
               <T
-                label="Bac water (mL)"
+                label="Analytical dilution volume (mL)"
                 required
                 type="number"
                 value={editing.reconstitutionVolumeMl}
@@ -759,9 +776,9 @@ function VariantsDialog({
                 placeholder="3"
               />
               <p className="text-[11px] text-muted-foreground sm:col-span-2">
-                Standard bacteriostatic-water reconstitution volume for this vial.
-                Record-only — shown to customers as reconstitution instructions, never
-                as a purchase choice.
+                Default dilution reference volume for the analytical standard calculator.
+                Record-only — not a purchase choice, not a sample-preparation protocol, and
+                never described as a reconstitution instruction to customers.
               </p>
 
               <label className="flex cursor-pointer items-center gap-2 sm:col-span-2">

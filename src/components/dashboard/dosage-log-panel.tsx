@@ -105,7 +105,7 @@ export function DosageLogPanel({
         onSubmit={handleSubmit}
         className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4"
       >
-        <h2 className="text-sm font-semibold">New log entry</h2>
+        <h2 className="text-sm font-semibold">New research record</h2>
 
         {variantOptions.length > 0 && (
           <div>
@@ -125,12 +125,12 @@ export function DosageLogPanel({
         )}
 
         <div>
-          <Label htmlFor="doseMcg" className="text-xs">Amount (mcg)</Label>
+          <Label htmlFor="doseMcg" className="text-xs">Analyte mass (mcg)</Label>
           <NumericInput id="doseMcg" required value={doseMcg} onChange={setDoseMcg} className="mt-1" />
         </div>
 
         <div>
-          <Label htmlFor="volumeMl" className="text-xs">Volume (mL, optional)</Label>
+          <Label htmlFor="volumeMl" className="text-xs">Diluent volume (mL, optional)</Label>
           <NumericInput id="volumeMl" value={volumeMl} onChange={setVolumeMl} className="mt-1" />
         </div>
 
@@ -152,8 +152,8 @@ export function DosageLogPanel({
         </Button>
 
         <p className="text-[11px] leading-relaxed text-muted-foreground">
-          A research record-keeping tool for in-vitro experiment tracking. Not a medical
-          or dosing record.
+          A research record-keeping tool for in-vitro analytical experiment tracking.
+          Not a medical, dosing, or sample-preparation record.
         </p>
       </form>
 
@@ -163,8 +163,8 @@ export function DosageLogPanel({
             <ClipboardList className="mx-auto h-8 w-8 text-muted-foreground" />
             <h2 className="mt-3 text-base font-semibold">No entries yet</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Log entries from here or straight from a product&apos;s reconstitution
-              calculator.
+              Record analytical experiments from here or straight from a product&apos;s
+              analytical standard calculator.
             </p>
           </div>
         ) : (
@@ -174,8 +174,8 @@ export function DosageLogPanel({
                 <tr>
                   <th className="px-3 py-2 font-medium">Date</th>
                   <th className="px-3 py-2 font-medium">Compound</th>
-                  <th className="px-3 py-2 font-medium">Amount</th>
-                  <th className="px-3 py-2 font-medium">Volume</th>
+                  <th className="px-3 py-2 font-medium">Analyte mass</th>
+                  <th className="px-3 py-2 font-medium">Diluent volume</th>
                   <th className="px-3 py-2 font-medium">Note</th>
                   <th className="px-3 py-2 font-medium">Actions</th>
                 </tr>
@@ -283,7 +283,7 @@ function EditDoseDialog({
       <DialogContent className="sm:max-w-sm">
         <form onSubmit={submit}>
           <DialogHeader>
-            <DialogTitle>Edit log entry</DialogTitle>
+            <DialogTitle>Edit research record</DialogTitle>
           </DialogHeader>
           <div className="mt-4 flex flex-col gap-3">
             {variantOptions.length > 0 && (
@@ -303,11 +303,11 @@ function EditDoseDialog({
               </div>
             )}
             <div>
-              <Label htmlFor="edit-dose" className="text-xs">Amount (mcg)</Label>
+              <Label htmlFor="edit-dose" className="text-xs">Analyte mass (mcg)</Label>
               <NumericInput id="edit-dose" required value={doseMcg} onChange={setDoseMcg} className="mt-1" />
             </div>
             <div>
-              <Label htmlFor="edit-vol" className="text-xs">Volume (mL, optional)</Label>
+              <Label htmlFor="edit-vol" className="text-xs">Diluent volume (mL, optional)</Label>
               <NumericInput id="edit-vol" value={volumeMl} onChange={setVolumeMl} className="mt-1" />
             </div>
             <div>

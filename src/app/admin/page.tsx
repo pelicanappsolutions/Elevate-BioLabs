@@ -304,6 +304,7 @@ export default async function AdminPage() {
               categoryName: p.category?.name ?? null,
               active: p.active,
               featured: p.featured,
+              highRisk: p.highRisk,
               variants: p.variants.map((v) => ({
                 id: v.id,
                 sku: v.sku,

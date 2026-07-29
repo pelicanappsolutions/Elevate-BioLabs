@@ -59,10 +59,11 @@ export function AgeGate() {
           </span>
           <DialogTitle className="text-xl">Are you 18 or older?</DialogTitle>
           <DialogDescription className="text-balance">
-            These products are For Research Use Only (RUO) and are not intended for human
-            consumption, diagnostic, or therapeutic use. By entering, you confirm you are at
-            least 18 years old and a qualified researcher or purchaser for lawful research
-            purposes.
+            These materials are analytical reference standards sold For Research Use Only
+            (RUO) and are not intended for human or veterinary consumption, diagnostic, or
+            therapeutic use. By entering, you confirm you are at least 18 years old, operate
+            appropriate analytical equipment (HPLC, LC-MS, or equivalent), and are acquiring
+            these materials for lawful in-vitro research purposes.
           </DialogDescription>
         </DialogHeader>
 

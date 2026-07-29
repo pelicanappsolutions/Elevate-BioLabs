@@ -40,7 +40,7 @@ export function CartView() {
         <ShoppingBag className="mx-auto h-10 w-10 text-muted-foreground" />
         <h2 className="mt-4 text-lg font-semibold">Your cart is empty</h2>
         <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
-          Browse the catalog and add a few compounds — bulk tiers apply automatically.
+          Browse the catalog and add analytical reference standards — bulk tiers apply automatically.
         </p>
         <Button asChild className="mt-5">
           <Link href="/products">Browse catalog</Link>
@@ -115,8 +115,9 @@ export function CartView() {
           </Button>
 
           <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
-            All items are supplied For Research Use Only. By checking out you confirm you
-            are 18+ and will not administer these compounds to humans or animals.
+            All items are supplied as analytical reference standards For Research Use Only.
+            By checking out you confirm you are 18+, operate appropriate analytical
+            equipment, and will not introduce these materials into humans or animals.
           </p>
         </div>
       </div>

@@ -56,8 +56,7 @@ async function main() {
     stock: number;
     /** Path under /public. Omit to fall back to PLACEHOLDER_IMAGE. */
     image?: string;
-    /** Standard bac-water reconstitution volume. Omit for the 3mL default —
-     *  only set for the handful of larger-format vials that need more. */
+    /** Standard analytical dilution reference volume for concentration calculations. */
     reconstitutionVolumeMl?: number;
   }
 
@@ -71,6 +70,7 @@ async function main() {
     form: ProductForm;
     category: string;
     featured?: boolean;
+    highRisk?: boolean;
     description: string;
     storageInfo?: string;
     variants: SeedVariant[];
@@ -83,9 +83,9 @@ async function main() {
       slug: "semaglutide", name: "Semaglutide",
       cas: "910463-68-2", purity: ">=99%", molarMass: 4113.6,
       form: ProductForm.LYOPHILIZED, category: "metabolic", featured: true,
-      sequence: "HAEGT...(GLP-1 analog)",
-      description: "Semaglutide is a GLP-1 receptor agonist studied for metabolic research applications. Lyophilized powder, reconstitute with bacteriostatic water. For Research Use Only — not for human consumption.",
-      storageInfo: "Store lyophilized at -20°C. After reconstitution, refrigerate 2–8°C and use within 30 days.",
+      sequence: "HAEGTFTSDVSSYLEGQAAKEFIAWLVKGRG (GLP-1 analog)",
+      description: "Synthetic GLP-1 receptor agonist peptide supplied as lyophilized trifluoroacetate salt. Certified ≥99% purity by HPLC-MS with full COA. Intended for chromatography method development, mass spectrometry calibration, and in-vitro receptor binding kinetics. Requires lyophilization equipment and an analytical balance (0.0001g precision) for accurate preparation of analytical standards. For Research Use Only — not for human or veterinary consumption.",
+      storageInfo: "Store lyophilized powder at -20°C, protected from light and moisture. Stable as supplied for 24 months under recommended conditions.",
       variants: [
         { sku: "EBL-SEMA-5", strengthMg: 5, priceCents: 8999, compareAtCents: 10999, stock: 120 },
         { sku: "EBL-SEMA-10", strengthMg: 10, priceCents: 14999, stock: 90 },
@@ -95,8 +95,8 @@ async function main() {
       slug: "tirzepatide", name: "Tirzepatide",
       cas: "2023788-19-2", purity: ">=99%", molarMass: 4813.5,
       form: ProductForm.LYOPHILIZED, category: "metabolic", featured: true,
-      description: "Dual GIP/GLP-1 receptor agonist for metabolic research. Lyophilized. For Research Use Only.",
-      storageInfo: "Store at -20°C. Reconstitute with bacteriostatic water; refrigerate after mixing.",
+      description: "Synthetic dual GIP/GLP-1 receptor agonist peptide supplied as lyophilized trifluoroacetate salt. Certified ≥99% purity by HPLC-MS. Suitable for chromatography method development, mass spectrometry calibration, and in-vitro receptor binding studies. Requires analytical balance (0.0001g precision) and appropriate laboratory solvent handling. For Research Use Only.",
+      storageInfo: "Store lyophilized powder at -20°C, protected from light and moisture. Stable as supplied for 24 months under recommended conditions.",
       variants: [
         { sku: "EBL-TIRZ-10", strengthMg: 10, priceCents: 10000, stock: 80, image: "/images/products/tirzepatide-10mg.png" },
         { sku: "EBL-TIRZ-20", strengthMg: 20, priceCents: 18000, stock: 60, image: "/images/products/tirzepatide-20mg.png" },
@@ -106,9 +106,9 @@ async function main() {
     {
       slug: "retatrutide", name: "Retatrutide",
       cas: "2381089-83-2", purity: ">=99%",
-      form: ProductForm.LYOPHILIZED, category: "metabolic",
-      description: "Triple GIP/GLP-1/glucagon receptor agonist studied in metabolic research. Lyophilized powder. For Research Use Only.",
-      storageInfo: "Store lyophilized at -20°C. After reconstitution, refrigerate 2–8°C and use within 30 days.",
+      form: ProductForm.LYOPHILIZED, category: "metabolic", highRisk: true,
+      description: "Synthetic triple GIP/GLP-1/glucagon receptor agonist peptide supplied as lyophilized trifluoroacetate salt. Certified ≥99% purity by HPLC-MS with full COA. For chromatography method development, mass spectrometry calibration, and in-vitro receptor binding kinetics. Requires lyophilization equipment and analytical balance (0.0001g precision). NOTE: This peptide is currently under FDA PCAC evaluation for bulk drug substance status. Purchasers must certify that research involves chromatographic behavior analysis, stability studies, or equivalent analytical applications and not therapeutic use. For Research Use Only.",
+      storageInfo: "Store lyophilized powder at -20°C, protected from light and moisture. Stable as supplied for 24 months under recommended conditions.",
       variants: [
         { sku: "EBL-RETA-5", strengthMg: 5, priceCents: 8999, stock: 90, image: "/images/products/retatrutide-5mg.png" },
         { sku: "EBL-RETA-10", strengthMg: 10, priceCents: 10000, stock: 75, image: "/images/products/retatrutide-10mg.png" },
@@ -122,8 +122,8 @@ async function main() {
       cas: "89030-95-5", purity: ">=99%", molarMass: 403.9,
       sequence: "Gly-His-Lys (Cu²⁺ complex)",
       form: ProductForm.LYOPHILIZED, category: "recovery-repair", featured: true,
-      description: "Copper tripeptide-1 (Gly-His-Lys copper complex) studied in tissue-remodelling and extracellular-matrix research. Characteristic blue lyophilate. For Research Use Only.",
-      storageInfo: "Store lyophilized at -20°C, protected from light. Refrigerate 2–8°C after reconstitution.",
+      description: "Copper tripeptide-1 (Gly-His-Lys copper complex) supplied as characteristic blue lyophilized powder. Certified ≥99% purity by HPLC-MS. Suitable for chromatography method development, mass spectrometry calibration, and extracellular-matrix research applications. Requires analytical balance (0.0001g precision) and copper-compatible laboratory solvents. For Research Use Only.",
+      storageInfo: "Store lyophilized powder at -20°C, protected from light and moisture. Stable as supplied for 24 months under recommended conditions.",
       variants: [
         { sku: "EBL-GHKCU-50", strengthMg: 50, priceCents: 6000, stock: 130, image: "/images/products/ghk-cu-50mg.png" },
         { sku: "EBL-GHKCU-100", strengthMg: 100, priceCents: 9999, stock: 85 },
@@ -133,8 +133,8 @@ async function main() {
       slug: "nad-plus", name: "NAD+",
       cas: "53-84-9", purity: ">=99%", molarMass: 663.4,
       form: ProductForm.LYOPHILIZED, category: "longevity", featured: true,
-      description: "Nicotinamide adenine dinucleotide, a coenzyme central to redox and cellular-energy research. Supplied in an amber vial to limit light exposure. For Research Use Only.",
-      storageInfo: "Store lyophilized at -20°C, protected from light. Refrigerate 2–8°C after reconstitution and use within 14 days.",
+      description: "Nicotinamide adenine dinucleotide (NAD⁺), a coenzyme central to redox and cellular-energy research, supplied as lyophilized powder in an amber vial to limit light exposure. Certified ≥99% purity by HPLC-MS. Suitable for chromatography method development, mass spectrometry calibration, and enzymatic assay development. For Research Use Only.",
+      storageInfo: "Store lyophilized powder at -20°C, protected from light and moisture. Stable as supplied for 24 months under recommended conditions.",
       variants: [
         { sku: "EBL-NAD-300", strengthMg: 300, priceCents: 6999, stock: 110 },
         { sku: "EBL-NAD-500", strengthMg: 500, priceCents: 6000, stock: 100, image: "/images/products/nad-plus-500mg.png", reconstitutionVolumeMl: 5 },
@@ -144,9 +144,9 @@ async function main() {
     {
       slug: "klow-blend", name: "KLOW Blend",
       purity: ">=98%",
-      form: ProductForm.BLEND, category: "blends", featured: true,
-      description: "Multi-peptide research blend combining KPV, Larazotide, GHK-Cu and BPC-157 in a single 80mg lyophilized vial for combination-study protocols. For Research Use Only.",
-      storageInfo: "Store lyophilized at -20°C, protected from light. Refrigerate 2–8°C after reconstitution.",
+      form: ProductForm.BLEND, category: "blends", featured: true, highRisk: true,
+      description: "Multi-peptide analytical standard blend containing KPV, Larazotide, GHK-Cu and BPC-157 in a single 80mg lyophilized vial for combination-study protocols. Certified ≥98% purity by HPLC-MS. Suitable for chromatographic method development and mass spectrometry calibration only. NOTE: This blend contains peptides under FDA PCAC evaluation. Purchasers must certify analytical research intent and confirm no therapeutic use. For Research Use Only.",
+      storageInfo: "Store lyophilized powder at -20°C, protected from light and moisture. Stable as supplied for 24 months under recommended conditions.",
       // Blend — "80mg" describes the total formulation, not an interchangeable
       // strength choice, so this stays a single-variant compound.
       variants: [
@@ -156,9 +156,9 @@ async function main() {
     {
       slug: "glow-blend", name: "GLOW Blend",
       purity: ">=98%",
-      form: ProductForm.BLEND, category: "blends", featured: true,
-      description: "Multi-peptide research blend combining GHK-Cu, BPC-157 and TB-500 in a single 70mg lyophilized vial for combination-study protocols. For Research Use Only.",
-      storageInfo: "Store lyophilized at -20°C, protected from light. Refrigerate 2–8°C after reconstitution.",
+      form: ProductForm.BLEND, category: "blends", featured: true, highRisk: true,
+      description: "Multi-peptide analytical standard blend containing GHK-Cu, BPC-157 and TB-500 in a single 70mg lyophilized vial for combination-study protocols. Certified ≥98% purity by HPLC-MS. Suitable for chromatographic method development and mass spectrometry calibration only. NOTE: This blend contains peptides under FDA PCAC evaluation. Purchasers must certify analytical research intent and confirm no therapeutic use. For Research Use Only.",
+      storageInfo: "Store lyophilized powder at -20°C, protected from light and moisture. Stable as supplied for 24 months under recommended conditions.",
       variants: [
         { sku: "EBL-GLOW-70", strengthMg: 70, priceCents: 9000, stock: 65, image: "/images/products/glow-blend-70mg.png" },
       ],
@@ -166,9 +166,9 @@ async function main() {
     {
       slug: "bpc-157", name: "BPC-157",
       cas: "137525-51-0", purity: ">=99%",
-      form: ProductForm.LYOPHILIZED, category: "recovery-repair", featured: true,
-      description: "Body Protection Compound-157, a pentadecapeptide studied in tissue-repair research. For Research Use Only.",
-      storageInfo: "Store lyophilized at -20°C, protect from light.",
+      form: ProductForm.LYOPHILIZED, category: "recovery-repair", featured: true, highRisk: true,
+      description: "Synthetic pentadecapeptide (IUPAC: L-Val-Gly-L-Val-Ala-Pro-Gly-L-Pro-L-Ser-L-Lys-L-Ala-L-Lys-L-Glu-L-Thr-L-Ala-L-Leu-L-Arg-L-Pro-L-Ala-L-Lys-Ser) supplied as lyophilized trifluoroacetate salt. Certified ≥99% purity by HPLC-MS with full COA. For chromatography method development, mass spectrometry calibration, and in-vitro receptor binding kinetics. Requires lyophilization equipment and analytical balance (0.0001g precision) for accurate preparation of analytical standards. NOTE: This peptide is currently under FDA PCAC evaluation for bulk drug substance status. Purchasers must certify that research involves chromatographic behavior analysis, stability studies under varying pH conditions, or equivalent analytical applications and not therapeutic use. For Research Use Only.",
+      storageInfo: "Store lyophilized powder at -20°C, protected from light and moisture. Stable as supplied for 24 months under recommended conditions.",
       variants: [
         { sku: "EBL-BPC-5", strengthMg: 5, priceCents: 4499, stock: 200 },
         { sku: "EBL-BPC-10", strengthMg: 10, priceCents: 5000, stock: 150 },
@@ -177,9 +177,9 @@ async function main() {
     {
       slug: "tb-500", name: "TB-500",
       cas: "77591-33-4", purity: ">=98%",
-      form: ProductForm.LYOPHILIZED, category: "recovery-repair",
-      description: "Thymosin Beta-4 fragment studied for recovery research. For Research Use Only.",
-      storageInfo: "Store at -20°C.",
+      form: ProductForm.LYOPHILIZED, category: "recovery-repair", highRisk: true,
+      description: "Synthetic thymosin beta-4 fragment (Ac-LKKTETQEKNTLPTKETIEQEKQAGES) supplied as lyophilized trifluoroacetate salt. Certified ≥98% purity by HPLC-MS. Suitable for chromatography method development, mass spectrometry calibration, and in-vitro analytical studies. Requires analytical balance (0.0001g precision) and appropriate laboratory solvents. NOTE: This peptide is currently under FDA PCAC evaluation for bulk drug substance status. Purchasers must certify analytical research intent and confirm no therapeutic use. For Research Use Only.",
+      storageInfo: "Store lyophilized powder at -20°C, protected from light and moisture. Stable as supplied for 24 months under recommended conditions.",
       variants: [
         { sku: "EBL-TB500-5", strengthMg: 5, priceCents: 4999, stock: 150 },
         { sku: "EBL-TB500-10", strengthMg: 10, priceCents: 5500, stock: 110 },
@@ -189,8 +189,8 @@ async function main() {
       slug: "ipamorelin", name: "Ipamorelin",
       cas: "170851-70-4", purity: ">=99%",
       form: ProductForm.LYOPHILIZED, category: "growth-hormone",
-      description: "Selective GH secretagogue / ghrelin receptor agonist. For Research Use Only.",
-      storageInfo: "Store at -20°C.",
+      description: "Synthetic pentapeptide (Aib-His-D-2-Nal-D-Phe-Lys-NH₂) selective ghrelin receptor agonist supplied as lyophilized trifluoroacetate salt. Certified ≥99% purity by HPLC-MS. Suitable for chromatography method development, mass spectrometry calibration, and in-vitro receptor binding studies. For Research Use Only.",
+      storageInfo: "Store lyophilized powder at -20°C, protected from light and moisture. Stable as supplied for 24 months under recommended conditions.",
       variants: [
         { sku: "EBL-IPAM-2", strengthMg: 2, priceCents: 1999, stock: 190 },
         { sku: "EBL-IPAM-5", strengthMg: 5, priceCents: 3999, stock: 175 },
@@ -201,8 +201,8 @@ async function main() {
       slug: "cjc-1295", name: "CJC-1295 no-DAC",
       cas: "863288-34-0", purity: ">=99%",
       form: ProductForm.LYOPHILIZED, category: "growth-hormone",
-      description: "GHRH analog studied alongside GH secretagogues. For Research Use Only.",
-      storageInfo: "Store at -20°C.",
+      description: "Synthetic GHRH analog (Tyr-D-Ala-Asp-Ala-Ile-Phe-Thr-Gln-Ser-Tyr-Arg-Lys-Val-Leu-Ala-Gln-Leu-Ser-Ala-Arg-Lys-Leu-Leu-Gln-Asp-Ile-Met-Ser-Arg-NH₂) supplied as lyophilized trifluoroacetate salt. Certified ≥99% purity by HPLC-MS. Suitable for chromatography method development, mass spectrometry calibration, and in-vitro receptor binding studies. For Research Use Only.",
+      storageInfo: "Store lyophilized powder at -20°C, protected from light and moisture. Stable as supplied for 24 months under recommended conditions.",
       variants: [
         { sku: "EBL-CJC-2", strengthMg: 2, priceCents: 3499, stock: 140 },
         { sku: "EBL-CJC-5", strengthMg: 5, priceCents: 6999, stock: 100 },
@@ -213,8 +213,8 @@ async function main() {
       slug: "semax", name: "Semax",
       cas: "80714-61-0", purity: ">=98%",
       form: ProductForm.NASAL_SPRAY, category: "cognitive",
-      description: "Heptapeptide studied in cognitive research. For Research Use Only.",
-      storageInfo: "Refrigerate 2–8°C.",
+      description: "Synthetic heptapeptide (Met-Glu-His-Phe-Pro-Gly-Pro) supplied as buffered aqueous analytical reference formulation. Certified ≥98% purity by HPLC-MS. Suitable for chromatography method development, mass spectrometry calibration, and in-vitro analytical studies. For Research Use Only.",
+      storageInfo: "Refrigerate formulation at 2–8°C, protected from light. Do not freeze. Stable for 12 months under recommended conditions.",
       variants: [
         { sku: "EBL-SEMAX-10", strengthMg: 10, priceCents: 5000, stock: 120 },
         { sku: "EBL-SEMAX-30", strengthMg: 30, priceCents: 5499, stock: 90 },
@@ -224,8 +224,8 @@ async function main() {
       slug: "selank", name: "Selank",
       cas: "129954-34-3", purity: ">=98%",
       form: ProductForm.NASAL_SPRAY, category: "cognitive",
-      description: "Synthetic analog of tuftsin studied in cognitive research. For Research Use Only.",
-      storageInfo: "Refrigerate 2–8°C.",
+      description: "Synthetic tuftsin analog peptide (Thr-Lys-Pro-Arg-Pro-Gly-Pro) supplied as buffered aqueous analytical reference formulation. Certified ≥98% purity by HPLC-MS. Suitable for chromatography method development, mass spectrometry calibration, and in-vitro analytical studies. For Research Use Only.",
+      storageInfo: "Refrigerate formulation at 2–8°C, protected from light. Do not freeze. Stable for 12 months under recommended conditions.",
       variants: [
         { sku: "EBL-SELANK-5", strengthMg: 5, priceCents: 2999, stock: 130 },
         { sku: "EBL-SELANK-10", strengthMg: 10, priceCents: 5000, stock: 110 },
@@ -235,8 +235,8 @@ async function main() {
       slug: "mots-c", name: "MOTS-c",
       purity: ">=98%",
       form: ProductForm.LYOPHILIZED, category: "metabolic",
-      description: "Mitochondrial-derived peptide studied in metabolic and exercise-mimetic research. Lyophilized powder. For Research Use Only.",
-      storageInfo: "Store lyophilized at -20°C. Refrigerate 2–8°C after reconstitution.",
+      description: "Mitochondrial-derived peptide (MRWQEMGYIFYPRKLR) supplied as lyophilized trifluoroacetate salt. Certified ≥98% purity by HPLC-MS. Suitable for chromatography method development, mass spectrometry calibration, and in-vitro metabolic research. For Research Use Only.",
+      storageInfo: "Store lyophilized powder at -20°C, protected from light and moisture. Stable as supplied for 24 months under recommended conditions.",
       variants: [
         { sku: "EBL-MOTSC-20", strengthMg: 20, priceCents: 6000, stock: 100 },
         { sku: "EBL-MOTSC-40", strengthMg: 40, priceCents: 10000, stock: 70 },
@@ -246,8 +246,8 @@ async function main() {
       slug: "sermorelin", name: "Sermorelin",
       cas: "86168-78-7", purity: ">=99%", molarMass: 3357.9,
       form: ProductForm.LYOPHILIZED, category: "growth-hormone",
-      description: "GHRH(1-29) analog studied as a GH secretagogue. Lyophilized powder. For Research Use Only.",
-      storageInfo: "Store at -20°C.",
+      description: "Synthetic GHRH(1-29) analog (Tyr-Ala-Asp-Ala-Ile-Phe-Thr-Asn-Ser-Tyr-Arg-Lys-Val-Leu-Gly-Gln-Leu-Ser-Ala-Arg-Lys-Leu-Leu-Gln-Asp-Ile-Met-Ser-Arg) supplied as lyophilized trifluoroacetate salt. Certified ≥99% purity by HPLC-MS. Suitable for chromatography method development, mass spectrometry calibration, and in-vitro receptor binding studies. For Research Use Only.",
+      storageInfo: "Store lyophilized powder at -20°C, protected from light and moisture. Stable as supplied for 24 months under recommended conditions.",
       variants: [
         { sku: "EBL-SERM-5", strengthMg: 5, priceCents: 5000, stock: 130 },
       ],
@@ -256,8 +256,8 @@ async function main() {
       slug: "tesamorelin", name: "Tesamorelin",
       cas: "218949-48-5", purity: ">=99%", molarMass: 5135.9,
       form: ProductForm.LYOPHILIZED, category: "growth-hormone",
-      description: "Stabilized GHRH analog studied as a GH secretagogue. Lyophilized powder. For Research Use Only.",
-      storageInfo: "Store at -20°C.",
+      description: "Synthetic stabilized GHRH analog supplied as lyophilized trifluoroacetate salt. Certified ≥99% purity by HPLC-MS. Suitable for chromatography method development, mass spectrometry calibration, and in-vitro receptor binding studies. For Research Use Only.",
+      storageInfo: "Store lyophilized powder at -20°C, protected from light and moisture. Stable as supplied for 24 months under recommended conditions.",
       variants: [
         { sku: "EBL-TESA-10", strengthMg: 10, priceCents: 7000, stock: 100 },
       ],
@@ -266,8 +266,8 @@ async function main() {
       slug: "tesa-ipa-blend", name: "Tesamorelin/Ipamorelin Blend",
       purity: ">=98%",
       form: ProductForm.BLEND, category: "blends",
-      description: "Multi-peptide research blend combining Tesamorelin and Ipamorelin (5mg/5mg) in a single 10mg lyophilized vial for combination-study protocols. For Research Use Only.",
-      storageInfo: "Store lyophilized at -20°C, protected from light. Refrigerate 2–8°C after reconstitution.",
+      description: "Multi-peptide analytical standard blend containing Tesamorelin and Ipamorelin (5mg/5mg) in a single 10mg lyophilized vial for combination-study protocols. Certified ≥98% purity by HPLC-MS. Suitable for chromatographic method development and mass spectrometry calibration only. For Research Use Only.",
+      storageInfo: "Store lyophilized powder at -20°C, protected from light and moisture. Stable as supplied for 24 months under recommended conditions.",
       variants: [
         { sku: "EBL-TI-10", strengthMg: 10, priceCents: 7500, stock: 80 },
       ],
@@ -276,8 +276,8 @@ async function main() {
       slug: "tesa-ipa-cjc-blend", name: "Tesamorelin/Ipamorelin/CJC-1295 Blend",
       purity: ">=98%",
       form: ProductForm.BLEND, category: "blends",
-      description: "Multi-peptide research blend combining Tesamorelin, Ipamorelin and CJC-1295 no-DAC (6mg/3mg/3mg) in a single 12mg lyophilized vial for combination-study protocols. For Research Use Only.",
-      storageInfo: "Store lyophilized at -20°C, protected from light. Refrigerate 2–8°C after reconstitution.",
+      description: "Multi-peptide analytical standard blend containing Tesamorelin, Ipamorelin and CJC-1295 no-DAC (6mg/3mg/3mg) in a single 12mg lyophilized vial for combination-study protocols. Certified ≥98% purity by HPLC-MS. Suitable for chromatographic method development and mass spectrometry calibration only. For Research Use Only.",
+      storageInfo: "Store lyophilized powder at -20°C, protected from light and moisture. Stable as supplied for 24 months under recommended conditions.",
       variants: [
         { sku: "EBL-TIC-12", strengthMg: 12, priceCents: 8500, stock: 70 },
       ],
@@ -285,9 +285,9 @@ async function main() {
     {
       slug: "wolverine-blend", name: "Wolverine Blend",
       purity: ">=98%",
-      form: ProductForm.BLEND, category: "blends",
-      description: "Multi-peptide research blend combining BPC-157, TB-500 and GHK-Cu in a single 20mg lyophilized vial for combination-study protocols. For Research Use Only.",
-      storageInfo: "Store lyophilized at -20°C, protected from light. Refrigerate 2–8°C after reconstitution.",
+      form: ProductForm.BLEND, category: "blends", highRisk: true,
+      description: "Multi-peptide analytical standard blend containing BPC-157, TB-500 and GHK-Cu in a single 20mg lyophilized vial for combination-study protocols. Certified ≥98% purity by HPLC-MS. Suitable for chromatographic method development and mass spectrometry calibration only. NOTE: This blend contains peptides under FDA PCAC evaluation. Purchasers must certify analytical research intent and confirm no therapeutic use. For Research Use Only.",
+      storageInfo: "Store lyophilized powder at -20°C, protected from light and moisture. Stable as supplied for 24 months under recommended conditions.",
       variants: [
         { sku: "EBL-WOLV-20", strengthMg: 20, priceCents: 8500, stock: 75 },
       ],
@@ -296,8 +296,8 @@ async function main() {
       slug: "glutathione", name: "Glutathione",
       cas: "70-18-8", purity: ">=99%", molarMass: 307.3,
       form: ProductForm.LYOPHILIZED, category: "longevity",
-      description: "Tripeptide antioxidant studied in cellular-protection and redox research. Lyophilized powder. For Research Use Only.",
-      storageInfo: "Store lyophilized at -20°C, protected from light. Refrigerate 2–8°C after reconstitution.",
+      description: "γ-L-Glutamyl-L-cysteinyl-glycine tripeptide antioxidant supplied as lyophilized powder. Certified ≥99% purity by HPLC-MS. Suitable for chromatography method development, mass spectrometry calibration, and redox biology research. For Research Use Only.",
+      storageInfo: "Store lyophilized powder at -20°C, protected from light and moisture. Stable as supplied for 24 months under recommended conditions.",
       variants: [
         { sku: "EBL-GLUT-1500", strengthMg: 1500, priceCents: 4500, stock: 110, reconstitutionVolumeMl: 5 },
       ],
@@ -306,8 +306,8 @@ async function main() {
       slug: "l-carnitine", name: "L-Carnitine",
       cas: "541-15-1", purity: ">=99%", molarMass: 161.2,
       form: ProductForm.LYOPHILIZED, category: "metabolic",
-      description: "Amino-acid derivative studied in fatty-acid and energy-metabolism research. Lyophilized powder. For Research Use Only.",
-      storageInfo: "Store lyophilized at -20°C. Refrigerate 2–8°C after reconstitution.",
+      description: "(R)-3-hydroxy-4-(trimethylammonio)butanoate amino-acid derivative supplied as lyophilized powder. Certified ≥99% purity by HPLC-MS. Suitable for chromatography method development, mass spectrometry calibration, and fatty-acid metabolism research. For Research Use Only.",
+      storageInfo: "Store lyophilized powder at -20°C, protected from light and moisture. Stable as supplied for 24 months under recommended conditions.",
       variants: [
         { sku: "EBL-LCAR-1200", strengthMg: 1200, priceCents: 4500, stock: 100, reconstitutionVolumeMl: 5 },
       ],
@@ -316,8 +316,8 @@ async function main() {
       slug: "melanotan-2", name: "Melanotan-2",
       cas: "121062-08-6", purity: ">=99%", molarMass: 1024.2,
       form: ProductForm.LYOPHILIZED, category: "specialty",
-      description: "Melanocortin receptor agonist studied in pigmentation research. Lyophilized powder. For Research Use Only.",
-      storageInfo: "Store lyophilized at -20°C, protected from light. Refrigerate 2–8°C after reconstitution.",
+      description: "Synthetic melanocortin receptor agonist peptide (Ac-Nle-c[Asp-His-D-Phe-Arg-Trp-Lys]-NH₂) supplied as lyophilized trifluoroacetate salt. Certified ≥99% purity by HPLC-MS. Suitable for chromatography method development, mass spectrometry calibration, and in-vitro receptor binding studies. For Research Use Only.",
+      storageInfo: "Store lyophilized powder at -20°C, protected from light and moisture. Stable as supplied for 24 months under recommended conditions.",
       variants: [
         { sku: "EBL-MT2-10", strengthMg: 10, priceCents: 6000, stock: 90 },
       ],
@@ -387,7 +387,7 @@ async function main() {
         data: {
           variantId: variant.id,
           url: image ?? PLACEHOLDER_IMAGE,
-          alt: `${c.name} ${v.strengthMg}mg`,
+          alt: `${c.name} ${v.strengthMg}mg analytical standard`,
           sortOrder: 0,
         },
       });
@@ -434,19 +434,19 @@ async function main() {
   const docs = [
     {
       title: "Research Use Only Policy", slug: "ruo-policy", category: "RUO",
-      body: "All products sold by Elevate Bio-Labs are intended FOR RESEARCH USE ONLY (RUO). They are not drugs, foods, cosmetics, or dietary supplements, and are NOT FDA-approved for the diagnosis, treatment, cure, or prevention of any disease. They are not for human or veterinary consumption. By purchasing, you certify you are a qualified researcher aged 18+.",
+      body: "All products sold by Elevate Bio-Labs are intended FOR RESEARCH USE ONLY (RUO) as analytical standards and laboratory reagents. They are not drugs, foods, cosmetics, or dietary supplements, and are NOT FDA-approved for the diagnosis, treatment, cure, or prevention of any disease. They are not for human or veterinary consumption. By purchasing, you certify you are a qualified researcher aged 18+ operating appropriate analytical equipment (HPLC, LC-MS, or equivalent).",
     },
     {
       title: "Shipping Policy", slug: "shipping-policy", category: "SHIPPING_POLICY",
-      body: "Orders ship via USPS with tracking. Temperature-sensitive items ship with cold packs. Delivery timelines and RUO labeling apply to all shipments.",
+      body: "Orders ship via USPS with tracking. Analytical standards are packed in plain exterior packaging with no product names or claims visible. COA and MSDS documentation are included inside. No bacteriostatic water, injection supplies, or reconstitution instructions are included. We ship within the United States only.",
     },
     {
       title: "Return & Refund Policy", slug: "refund-policy", category: "REFUND",
-      body: "Due to the research-grade nature of our products, all sales are final once shipped. Damaged or incorrect items are eligible for replacement within 7 days with photo proof.",
+      body: "Due to the research-grade nature of our analytical standards, all sales are final once shipped. Damaged or incorrect items are eligible for replacement within 7 days with photo proof. We do not provide dosing, reconstitution, or sample-preparation guidance.",
     },
     {
       title: "LegitScript Compliance", slug: "legitscript", category: "LEGITSCRIPT",
-      body: "Elevate Bio-Labs maintains RUO labeling, batch/lot COA traceability, and monitors chargeback ratios against the 2026 Visa VAMP 1.5% threshold to preserve processing eligibility.",
+      body: "Elevate Bio-Labs maintains RUO labeling, batch/lot COA traceability, independent-laboratory verification for non-institutional buyers, and monitors chargeback ratios against the 2026 Visa VAMP 1.5% threshold to preserve processing eligibility.",
     },
   ];
   for (const d of docs) {

@@ -28,7 +28,7 @@ function getAvailableRails(): PaymentRail[] {
 
 export const metadata: Metadata = {
   title: "Checkout",
-  description: "Complete your research peptide order.",
+  description: "Complete your analytical reference standard order.",
 };
 
 // Reads the session per-request to prefill; never cached.

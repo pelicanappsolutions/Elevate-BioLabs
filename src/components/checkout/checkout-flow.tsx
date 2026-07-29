@@ -183,7 +183,7 @@ export function CheckoutFlow({
   async function submit() {
     setError(null);
     if (!ageConfirm) {
-      return setError("Please confirm the Research Use Only acknowledgement.");
+      return setError("Please confirm the analytical laboratory certification and Research Use Only acknowledgement.");
     }
 
     setSubmitting(true);
@@ -335,11 +335,15 @@ export function CheckoutFlow({
               />
               <Field
                 id="street2"
-                label="Apt, suite, unit (optional)"
+                label="Suite, lab, or unit (optional)"
                 value={address.street2}
                 onChange={(v) => setAddress((a) => ({ ...a, street2: v }))}
                 autoComplete="address-line2"
               />
+              <p className="text-xs text-muted-foreground">
+                Residential addresses are accepted if labeled &quot;Suite&quot; or &quot;Lab&quot; in line 2.
+                PO Box orders may be held for manual review.
+              </p>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 <Field
                   id="city"
@@ -517,9 +521,12 @@ export function CheckoutFlow({
                   className="mt-0.5"
                 />
                 <span className="text-xs leading-relaxed text-muted-foreground">
-                  I confirm I am 18 or older, that I am purchasing these compounds
-                  strictly For Research Use Only, and that I will not administer them to
-                  humans or animals. I have read the{" "}
+                  I confirm I am 18 or older, that I am purchasing these materials as
+                  analytical reference standards strictly For Research Use Only, and that
+                  I will not introduce them into humans or animals. I certify that I operate
+                  a laboratory equipped for peptide analysis (HPLC, LC-MS, or equivalent) and
+                  that I will not use these materials for personal health, fitness, or
+                  therapeutic purposes. I have read the{" "}
                   <Link href="/compliance" className="text-primary underline">
                     compliance policy
                   </Link>

@@ -54,7 +54,7 @@ export const env = {
     clientSecret: process.env.USPS_CLIENT_SECRET ?? "",
     baseUrl: process.env.USPS_BASE_URL ?? "https://apis.usps.com",
     from: {
-      name: process.env.SHIP_FROM_NAME ?? "Elevate Bio-Labs",
+      name: process.env.SHIP_FROM_NAME ?? "Elevate Bio-Labs Chemical Supply",
       street: process.env.SHIP_FROM_STREET ?? "1 Research Way",
       city: process.env.SHIP_FROM_CITY ?? "Austin",
       state: process.env.SHIP_FROM_STATE ?? "TX",

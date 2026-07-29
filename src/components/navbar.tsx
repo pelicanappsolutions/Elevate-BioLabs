@@ -66,7 +66,7 @@ function SearchForm({
         type="search"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search peptides, CAS, SKU..."
+        placeholder="Search standards, CAS, SKU..."
         aria-label="Search products"
         autoFocus={autoFocus}
         className="pl-9"
@@ -85,7 +85,7 @@ export function Navbar() {
     <div className="relative z-40">
       {/* RUO banner strip */}
       <div className="w-full bg-primary/10 py-1.5 text-center text-xs font-medium text-primary">
-        🔬 For Research Use Only — Not for human consumption
+        🔬 Analytical reference standards — For Research Use Only — Not for human or veterinary use
       </div>
 
       <header className="w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">

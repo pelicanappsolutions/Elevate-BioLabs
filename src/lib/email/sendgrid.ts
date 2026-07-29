@@ -158,7 +158,7 @@ ${preheader(preview)}
       <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid ${BRAND.line};font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:${BRAND.ink};">
         <tr><td style="background:${BRAND.navy};padding:22px 28px;">
           <span style="color:#ffffff;font-size:19px;font-weight:800;letter-spacing:1.5px;">ELEVATE BIO-LABS</span>
-          <div style="color:#9fb8cf;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;margin-top:3px;">Research Peptides · RUO</div>
+          <div style="color:#9fb8cf;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;margin-top:3px;">Analytical Standards · RUO</div>
         </td></tr>
         <tr><td style="padding:30px 28px 8px;">
           ${body}
@@ -348,7 +348,7 @@ export function welcomeHtml(name: string): string {
       name ? `, ${escapeHtml(name)}` : ""
     }.</h1>
     <p style="margin:0 0 20px;font-size:15px;line-height:1.55;color:${BRAND.muted};">
-      Thanks for joining Elevate Bio-Labs — your source for third-party tested, batch-tracked research peptides. Every order ships with a matching Certificate of Analysis.
+      Thanks for joining Elevate Bio-Labs — your source for third-party tested, batch-tracked analytical reference standards. Every order ships with a matching Certificate of Analysis.
     </p>
     ${card(`<div style="margin-bottom:2px;">${chips}</div>`, "Popular research categories")}
     <div style="margin:0 0 18px;">${button(env.SITE_URL + "/products", "Browse the catalog")}</div>
@@ -357,7 +357,7 @@ export function welcomeHtml(name: string): string {
       <a href="mailto:${SUPPORT_EMAIL}" style="color:${BRAND.accent};text-decoration:none;">${SUPPORT_EMAIL}</a>.
     </p>`;
 
-  return shell("Welcome", "Welcome to Elevate Bio-Labs — research peptides with a COA on every order", body);
+  return shell("Welcome", "Welcome to Elevate Bio-Labs — analytical standards with a COA on every order", body);
 }
 
 function escapeHtml(input: unknown): string {

@@ -20,6 +20,12 @@ enum Role {
   ADMIN
 }
 
+enum VerificationTier {
+  INSTITUTIONAL
+  INDEPENDENT
+  PENDING
+}
+
 enum ProductForm {
   LYOPHILIZED
   SOLUTION
@@ -90,6 +96,10 @@ model User {
   ageVerified   Boolean   @default(false)
   marketingOptIn Boolean  @default(false) // customer email/marketing consent toggle
 
+  // Dual-track verification under 21 CFR § 201.128
+  verificationTier VerificationTier @default(PENDING)
+  labProfile       LabProfile?
+
   accounts      Account[]
   sessions      Session[]
   orders        Order[]
@@ -102,6 +112,31 @@ model User {
   updatedAt DateTime @updatedAt
 
   @@index([role])
+  @@index([verificationTier])
+}
+
+// Enhanced liability documentation for the Independent Laboratory track.
+// Creates a paper trail of research intent for buyers without institutional emails.
+model LabProfile {
+  id                  String  @id @default(cuid())
+  userId              String  @unique
+  user                User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  labName             String
+  einOrRegistration   String
+  street1             String
+  street2             String?
+  city                String
+  state               String
+  zip                 String
+  researchApplication String
+  equipmentCertified  Boolean @default(false)
+  certificationText   String? @db.Text
+  signedAt            DateTime?
+  ipAddress           String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Account {
@@ -188,6 +223,7 @@ model Product {
   form        ProductForm @default(LYOPHILIZED)
   storageInfo String?     @db.Text
   researchUse Boolean     @default(true) // RUO flag
+  highRisk    Boolean     @default(false) // Category 3 / active PCAC evaluation
   currency    String      @default("USD")
 
   // Denormalized catalog-performance fields — kept in sync by

@@ -108,7 +108,7 @@ export default async function DashboardPage() {
           <TabsList className="inline-flex w-auto">
             <TabsTrigger value="orders">Orders</TabsTrigger>
             <TabsTrigger value="saved">Saved ({saved.length})</TabsTrigger>
-            <TabsTrigger value="doses">Dosage log</TabsTrigger>
+            <TabsTrigger value="doses">Research record</TabsTrigger>
             <TabsTrigger value="addresses">Addresses</TabsTrigger>
             <TabsTrigger value="profile">Profile</TabsTrigger>
           </TabsList>

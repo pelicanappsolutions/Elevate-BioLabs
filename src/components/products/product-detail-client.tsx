@@ -149,12 +149,12 @@ export function ProductDetailClient({
         </div>
       </div>
 
-      {/* Reconstitution calculator — strength-aware, swaps with selection */}
+      {/* Analytical standard calculator — strength-aware, swaps with selection */}
       <div>
-        <h2 className="text-lg font-semibold">Reconstitution calculator</h2>
+        <h2 className="text-lg font-semibold">Analytical standard calculator</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Plan your dilution for in-vitro work. Figures are arithmetic only and are not
-          dosing guidance.
+          Calculate reference concentration for in-vitro analytical work. Figures are
+          arithmetic only and are not experimental protocols or dosing guidance.
         </p>
         <div className="mt-3">
           <DosageCalculator

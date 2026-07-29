@@ -1,46 +1,28 @@
 "use client";
 
 import * as React from "react";
-import { Calculator, Droplet, Loader2, Save } from "lucide-react";
-
-import { logDose } from "@/actions/dashboard";
+import { Calculator, FlaskConical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NumericInput } from "@/components/ui/numeric-input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
 
 /**
- * Reconstitution math for lyophilized vials.
+ * Analytical concentration calculator for lyophilized reference standards.
  *
- *   concentration (mcg/mL) = vial strength (mg) * 1000 / diluent (mL)
- *   draw volume (mL)       = target dose (mcg) / concentration
- *   insulin units          = draw volume (mL) * 100   (U-100 syringe)
+ *   concentration (mcg/mL) = analyte mass (mcg) / diluent volume (mL)
  *
- * Pure arithmetic, RUO-framed — deliberately gives no dosing recommendation.
+ * Pure arithmetic, RUO-framed — deliberately gives no dosing recommendation
+ * or sample-preparation protocol.
  */
-function reconstitute(vialMg: number, diluentMl: number, doseMcg: number) {
-  if (!(vialMg > 0) || !(diluentMl > 0) || !(doseMcg > 0)) return null;
-
-  const totalMcg = vialMg * 1000;
-  const concentrationMcgPerMl = totalMcg / diluentMl;
-  const drawMl = doseMcg / concentrationMcgPerMl;
-  const units = drawMl * 100;
-  const dosesPerVial = totalMcg / doseMcg;
-
-  if (drawMl > diluentMl) return { error: "Target exceeds the full vial." as const };
-
+function calculateConcentration(analyteMcg: number, diluentMl: number) {
+  if (!(analyteMcg > 0) || !(diluentMl > 0)) return null;
   return {
-    concentrationMcgPerMl,
-    drawMl,
-    units,
-    dosesPerVial,
-    error: null,
+    concentrationMcgPerMl: analyteMcg / diluentMl,
+    totalVialMcg: analyteMcg,
   };
 }
 
 export function DosageCalculator({
-  variantId,
-  productName,
   vialMg,
   reconstitutionVolumeMl,
 }: {
@@ -48,110 +30,83 @@ export function DosageCalculator({
   productName?: string;
   /** The selected variant's actual strength — a fact, not editable here. */
   vialMg: number;
-  /** Standard bac-water volume set by admin for this vial — a fact, not
-   *  a customer choice. Following standard peptide reconstitution protocol,
-   *  this is fixed per product/batch, not something a shopper should guess. */
+  /** Default analytical dilution volume used for concentration calculations. */
   reconstitutionVolumeMl: number;
 }) {
-  const { toast } = useToast();
-  const [doseMcg, setDoseMcg] = React.useState("250");
-  const [saving, setSaving] = React.useState(false);
+  const [analyteMcg, setAnalyteMcg] = React.useState(String(vialMg * 1000));
+  const [diluentMl, setDiluentMl] = React.useState(String(reconstitutionVolumeMl));
 
   const result = React.useMemo(
-    () => reconstitute(vialMg, reconstitutionVolumeMl, Number(doseMcg)),
-    [vialMg, reconstitutionVolumeMl, doseMcg]
+    () => calculateConcentration(Number(analyteMcg), Number(diluentMl)),
+    [analyteMcg, diluentMl]
   );
 
-  async function handleSave() {
-    if (!result || result.error) return;
-    setSaving(true);
-    try {
-      const res = await logDose({
-        variantId,
-        doseMcg: Number(doseMcg),
-        volumeMl: Number(result.drawMl.toFixed(4)),
-        note: productName ? `Reconstitution plan — ${productName}` : undefined,
-      });
-      if (res.ok) {
-        toast({
-          title: "Saved to your dosage log",
-          description: "View it any time from your dashboard.",
-        });
-      } else {
-        toast({
-          title: "Couldn't save",
-          description: res.error ?? "Sign in to keep a dosage log.",
-          variant: "destructive",
-        });
-      }
-    } finally {
-      setSaving(false);
-    }
-  }
+  const vialTotalMcg = vialMg * 1000;
 
   return (
     <div className="rounded-lg border border-border bg-card p-4">
       <div className="mb-4 flex items-center gap-2">
         <Calculator className="h-4 w-4 text-primary" aria-hidden="true" />
-        <h3 className="text-sm font-semibold">Reconstitution calculator</h3>
+        <h3 className="text-sm font-semibold">Analytical standard calculator</h3>
       </div>
 
-      {/* Standard bac-water instruction — a fixed fact for this vial, not a
-          customer choice, per standard peptide reconstitution protocol. */}
       <div className="flex items-center gap-2 rounded-md border border-primary/30 bg-primary/5 p-3">
-        <Droplet className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+        <FlaskConical className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
         <p className="text-sm">
-          Add <span className="font-semibold text-primary">{reconstitutionVolumeMl}mL</span> of
-          Bacteriostatic Water to this {vialMg}mg vial.
+          Vial contains <span className="font-semibold text-primary">{vialMg}mg</span> of reference
+          material ({vialTotalMcg.toLocaleString()} mcg total).
         </p>
       </div>
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        <Fact label="Vial strength" value={`${vialMg}mg`} />
-        <Fact label="Bac water to add" value={`${reconstitutionVolumeMl}mL`} />
-      </div>
-
-      <div className="mt-3">
-        <Label htmlFor="doseMcg" className="text-xs">
-          Your target dose (mcg)
-        </Label>
-        <NumericInput id="doseMcg" value={doseMcg} onChange={setDoseMcg} className="mt-1" />
+        <div>
+          <Label htmlFor="analyteMcg" className="text-xs">
+            Analyte mass (mcg)
+          </Label>
+          <NumericInput
+            id="analyteMcg"
+            value={analyteMcg}
+            onChange={setAnalyteMcg}
+            className="mt-1"
+          />
+        </div>
+        <div>
+          <Label htmlFor="diluentMl" className="text-xs">
+            Diluent volume (mL)
+          </Label>
+          <NumericInput
+            id="diluentMl"
+            value={diluentMl}
+            onChange={setDiluentMl}
+            className="mt-1"
+          />
+        </div>
       </div>
 
       <div className="mt-4 rounded-md bg-secondary/60 p-3">
         {!result ? (
-          <p className="text-sm text-muted-foreground">Enter a target dose to calculate.</p>
-        ) : result.error ? (
-          <p className="text-sm text-destructive">{result.error}</p>
+          <p className="text-sm text-muted-foreground">
+            Enter a positive analyte mass and diluent volume to calculate concentration.
+          </p>
         ) : (
-          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Stat label="Concentration" value={`${round(result.concentrationMcgPerMl)} mcg/mL`} />
-            <Stat label="Draw volume" value={`${round(result.drawMl, 3)} mL`} />
-            <Stat label="U-100 units" value={`${round(result.units, 1)}`} highlight />
-            <Stat label="Doses / vial" value={`${round(result.dosesPerVial, 1)}`} />
+          <dl className="grid grid-cols-2 gap-3">
+            <Stat
+              label="Concentration"
+              value={`${round(result.concentrationMcgPerMl)} mcg/mL`}
+              highlight
+            />
+            <Stat
+              label="Total analyte"
+              value={`${round(result.totalVialMcg)} mcg`}
+            />
           </dl>
         )}
       </div>
 
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        className="mt-3 w-full"
-        onClick={handleSave}
-        disabled={saving || !result || Boolean(result.error)}
-      >
-        {saving ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        ) : (
-          <Save className="mr-2 h-4 w-4" />
-        )}
-        Save to dosage log
-      </Button>
-
       <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
-        Arithmetic aid for in-vitro experimental design only. This is not dosing
-        guidance, and these compounds are not for human or animal administration.
+        Arithmetic aid for in-vitro analytical method development only. This is not a
+        sample-preparation protocol, dosing guidance, or reconstitution instruction. These
+        compounds are not for human or animal administration.
       </p>
     </div>
   );
@@ -159,15 +114,6 @@ export function DosageCalculator({
 
 function round(n: number, dp = 2) {
   return Number(n.toFixed(dp)).toLocaleString("en-US");
-}
-
-function Fact({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-md border border-border bg-secondary/40 px-3 py-2">
-      <p className="text-[11px] text-muted-foreground">{label}</p>
-      <p className="text-sm font-semibold">{value}</p>
-    </div>
-  );
 }
 
 function Stat({

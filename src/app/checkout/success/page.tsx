@@ -197,8 +197,10 @@ export default async function CheckoutSuccessPage({
       </div>
 
       <p className="mt-6 text-center text-xs text-muted-foreground">
-        A confirmation email is on its way. All products are supplied For Research Use
-        Only and are not for human or veterinary consumption.
+        A confirmation email is on its way. All materials are supplied as analytical
+        reference standards For Research Use Only and are not for human or veterinary
+        consumption. No bacteriostatic water, injection supplies, or reconstitution
+        instructions are included.
       </p>
     </div>
   );

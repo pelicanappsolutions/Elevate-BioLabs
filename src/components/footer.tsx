@@ -18,7 +18,7 @@ const SHOP_LINKS = [
   { href: "/products/tirzepatide", label: "Tirzepatide" },
   { href: "/products/retatrutide", label: "Retatrutide" },
   { href: "/products/klow-blend", label: "KLOW Blend" },
-  { href: "/products", label: "Shop all peptides →" },
+  { href: "/products", label: "Shop all standards →" },
 ];
 
 const SUPPORT_LINKS = [
@@ -46,10 +46,10 @@ export function Footer() {
               <span className="text-lg font-semibold tracking-tight">Elevate Bio-Labs</span>
             </Link>
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground">
-              All products sold by Elevate Bio-Labs are intended strictly For Research Use
-              Only (RUO). They are not for human or veterinary use, diagnostic use, or
-              consumption of any kind. Not for sale to minors — you must be 18 or older to
-              purchase.
+              All products sold by Elevate Bio-Labs are analytical reference standards intended
+              strictly For Research Use Only (RUO). They are not for human or veterinary use,
+              diagnostic use, or consumption of any kind. Not for sale to minors — you must be 18
+              or older to purchase.
             </p>
             <div className="mt-6">
               <p className="mb-2 text-sm font-medium">Research updates &amp; COA releases</p>
@@ -66,7 +66,7 @@ export function Footer() {
           </div>
 
           <FooterColumn title="Browse Categories" links={CATEGORY_LINKS} />
-          <FooterColumn title="Shop Peptides" links={SHOP_LINKS} />
+          <FooterColumn title="Shop Standards" links={SHOP_LINKS} />
           <FooterColumn title="Resources & Support" links={SUPPORT_LINKS} />
         </div>
 

@@ -4,7 +4,7 @@ import { CartView } from "@/components/cart/cart-view";
 
 export const metadata: Metadata = {
   title: "Your Cart",
-  description: "Review your research peptide order before checkout.",
+  description: "Review your analytical reference standard order before checkout.",
 };
 
 export default function CartPage() {

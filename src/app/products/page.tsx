@@ -10,9 +10,9 @@ import { SortSelect } from "@/components/products/sort-select";
 import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
-  title: "Peptide Catalog",
+  title: "Analytical Standards Catalog",
   description:
-    "Browse third-party tested research peptides — filter by category, purity, form, and price. For Research Use Only.",
+    "Browse third-party tested analytical reference standards — filter by category, purity, form, and price. For Research Use Only.",
 };
 
 export const revalidate = 120;
@@ -133,12 +133,12 @@ export default async function ProductsPage({
         <Link href="/" className="hover:text-foreground">
           Home
         </Link>{" "}
-        <span className="mx-1">/</span> Shop Peptides
+        <span className="mx-1">/</span> Shop Standards
       </nav>
 
       <header className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-          {searchParams.q ? `Results for "${searchParams.q}"` : "Shop Research Peptides"}
+          {searchParams.q ? `Results for "${searchParams.q}"` : "Shop Analytical Standards"}
         </h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
           {total} product{total === 1 ? "" : "s"} • All compounds supplied For Research

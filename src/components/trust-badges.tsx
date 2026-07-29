@@ -4,7 +4,7 @@ const BADGES = [
   { icon: Beaker, label: "≥99% Purity" },
   { icon: ShieldCheck, label: "Third-Party Tested (COA)" },
   { icon: PackageCheck, label: "Batch/Lot Tracked" },
-  { icon: Truck, label: "Discreet USPS Shipping" },
+  { icon: Truck, label: "Plain Laboratory Shipping" },
   { icon: FlaskConical, label: "Research Use Only" },
 ];
 
