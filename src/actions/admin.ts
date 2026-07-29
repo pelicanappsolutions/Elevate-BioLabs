@@ -11,7 +11,7 @@ import {
   orderNotesSchema,
 } from "@/lib/validations";
 import { adjustStock, recomputeProductAggregates } from "@/lib/inventory";
-import { uploadFile } from "@/lib/storage";
+import { uploadFile, deleteFile } from "@/lib/storage";
 import { createLabel } from "@/lib/shipping/usps";
 import { sendTransactional, trackMarketing } from "@/lib/email/index";
 import { slugify, variantDisplayName } from "@/lib/utils";
@@ -326,6 +326,27 @@ export async function uploadCoa(formData: FormData): Promise<{ ok: boolean; erro
   revalidatePath("/admin");
   revalidatePath("/certificates");
   revalidatePath("/verify-coa");
+  return { ok: true };
+}
+
+export async function deleteCoa(id: string): Promise<{ ok: boolean; error?: string }> {
+  const admin = await requireAdmin().catch(() => null);
+  if (!admin) return { ok: false, error: "Unauthorized" };
+
+  const coa = await db.cOA.findUnique({ where: { id } });
+  if (!coa) return { ok: false, error: "COA not found." };
+
+  await deleteFile(coa.fileUrl);
+  await db.cOA.delete({ where: { id } });
+  await audit(admin.id, "COA_DELETED", "ProductVariant", coa.variantId, {
+    batchLot: coa.batchLot,
+    fileUrl: coa.fileUrl,
+  });
+
+  revalidatePath("/admin");
+  revalidatePath("/certificates");
+  revalidatePath("/verify-coa");
+  revalidatePath(`/products`);
   return { ok: true };
 }
 

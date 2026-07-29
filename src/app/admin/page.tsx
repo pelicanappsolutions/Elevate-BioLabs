@@ -61,7 +61,7 @@ export default async function AdminPage() {
           orderBy: [{ sortOrder: "asc" }, { strengthMg: "asc" }],
           include: {
             images: { orderBy: { sortOrder: "asc" }, take: 1 },
-            _count: { select: { coas: true } },
+            coas: { orderBy: { createdAt: "desc" }, select: { id: true, batchLot: true, fileUrl: true, purity: true, testedOn: true } },
           },
         },
       },
@@ -315,7 +315,7 @@ export default async function AdminPage() {
                 lowStockThreshold: v.lowStockThreshold,
                 active: v.active,
                 sortOrder: v.sortOrder,
-                coaCount: v._count.coas,
+                coaCount: v.coas.length,
                 imageUrl: v.images[0]?.url ?? null,
                 reconstitutionVolumeMl: v.reconstitutionVolumeMl,
               })),
@@ -331,7 +331,14 @@ export default async function AdminPage() {
                 id: v.id,
                 name: variantDisplayName(p.name, v.strengthMg),
                 sku: v.sku,
-                coaCount: v._count.coas,
+                coaCount: v.coas.length,
+                coas: v.coas.map((c) => ({
+                  id: c.id,
+                  batchLot: c.batchLot,
+                  fileUrl: c.fileUrl,
+                  purity: c.purity,
+                  testedOn: c.testedOn?.toISOString() ?? "",
+                })),
               }))
             )}
           />

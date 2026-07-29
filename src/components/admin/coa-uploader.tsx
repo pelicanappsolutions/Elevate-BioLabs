@@ -2,9 +2,9 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { FileCheck2, Loader2, Upload } from "lucide-react";
+import { FileCheck2, Loader2, Trash2, Upload } from "lucide-react";
 
-import { uploadCoa } from "@/actions/admin";
+import { uploadCoa, deleteCoa } from "@/actions/admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +22,13 @@ interface CoaVariant {
   name: string; // combined display name, e.g. "Tirzepatide 10mg"
   sku: string;
   coaCount: number;
+  coas: {
+    id: string;
+    batchLot: string;
+    fileUrl: string;
+    purity: string | null;
+    testedOn: string;
+  }[];
 }
 
 export function CoaUploader({ products }: { products: CoaVariant[] }) {
@@ -34,6 +41,7 @@ export function CoaUploader({ products }: { products: CoaVariant[] }) {
   const [testedOn, setTestedOn] = React.useState("");
   const [fileName, setFileName] = React.useState("");
   const [pending, setPending] = React.useState(false);
+  const [deletingId, setDeletingId] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
 
   const selectedVariant = products.find((p) => p.id === variantId);
@@ -112,6 +120,22 @@ export function CoaUploader({ products }: { products: CoaVariant[] }) {
       router.refresh();
     } finally {
       setPending(false);
+    }
+  }
+
+  async function handleDelete(id: string, batchLot: string) {
+    if (!window.confirm(`Delete COA for batch ${batchLot}? This also removes the stored PDF.`)) return;
+    setDeletingId(id);
+    try {
+      const res = await deleteCoa(id);
+      if (!res.ok) {
+        toast({ variant: "destructive", title: "Delete failed", description: res.error });
+        return;
+      }
+      toast({ title: "COA deleted", description: `Batch ${batchLot} removed.` });
+      router.refresh();
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -228,31 +252,84 @@ export function CoaUploader({ products }: { products: CoaVariant[] }) {
       </form>
 
       <div className="overflow-x-auto rounded-lg border border-border">
-        <table className="w-full min-w-[420px] text-sm">
+        <table className="w-full min-w-[540px] text-sm">
           <thead className="bg-secondary/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
               <th className="px-3 py-2 font-medium">Product</th>
               <th className="px-3 py-2 font-medium">SKU</th>
-              <th className="px-3 py-2 font-medium">COAs on file</th>
+              <th className="px-3 py-2 font-medium">Batch / lot</th>
+              <th className="px-3 py-2 font-medium">Purity</th>
+              <th className="px-3 py-2 font-medium">Tested on</th>
+              <th className="px-3 py-2 font-medium">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {products.map((p) => (
-              <tr key={p.id} className="border-t border-border">
-                <td className="px-3 py-2 font-medium">{p.name}</td>
-                <td className="px-3 py-2 text-muted-foreground">{p.sku}</td>
-                <td className="px-3 py-2">
-                  {p.coaCount === 0 ? (
+            {products.flatMap((p) =>
+              p.coas.length === 0 ? (
+                <tr key={p.id} className="border-t border-border">
+                  <td className="px-3 py-2 font-medium">{p.name}</td>
+                  <td className="px-3 py-2 text-muted-foreground">{p.sku}</td>
+                  <td className="px-3 py-2" colSpan={4}>
                     <span className="text-destructive">None — action needed</span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 text-primary">
-                      <FileCheck2 className="h-3.5 w-3.5" />
-                      {p.coaCount}
-                    </span>
-                  )}
-                </td>
-              </tr>
-            ))}
+                  </td>
+                </tr>
+              ) : (
+                p.coas.map((coa, idx) => (
+                  <tr
+                    key={coa.id}
+                    className="border-t border-border"
+                  >
+                    {idx === 0 && (
+                      <td
+                        className="px-3 py-2 font-medium align-top"
+                        rowSpan={p.coas.length}
+                      >
+                        {p.name}
+                      </td>
+                    )}
+                    {idx === 0 && (
+                      <td
+                        className="px-3 py-2 text-muted-foreground align-top"
+                        rowSpan={p.coas.length}
+                      >
+                        {p.sku}
+                      </td>
+                    )}
+                    <td className="px-3 py-2">{coa.batchLot}</td>
+                    <td className="px-3 py-2">{coa.purity ? `${coa.purity}%` : "—"}</td>
+                    <td className="px-3 py-2 text-muted-foreground">
+                      {coa.testedOn ? new Date(coa.testedOn).toLocaleDateString() : "—"}
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={coa.fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs font-medium text-primary hover:underline"
+                        >
+                          View
+                        </a>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-destructive hover:text-destructive"
+                          disabled={deletingId === coa.id}
+                          onClick={() => handleDelete(coa.id, coa.batchLot)}
+                        >
+                          {deletingId === coa.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )
+            )}
           </tbody>
         </table>
       </div>
