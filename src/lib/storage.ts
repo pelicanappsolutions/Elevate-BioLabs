@@ -22,7 +22,7 @@ export async function uploadFile(
   if (isConfigured.blob()) {
     const blob = await put(safeName, file, {
       access: "public",
-      token: env.blob.token,
+      ...(env.blob.storeId ? { storeId: env.blob.storeId } : { token: env.blob.token }),
     });
     return { url: blob.url, pathname: blob.pathname };
   }

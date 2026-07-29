@@ -73,6 +73,7 @@ export const env = {
   },
   blob: {
     token: process.env.BLOB_READ_WRITE_TOKEN ?? "",
+    storeId: process.env.BLOB_READ_WRITE_TOKEN_STORE_ID ?? process.env.BLOB_STORE_ID ?? "",
   },
 };
 
@@ -85,5 +86,5 @@ export const isConfigured = {
   usps: () => !!env.usps.clientId && !!env.usps.clientSecret,
   sendgrid: () => !!env.sendgrid.apiKey,
   klaviyo: () => !!env.klaviyo.apiKey,
-  blob: () => !!env.blob.token,
+  blob: () => !!env.blob.token || !!env.blob.storeId,
 };
