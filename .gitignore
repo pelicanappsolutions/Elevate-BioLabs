@@ -41,3 +41,6 @@ yarn-error.log*
 
 # backend service credentials (NEVER commit)
 BACKEND_CREDENTIALS.md
+
+.vercel
+.env*
