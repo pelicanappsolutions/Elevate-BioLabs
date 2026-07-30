@@ -66,17 +66,17 @@ export const PAYMENT_RAIL_META: Record<PaymentRailName, PaymentRailMeta> = {
   },
   P2P_ZELLE: {
     label: "Zelle",
-    description: "Send payment via Zelle using your bank app, then upload proof.",
+    description: "Send payment via Zelle using your bank app. No upload needed.",
     feeNote: "0% • manual review",
     type: "p2p",
-    requiresProof: true,
+    requiresProof: false,
   },
   P2P_VENMO: {
     label: "Venmo",
-    description: "Send payment via Venmo, then upload proof.",
+    description: "Send payment via Venmo. No upload needed.",
     feeNote: "0% • manual review",
     type: "p2p",
-    requiresProof: true,
+    requiresProof: false,
   },
   P2P_WIRE: {
     label: "Bank Wire",

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ProofOfPaymentModal } from "@/components/checkout/proof-of-payment-modal";
+import { PAYMENT_RAIL_META } from "@/lib/payments/meta";
 
 export const metadata: Metadata = {
   title: "Order Confirmed",
@@ -40,6 +41,7 @@ export default async function CheckoutSuccessPage({
 
   const payment = order.payments[0];
   const isP2P = payment ? P2P_RAILS.includes(payment.rail) : false;
+  const requiresProof = payment ? PAYMENT_RAIL_META[payment.rail].requiresProof : false;
   const hasReceipt = order.receipts.length > 0;
 
   // P2P has no gateway callback, so we re-derive the same display instructions
@@ -66,14 +68,14 @@ export default async function CheckoutSuccessPage({
     <div className="container-tight max-w-2xl py-10 sm:py-16">
       <div className="text-center">
         <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-          {isP2P && !hasReceipt ? (
+          {isP2P && order.status === "AWAITING_REVIEW" ? (
             <Clock className="h-7 w-7 text-primary" />
           ) : (
             <CheckCircle2 className="h-7 w-7 text-primary" />
           )}
         </span>
         <h1 className="mt-4 text-2xl font-bold tracking-tight sm:text-3xl">
-          {isP2P && !hasReceipt ? "Almost there — send payment" : "Order confirmed"}
+          {isP2P && order.status === "AWAITING_REVIEW" ? "Almost there — send payment" : "Order confirmed"}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Order <span className="font-mono font-semibold">{order.orderNumber}</span> •{" "}
@@ -108,28 +110,44 @@ export default async function CheckoutSuccessPage({
 
           <Separator className="my-4" />
 
-          <h2 className="text-base font-semibold">Step 2 — Upload your proof</h2>
-          {hasReceipt ? (
-            <p className="mt-2 flex items-center gap-2 text-sm text-primary">
-              <CheckCircle2 className="h-4 w-4" />
-              Receipt received — an admin is verifying it now. You&apos;ll get an email
-              the moment it clears.
+          {requiresProof ? (
+            <>
+              <h2 className="text-base font-semibold">Step 2 — Upload your proof</h2>
+              {hasReceipt ? (
+                <p className="mt-2 flex items-center gap-2 text-sm text-primary">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Receipt received — an admin is verifying it now. You&apos;ll get an email
+                  the moment it clears.
+                </p>
+              ) : (
+                <>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Attach a screenshot or PDF of the completed transfer. We match it against
+                    the memo and release your order, usually within a few hours.
+                  </p>
+                  <div className="mt-3">
+                    <ProofOfPaymentModal
+                      orderId={order.id}
+                      orderNumber={order.orderNumber}
+                      rail={payment!.rail}
+                      amountCents={order.totalCents}
+                    />
+                  </div>
+                </>
+              )}
+            </>
+          ) : order.status === "AWAITING_REVIEW" ? (
+            <p className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Clock className="h-4 w-4 shrink-0 text-primary" />
+              That&apos;s it — no upload needed. We&apos;ll match your order number against
+              the payment on our end and ship it, usually within a few hours. You&apos;ll get
+              a confirmation email the moment it clears.
             </p>
           ) : (
-            <>
-              <p className="mt-2 text-xs text-muted-foreground">
-                Attach a screenshot or PDF of the completed transfer. We match it against
-                the memo and release your order, usually within a few hours.
-              </p>
-              <div className="mt-3">
-                <ProofOfPaymentModal
-                  orderId={order.id}
-                  orderNumber={order.orderNumber}
-                  rail={payment!.rail}
-                  amountCents={order.totalCents}
-                />
-              </div>
-            </>
+            <p className="flex items-center gap-2 text-sm text-primary">
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
+              Payment confirmed — your order is being prepared for shipment.
+            </p>
           )}
         </div>
       )}

@@ -2,12 +2,12 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { FileText, Loader2, Truck } from "lucide-react";
+import { Check, FileText, Loader2, Truck } from "lucide-react";
 import type { OrderStatus, PaymentRail } from "@prisma/client";
 
 import Link from "next/link";
 
-import { createShippingLabel, updateOrderStatus } from "@/actions/admin";
+import { confirmP2pPayment, createShippingLabel, updateOrderStatus } from "@/actions/admin";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -57,6 +57,27 @@ export function AdminOrders({ orders }: { orders: AdminOrder[] }) {
         router.refresh();
       } else {
         toast({ title: "Update failed", description: res.error, variant: "destructive" });
+      }
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  /** Zelle/Venmo/Wire have no gateway callback — this is the "I checked our own
+   *  Venmo/Zelle activity and it's there" button. Flips PAID, marks the payment
+   *  SUCCEEDED, and fires the confirmation email — all in confirmP2pPayment. */
+  async function confirmPayment(orderId: string, orderNumber: string) {
+    setBusyId(orderId);
+    try {
+      const res = await confirmP2pPayment(orderId);
+      if (res.ok) {
+        toast({
+          title: "Payment confirmed",
+          description: `${orderNumber} marked PAID — confirmation sent.`,
+        });
+        router.refresh();
+      } else {
+        toast({ title: "Confirm failed", description: res.error, variant: "destructive" });
       }
     } finally {
       setBusyId(null);
@@ -164,6 +185,21 @@ export function AdminOrders({ orders }: { orders: AdminOrder[] }) {
                     ))}
                   </SelectContent>
                 </Select>
+
+                {order.status === "AWAITING_REVIEW" && (
+                  <Button
+                    size="sm"
+                    disabled={busyId === order.id}
+                    onClick={() => confirmPayment(order.id, order.orderNumber)}
+                  >
+                    {busyId === order.id ? (
+                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Check className="mr-1.5 h-3.5 w-3.5" />
+                    )}
+                    Confirm payment received
+                  </Button>
+                )}
 
                 {!order.trackingNumber ? (
                   <Button

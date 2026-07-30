@@ -488,6 +488,18 @@ export function CheckoutFlow({
                   </p>
                 </div>
               )}
+
+              {(rail === "P2P_ZELLE" || rail === "P2P_VENMO") && (
+                <div className="flex gap-2 rounded-md border border-primary/30 bg-primary/5 p-3">
+                  <AlertTriangle className="h-4 w-4 shrink-0 text-primary" />
+                  <p className="text-xs text-muted-foreground">
+                    After placing the order you&apos;ll get a one-screen instruction —
+                    send the exact total with your order number in the memo. No upload
+                    needed; we confirm and ship once we see it come through, usually
+                    within a few hours.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 

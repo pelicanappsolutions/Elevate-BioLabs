@@ -14,6 +14,7 @@ import { adjustStock, recomputeProductAggregates } from "@/lib/inventory";
 import { uploadFile, deleteFile } from "@/lib/storage";
 import { createLabel } from "@/lib/shipping/usps";
 import { sendTransactional, trackMarketing } from "@/lib/email/index";
+import { confirmP2pPaymentByOrder } from "@/lib/payments/p2p-confirm";
 import { slugify, variantDisplayName } from "@/lib/utils";
 import type { OrderStatus, CampaignType } from "@prisma/client";
 
@@ -275,6 +276,20 @@ export async function rejectReceipt(receiptId: string): Promise<{ ok: boolean; e
   return { ok: true };
 }
 
+/** Zelle/Venmo have no proof upload — the admin confirms directly against their
+ *  own Venmo/Zelle activity (order number in the memo) and this fires the same
+ *  side effects approveReceipt does, minus the receipt record. */
+export async function confirmP2pPayment(orderId: string): Promise<{ ok: boolean; error?: string }> {
+  const admin = await requireAdmin().catch(() => null);
+  if (!admin) return { ok: false, error: "Unauthorized" };
+
+  return confirmP2pPaymentByOrder(orderId, {
+    actorId: admin.id,
+    actor: "admin",
+    reason: "Admin confirmed payment via Venmo/Zelle activity",
+  });
+}
+
 // ---------------- COA upload ----------------
 
 export async function uploadCoa(formData: FormData): Promise<{ ok: boolean; error?: string }> {
@@ -510,5 +525,117 @@ export async function refundOrder(orderId: string): Promise<{ ok: boolean; error
   await audit(admin.id, "ORDER_REFUNDED", "Order", orderId);
   revalidatePath("/admin");
   revalidatePath(`/admin/orders/${orderId}`);
+  return { ok: true };
+}
+
+// ---------------- P2P email notification review ----------------
+
+export async function getPendingEmailNotifications(): Promise<{
+  ok: boolean;
+  notifications?: Array<{
+    id: string;
+    source: string;
+    fromEmail: string;
+    subject: string;
+    amountCents: number | null;
+    orderNumber: string | null;
+    memo: string | null;
+    status: string;
+    createdAt: string;
+    order: {
+      id: string;
+      orderNumber: string;
+      totalCents: number;
+      status: string;
+      rail: string | null;
+      guestEmail: string | null;
+    } | null;
+  }>;
+  error?: string;
+}> {
+  const admin = await requireAdmin().catch(() => null);
+  if (!admin) return { ok: false, error: "Unauthorized" };
+
+  const rows = await db.emailPaymentNotification.findMany({
+    where: { status: { in: ["PENDING", "NEEDS_REVIEW"] } },
+    include: {
+      order: { include: { payments: { orderBy: { createdAt: "desc" }, take: 1 } } },
+    },
+    orderBy: { createdAt: "asc" },
+    take: 100,
+  });
+
+  return {
+    ok: true,
+    notifications: rows.map((n) => ({
+      id: n.id,
+      source: n.source,
+      fromEmail: n.fromEmail,
+      subject: n.subject,
+      amountCents: n.amountCents,
+      orderNumber: n.orderNumber,
+      memo: n.memo,
+      status: n.status,
+      createdAt: n.createdAt.toISOString(),
+      order: n.order
+        ? {
+            id: n.order.id,
+            orderNumber: n.order.orderNumber,
+            totalCents: n.order.totalCents,
+            status: n.order.status,
+            rail: n.order.payments[0]?.rail ?? null,
+            guestEmail: n.order.guestEmail,
+          }
+        : null,
+    })),
+  };
+}
+
+export async function confirmEmailNotification(
+  notificationId: string,
+  orderId?: string
+): Promise<{ ok: boolean; error?: string }> {
+  const admin = await requireAdmin().catch(() => null);
+  if (!admin) return { ok: false, error: "Unauthorized" };
+
+  const notification = await db.emailPaymentNotification.findUnique({
+    where: { id: notificationId },
+  });
+  if (!notification) return { ok: false, error: "Notification not found" };
+
+  const targetOrderId = orderId ?? notification.orderId;
+  if (!targetOrderId) return { ok: false, error: "No order linked to this notification" };
+
+  const confirm = await confirmP2pPaymentByOrder(targetOrderId, {
+    actorId: admin.id,
+    actor: "admin",
+    reason: `Confirmed from ${notification.source} email notification ${notification.id}`,
+  });
+  if (!confirm.ok) return confirm;
+
+  await db.emailPaymentNotification.update({
+    where: { id: notificationId },
+    data: {
+      status: "REVIEWED",
+      orderId: targetOrderId,
+      reviewedById: admin.id,
+      reviewedAt: new Date(),
+    },
+  });
+
+  revalidatePath("/admin");
+  return { ok: true };
+}
+
+export async function ignoreEmailNotification(notificationId: string): Promise<{ ok: boolean; error?: string }> {
+  const admin = await requireAdmin().catch(() => null);
+  if (!admin) return { ok: false, error: "Unauthorized" };
+
+  await db.emailPaymentNotification.update({
+    where: { id: notificationId },
+    data: { status: "IGNORED", reviewedById: admin.id, reviewedAt: new Date() },
+  });
+  await audit(admin.id, "EMAIL_NOTIFICATION_IGNORED", "EmailPaymentNotification", notificationId);
+  revalidatePath("/admin");
   return { ok: true };
 }

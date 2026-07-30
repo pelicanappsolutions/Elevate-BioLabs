@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminProducts } from "@/components/admin/admin-products";
 import { AdminOrders } from "@/components/admin/admin-orders";
 import { ReceiptQueue } from "@/components/admin/receipt-queue";
+import { EmailNotificationQueue } from "@/components/admin/email-notification-queue";
 import { CoaUploader } from "@/components/admin/coa-uploader";
 import { EmailCampaignManager } from "@/components/admin/email-campaign-manager";
 import { ComplianceTracker } from "@/components/admin/compliance-tracker";
@@ -41,6 +42,7 @@ export default async function AdminPage() {
     categories,
     orders,
     pendingReceipts,
+    pendingEmailNotifications,
     revenueAgg,
     orderCount,
     lowStock,
@@ -78,6 +80,12 @@ export default async function AdminPage() {
       where: { approved: false, reviewedAt: null },
       include: { order: { include: { items: true } } },
       orderBy: { createdAt: "asc" },
+    }),
+    db.emailPaymentNotification.findMany({
+      where: { status: { in: ["PENDING", "NEEDS_REVIEW"] } },
+      include: { order: { include: { payments: { orderBy: { createdAt: "desc" }, take: 1 } } } },
+      orderBy: { createdAt: "asc" },
+      take: 100,
     }),
     db.order.aggregate({
       _sum: { totalCents: true },
@@ -187,9 +195,9 @@ export default async function AdminPage() {
         <Kpi
           icon={ShoppingBag}
           label="Awaiting review"
-          value={String(pendingReceipts.length)}
-          hint="P2P receipts in queue"
-          alert={pendingReceipts.length > 0}
+          value={String(pendingReceipts.length + pendingEmailNotifications.length)}
+          hint="P2P receipts + email notifications"
+          alert={pendingReceipts.length + pendingEmailNotifications.length > 0}
         />
         <Kpi
           icon={Package}
@@ -226,7 +234,11 @@ export default async function AdminPage() {
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="customers">Customers</TabsTrigger>
             <TabsTrigger value="receipts">
-              P2P queue{pendingReceipts.length > 0 ? ` (${pendingReceipts.length})` : ""}
+              P2P receipts{pendingReceipts.length > 0 ? ` (${pendingReceipts.length})` : ""}
+            </TabsTrigger>
+            <TabsTrigger value="p2p-email">
+              P2P email
+              {pendingEmailNotifications.length > 0 ? ` (${pendingEmailNotifications.length})` : ""}
             </TabsTrigger>
             <TabsTrigger value="products">Products</TabsTrigger>
             <TabsTrigger value="coa">COAs</TabsTrigger>
@@ -283,6 +295,32 @@ export default async function AdminPage() {
                 totalCents: r.order.totalCents,
                 guestEmail: r.order.guestEmail,
               },
+            }))}
+          />
+        </TabsContent>
+
+        <TabsContent value="p2p-email" className="mt-6">
+          <EmailNotificationQueue
+            notifications={pendingEmailNotifications.map((n) => ({
+              id: n.id,
+              source: n.source,
+              fromEmail: n.fromEmail,
+              subject: n.subject,
+              amountCents: n.amountCents,
+              orderNumber: n.orderNumber,
+              memo: n.memo,
+              status: n.status,
+              createdAt: n.createdAt.toISOString(),
+              order: n.order
+                ? {
+                    id: n.order.id,
+                    orderNumber: n.order.orderNumber,
+                    totalCents: n.order.totalCents,
+                    status: n.order.status,
+                    rail: n.order.payments[0]?.rail ?? null,
+                    guestEmail: n.order.guestEmail,
+                  }
+                : null,
             }))}
           />
         </TabsContent>

@@ -66,6 +66,17 @@ export const env = {
     fromEmail: process.env.SENDGRID_FROM_EMAIL ?? "orders@elevatebiolab.com",
     fromName: process.env.SENDGRID_FROM_NAME ?? "Elevate Bio-Labs",
   },
+  p2pEmail: {
+    host: process.env.P2P_EMAIL_IMAP_HOST ?? "",
+    port: Number(process.env.P2P_EMAIL_IMAP_PORT ?? "993"),
+    user: process.env.P2P_EMAIL_IMAP_USER ?? "",
+    password: process.env.P2P_EMAIL_IMAP_PASSWORD ?? "",
+    folder: process.env.P2P_EMAIL_POLL_FOLDER ?? "INBOX",
+    // How far back (in hours) to look for unread notifications on each run.
+    lookbackHours: Number(process.env.P2P_EMAIL_LOOKBACK_HOURS ?? "24"),
+    // Max emails to process per run to stay within serverless limits.
+    maxPerRun: Number(process.env.P2P_EMAIL_MAX_PER_RUN ?? "50"),
+  },
   klaviyo: {
     apiKey: process.env.KLAVIYO_API_KEY ?? "",
     publicKey: process.env.KLAVIYO_PUBLIC_KEY ?? "",
@@ -85,6 +96,7 @@ export const isConfigured = {
   coinbase: () => !!env.coinbase.apiKey,
   usps: () => !!env.usps.clientId && !!env.usps.clientSecret,
   sendgrid: () => !!env.sendgrid.apiKey,
+  p2pEmail: () => !!env.p2pEmail.host && !!env.p2pEmail.user && !!env.p2pEmail.password,
   klaviyo: () => !!env.klaviyo.apiKey,
   blob: () => !!env.blob.token || !!env.blob.storeId,
 };

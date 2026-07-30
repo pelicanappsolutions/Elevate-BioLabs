@@ -360,10 +360,11 @@ model Order {
   shippedAt      DateTime?
   deliveredAt    DateTime?
 
-  items          OrderItem[]
-  payments       Payment[]
-  receipts       PaymentReceipt[]
-  campaignEvents CampaignEvent[]
+  items                OrderItem[]
+  payments             Payment[]
+  receipts             PaymentReceipt[]
+  campaignEvents       CampaignEvent[]
+  emailNotifications   EmailPaymentNotification[]
 
   notes     String? @db.Text
   createdAt DateTime @default(now())
@@ -433,6 +434,33 @@ model PaymentReceipt {
 
   @@index([orderId])
   @@index([approved])
+}
+
+// Parsed inbound payment notification emails (Venmo/Zelle). Used for
+// idempotency, auto-confirmation, and a manual review queue when the memo
+// is missing or does not match an awaiting order.
+model EmailPaymentNotification {
+  id           String    @id @default(cuid())
+  messageId    String    @unique
+  source       String    // "venmo" | "zelle" | "unknown"
+  fromEmail    String
+  subject      String
+  rawBody      String    @db.Text
+  amountCents  Int?
+  orderNumber  String?
+  memo         String?   @db.Text
+  status       String    @default("PENDING") // PENDING | AUTO_CONFIRMED | NEEDS_REVIEW | IGNORED | REVIEWED
+  orderId      String?
+  order        Order?    @relation(fields: [orderId], references: [id])
+  reviewedById String?
+  reviewedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orderNumber])
+  @@index([status])
+  @@index([messageId])
 }
 
 // ============================ INVENTORY ============================
