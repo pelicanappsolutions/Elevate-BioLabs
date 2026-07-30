@@ -222,15 +222,15 @@ export function AdminProducts({
         <table className="w-full min-w-[760px] text-sm">
           <thead className="bg-secondary/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
-              <th className="px-3 py-2 font-medium">Compound</th>
-              <th className="px-3 py-2 font-medium">Category</th>
-              <th className="px-3 py-2 font-medium">Strengths</th>
-              <th className="px-3 py-2 font-medium">Price range</th>
-              <th className="px-3 py-2 font-medium">State</th>
-              <th className="px-3 py-2 font-medium">Actions</th>
+              <th className="px-3 py-3 font-medium">Compound</th>
+              <th className="px-3 py-3 font-medium">Category</th>
+              <th className="px-3 py-3 font-medium">Strengths</th>
+              <th className="px-3 py-3 font-medium">Price range</th>
+              <th className="px-3 py-3 font-medium">State</th>
+              <th className="px-3 py-3 font-medium">Actions</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="align-top">
             {products.map((p) => {
               const activeVariants = p.variants.filter((v) => v.active);
               const prices = activeVariants.map((v) => v.priceCents);
@@ -239,9 +239,9 @@ export function AdminProducts({
               const thumb = activeVariants[0]?.imageUrl ?? p.variants[0]?.imageUrl ?? null;
 
               return (
-                <tr key={p.id} className="border-t border-border">
-                  <td className="px-3 py-2">
-                    <div className="flex items-center gap-2">
+                <tr key={p.id} className="border-t border-border align-top">
+                  <td className="px-3 py-3 align-top">
+                    <div className="flex items-start gap-2">
                       {thumb && (
                         <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded">
                           <Image src={thumb} alt="" fill sizes="32px" className="object-cover" />
@@ -253,42 +253,42 @@ export function AdminProducts({
                       </span>
                     </div>
                   </td>
-                  <td className="px-3 py-2 text-muted-foreground">
+                  <td className="px-3 py-3 align-top text-muted-foreground">
                     {p.categoryName ?? "—"}
                   </td>
-                  <td className="px-3 py-2">{activeVariants.length}</td>
-                  <td className="whitespace-nowrap px-3 py-2">
+                  <td className="px-3 py-3 align-top">{activeVariants.length}</td>
+                  <td className="whitespace-nowrap px-3 py-3 align-top">
                     {minPrice == null
                       ? "—"
                       : minPrice === maxPrice
                         ? formatPrice(minPrice)
                         : `${formatPrice(minPrice)}–${formatPrice(maxPrice as number)}`}
                   </td>
-                  <td className="px-3 py-2">
-                    <div className="flex flex-wrap gap-1">
+                  <td className="px-3 py-3 align-top">
+                    <div className="flex flex-wrap items-start gap-1.5">
                       {p.active ? (
-                        <Badge variant="success" className="font-normal">
+                        <Badge variant="success" className="whitespace-nowrap font-normal">
                           Active
                         </Badge>
                       ) : (
-                        <Badge variant="secondary" className="font-normal">
+                        <Badge variant="secondary" className="whitespace-nowrap font-normal">
                           Inactive
                         </Badge>
                       )}
                       {p.featured && (
-                        <Badge variant="outline" className="font-normal">
+                        <Badge variant="outline" className="whitespace-nowrap font-normal">
                           Featured
                         </Badge>
                       )}
                       {p.highRisk && (
-                        <Badge variant="destructive" className="font-normal">
+                        <Badge variant="destructive" className="whitespace-nowrap font-normal">
                           Category 3
                         </Badge>
                       )}
                     </div>
                   </td>
-                  <td className="px-3 py-2">
-                    <div className="flex gap-1">
+                  <td className="px-3 py-3 align-top">
+                    <div className="flex items-start gap-1">
                       <Button size="sm" variant="ghost" onClick={() => openEdit(p)} aria-label={`Edit ${p.name}`}>
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
