@@ -29,7 +29,7 @@ const RESEARCH_APPLICATIONS = [
   { value: "CHROMATOGRAPHY_METHOD_DEVELOPMENT", label: "Chromatography Method Development" },
 ] as const;
 
-const CERTIFICATION_TEMPLATE = `I certify that I operate a private analytical chemistry laboratory equipped for in-vitro peptide analysis. I understand these materials are unapproved chemical reagents with no recognized therapeutic uses. I intend to use them exclusively for chromatography reference standards, mass spectrometry calibration, or receptor binding assays. I will not introduce these materials into humans or animals. I understand that misrepresentation of laboratory status may violate 18 U.S.C. § 1001.`;
+const CERTIFICATION_TEMPLATE = `I certify that I operate a private analytical chemistry laboratory equipped for peptide analysis. I understand these materials are unapproved chemical reagents intended for research applications only. I intend to use them for chromatography reference standards, mass spectrometry calibration, or receptor binding assays. I will not introduce these materials into humans or animals.`;
 
 export function RegisterForm() {
   const router = useRouter();
@@ -382,8 +382,8 @@ export function RegisterForm() {
           aria-required="true"
         />
         <Label htmlFor="ageConfirm" className="text-sm font-normal leading-snug">
-          I confirm I am at least 18 years old and am purchasing analytical reference materials
-          strictly for research use only, not for human or veterinary consumption.
+          I confirm I am at least 18 years old and am acquiring these materials for laboratory
+          research use only, not for human or veterinary consumption.
         </Label>
       </div>
 
@@ -399,7 +399,7 @@ export function RegisterForm() {
       </Button>
 
       <p className="text-center text-xs text-muted-foreground">
-        For Research Use Only. Not for human or veterinary consumption. Not FDA approved.
+        Research-use-only materials; not for human or veterinary use.
       </p>
     </form>
   );

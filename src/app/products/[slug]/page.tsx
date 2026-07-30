@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AlertTriangle, ChevronRight, Snowflake, Truck } from "lucide-react";
+import { ChevronRight, FileQuestion, Snowflake, Truck } from "lucide-react";
 
 import { db } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
@@ -126,23 +126,19 @@ export default async function ProductDetailPage({
         <Badge variant="outline">{FORM_LABELS[product.form] ?? product.form}</Badge>
         {product.researchUse && <Badge variant="outline">RUO</Badge>}
         {product.highRisk && (
-          <Badge variant="destructive">Category 3 — PCAC review</Badge>
+          <Badge variant="secondary">Enhanced verification</Badge>
         )}
       </div>
 
       {product.highRisk && (
-        <div className="mb-6 flex gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
-          <AlertTriangle className="h-5 w-5 shrink-0 text-destructive" aria-hidden="true" />
+        <div className="mb-6 flex gap-3 rounded-lg border border-border bg-secondary/40 p-4">
+          <FileQuestion className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden="true" />
           <div>
-            <h3 className="text-sm font-semibold text-destructive">
-              Enhanced verification required
-            </h3>
+            <h3 className="text-sm font-semibold">Enhanced verification</h3>
             <p className="mt-1 text-xs text-muted-foreground">
-              This compound is currently under FDA PCAC evaluation for bulk drug substance status.
-              Purchase requires Institutional verification or Independent Laboratory tier plus an
-              additional affidavit certifying analytical research intent (e.g., chromatographic
-              behavior analysis or stability studies) and no therapeutic use. Quantities may be
-              limited.
+              This SKU requires additional documentation confirming analytical laboratory use
+              (e.g., chromatography or mass spectrometry). We may limit order quantities while
+              verification is completed.
             </p>
           </div>
         </div>
@@ -203,19 +199,14 @@ export default async function ProductDetailPage({
             ))}
         </dl>
 
-        <div className="mt-6 flex gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
-          <AlertTriangle className="h-5 w-5 shrink-0 text-destructive" aria-hidden="true" />
+        <div className="mt-6 flex gap-3 rounded-lg border border-border bg-secondary/40 p-4">
           <div>
-            <h3 className="text-sm font-semibold text-destructive">
-              For Research Use Only — Analytical Standard
-            </h3>
+            <h3 className="text-sm font-semibold">Research Use Only</h3>
             <p className="mt-1 text-xs text-muted-foreground">
-              This product is sold strictly as an analytical chemistry reference standard
-              for in-vitro laboratory study by qualified professionals. It is not a drug,
-              food, cosmetic, or dietary supplement, has not been approved by the FDA for
-              human or veterinary use, and must not be introduced into humans or animals.
-              We do not provide dosing, reconstitution, or sample-preparation guidance.
-              Purchaser assumes all responsibility for safe handling and lawful use.
+              This product is an analytical reference standard for laboratory research. It is not
+              a drug, food, cosmetic, or dietary supplement and has not been evaluated by the FDA for
+              human or veterinary use. We do not provide dosing, reconstitution, or sample-preparation
+              guidance. Purchaser is responsible for safe handling and lawful use.
             </p>
           </div>
         </div>

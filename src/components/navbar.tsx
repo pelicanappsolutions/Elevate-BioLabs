@@ -85,7 +85,7 @@ export function Navbar() {
     <div className="relative z-40">
       {/* RUO banner strip */}
       <div className="w-full bg-primary/10 py-1.5 text-center text-xs font-medium text-primary">
-        🔬 Analytical reference standards — For Research Use Only — Not for human or veterinary use
+        Analytical reference standards for laboratory research — not for human or veterinary use
       </div>
 
       <header className="w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">

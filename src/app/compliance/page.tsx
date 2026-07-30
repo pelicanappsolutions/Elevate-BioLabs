@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AlertTriangle, FileCheck2, PackageCheck, RotateCcw, ShieldQuestion, Truck } from "lucide-react";
+import { FileCheck2, PackageCheck, RotateCcw, ShieldQuestion, Truck } from "lucide-react";
 
 import { db } from "@/lib/db";
 import { Separator } from "@/components/ui/separator";
@@ -20,7 +20,9 @@ const SECTIONS = [
   { id: "coa", label: "Verify a COA" },
   { id: "shipping", label: "Shipping policy" },
   { id: "returns", label: "Returns & refunds" },
-  { id: "faq", label: "Safety Harbor FAQ" },
+  { id: "terms", label: "Terms of sale" },
+  { id: "privacy", label: "Privacy policy" },
+  { id: "faq", label: "FAQ" },
   { id: "about", label: "About us" },
   { id: "contact", label: "Contact" },
 ];
@@ -57,48 +59,34 @@ export default async function CompliancePage() {
 
       {/* ── RUO ── */}
       <section id="ruo" className="mt-10 scroll-mt-28">
-        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-5">
-          <div className="flex gap-3">
-            <AlertTriangle className="h-6 w-6 shrink-0 text-destructive" />
-            <div>
-              <h2 className="text-lg font-semibold text-destructive">
-                For Research Use Only — Analytical Standards
-              </h2>
-              <div className="mt-2 flex flex-col gap-3 text-sm leading-relaxed text-muted-foreground">
-                {docFor("RUO") ? (
-                  <p className="whitespace-pre-line">{docFor("RUO")!.body}</p>
-                ) : (
-                  <>
-                    <p>
-                      All products sold by Elevate Bio-Labs are analytical chemistry
-                      reference standards supplied strictly for in-vitro laboratory research
-                      by qualified professionals. They are{" "}
-                      <strong className="text-foreground">not</strong> drugs, foods,
-                      cosmetics, dietary supplements, or medical devices.
-                    </p>
-                    <p>
-                      No product on this site has been approved by the U.S. Food and Drug
-                      Administration for the diagnosis, treatment, cure, or prevention of
-                      any disease. Nothing in our product descriptions, marketing, or
-                      research tools constitutes medical advice, a dosing recommendation,
-                      a reconstitution protocol, or a therapeutic claim.
-                    </p>
-                    <p>
-                      These compounds must not be introduced into humans or animals. Purchase
-                      requires that you are 18 years or older, that you operate a laboratory
-                      equipped for peptide analysis (HPLC, LC-MS, or equivalent), and that
-                      you accept full responsibility for safe handling, storage, and disposal
-                      in accordance with all applicable federal, state, and local law.
-                    </p>
-                    <p>
-                      Reselling, relabeling, repackaging, or presenting our products for human
-                      or veterinary consumption is a material breach of our terms of sale and
-                      will result in immediate account termination and, where warranted,
-                      referral to the relevant authorities.
-                    </p>
-                  </>
-                )}
-              </div>
+        <div className="rounded-lg border border-border bg-card p-5">
+          <div className="flex flex-col gap-3">
+            <h2 className="text-lg font-semibold">Research Use Only — Analytical Standards</h2>
+            <div className="flex flex-col gap-3 text-sm leading-relaxed text-muted-foreground">
+              {docFor("RUO") ? (
+                <p className="whitespace-pre-line">{docFor("RUO")!.body}</p>
+              ) : (
+                <>
+                  <p>
+                    All products sold by Elevate Bio-Labs are analytical chemistry reference
+                    standards supplied for in-vitro laboratory research by qualified
+                    professionals. They are not drugs, foods, cosmetics, dietary supplements, or
+                    medical devices.
+                  </p>
+                  <p>
+                    No product on this site has been approved by the U.S. Food and Drug
+                    Administration for the diagnosis, treatment, cure, or prevention of any
+                    disease. Nothing in our product descriptions, marketing, or research tools
+                    constitutes medical advice, dosing guidance, or a therapeutic claim.
+                  </p>
+                  <p>
+                    These compounds are not for introduction into humans or animals. Purchase
+                    requires that you are 18 years or older and operate a laboratory equipped for
+                    peptide analysis (HPLC, LC-MS, or equivalent). Reselling or relabeling for
+                    human or veterinary use violates our terms of sale.
+                  </p>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -196,6 +184,72 @@ export default async function CompliancePage() {
 
       <Separator className="my-10" />
 
+      {/* ── Terms of sale + Privacy ── */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section id="terms" className="scroll-mt-28">
+          <div className="flex items-center gap-2">
+            <FileCheck2 className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold">Terms of sale</h2>
+          </div>
+          <div className="mt-3 flex flex-col gap-2 text-sm leading-relaxed text-muted-foreground">
+            {docFor("TERMS") ? (
+              <p className="whitespace-pre-line">{docFor("TERMS")!.body}</p>
+            ) : (
+              <>
+                <p>
+                  By placing an order, you represent that you are at least 18 years old, operate a
+                  laboratory equipped for analytical work, and are purchasing reference standards for
+                  lawful in-vitro research only.
+                </p>
+                <p>
+                  These materials are not for human or veterinary consumption, diagnosis, or
+                  treatment. Misrepresentation of laboratory status, resale for human or veterinary
+                  use, or use inconsistent with their RUO labeling is a breach of these terms and
+                  may result in order cancellation and account closure.
+                </p>
+                <p>
+                  All sales are subject to verification, quantity limits, and applicable shipping
+                  restrictions. We reserve the right to cancel any order we believe is destined for
+                  non-research use.
+                </p>
+              </>
+            )}
+          </div>
+        </section>
+
+        <section id="privacy" className="scroll-mt-28">
+          <div className="flex items-center gap-2">
+            <ShieldQuestion className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold">Privacy policy</h2>
+          </div>
+          <div className="mt-3 flex flex-col gap-2 text-sm leading-relaxed text-muted-foreground">
+            {docFor("PRIVACY") ? (
+              <p className="whitespace-pre-line">{docFor("PRIVACY")!.body}</p>
+            ) : (
+              <>
+                <p>
+                  We collect only the information needed to process orders, verify laboratory
+                  status, and communicate with you about shipments and COA releases. This includes
+                  your account details, shipping address, order history, and verification documents.
+                </p>
+                <p>
+                  We do not sell your personal information. We use cookies and similar technologies
+                  to keep your cart and session working. You can manage cookie preferences through
+                  your browser settings.
+                </p>
+                <p>
+                  For questions about your data, contact us through the form below. We comply with
+                  applicable U.S. privacy laws and will notify users of any material changes to this
+                  policy.
+                </p>
+              </>
+            )}
+          </div>
+        </section>
+      </div>
+
+      <Separator className="my-10" />
+
       {/* ── Safety Harbor FAQ ── */}
       <section id="faq" className="scroll-mt-28">
         <div className="flex items-center gap-2">
@@ -214,7 +268,7 @@ export default async function CompliancePage() {
           />
           <Faq
             q="Can I use these for personal health or fitness?"
-            a="No. These materials are not intended for human or veterinary consumption, diagnosis, or treatment. They are sold exclusively as laboratory reagents for in-vitro research. Any other use violates our Terms of Service and applicable federal law."
+            a="No. These materials are sold for laboratory research only. They are not intended for human or veterinary consumption, diagnosis, or treatment. Any other use violates our terms of sale."
           />
           <Faq
             q="Do you provide instructions on how to use these peptides?"
@@ -229,8 +283,8 @@ export default async function CompliancePage() {
             a="Yes, if the address line includes 'Suite' or 'Lab' (e.g., '123 Main St, Suite 100'). Orders to PO Boxes may be held for manual review. Signature confirmation is required for orders over $500."
           />
           <Faq
-            q="Why are some compounds marked Category 3?"
-            a="Compounds such as BPC-157, TB-500, and Retatrutide are currently under FDA PCAC evaluation for bulk drug substance status. These SKUs require enhanced verification and an additional affidavit certifying analytical research intent (e.g., chromatographic behavior analysis or stability studies) and no therapeutic use."
+            q="Why do some compounds require enhanced verification?"
+            a="Certain SKUs are subject to additional seller verification. We may ask for an affidavit confirming analytical research intent (e.g., chromatography or stability studies) and no therapeutic use."
           />
         </div>
       </section>

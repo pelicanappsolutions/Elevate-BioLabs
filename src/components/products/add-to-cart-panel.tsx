@@ -201,7 +201,7 @@ export function AddToCartPanel({
           variant="outline"
           className="tap flex-1"
         >
-          Buy now
+          Order sample
         </Button>
       </div>
     </div>

@@ -144,6 +144,11 @@ export default async function ProductsPage({
           {total} product{total === 1 ? "" : "s"} • All compounds supplied For Research
           Use Only
         </p>
+        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+          Elevate Bio-Labs supplies third-party tested reference standards for qualified
+          researchers. Every compound is sold for laboratory use only — not for human or
+          veterinary administration.
+        </p>
       </header>
 
       <div className="grid gap-6 lg:grid-cols-[240px_1fr]">

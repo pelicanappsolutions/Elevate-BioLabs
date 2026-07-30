@@ -107,7 +107,7 @@ async function main() {
       slug: "retatrutide", name: "Retatrutide",
       cas: "2381089-83-2", purity: ">=99%",
       form: ProductForm.LYOPHILIZED, category: "metabolic", highRisk: true,
-      description: "Synthetic triple GIP/GLP-1/glucagon receptor agonist peptide supplied as lyophilized trifluoroacetate salt. Certified ≥99% purity by HPLC-MS with full COA. For chromatography method development, mass spectrometry calibration, and in-vitro receptor binding kinetics. Requires lyophilization equipment and analytical balance (0.0001g precision). NOTE: This peptide is currently under FDA PCAC evaluation for bulk drug substance status. Purchasers must certify that research involves chromatographic behavior analysis, stability studies, or equivalent analytical applications and not therapeutic use. For Research Use Only.",
+      description: "Synthetic triple GIP/GLP-1/glucagon receptor agonist peptide supplied as lyophilized trifluoroacetate salt. Certified ≥99% purity by HPLC-MS with full COA. For chromatography method development, mass spectrometry calibration, and in-vitro receptor binding kinetics. Requires lyophilization equipment and analytical balance (0.0001g precision). Enhanced verification may apply. For Research Use Only.",
       storageInfo: "Store lyophilized powder at -20°C, protected from light and moisture. Stable as supplied for 24 months under recommended conditions.",
       variants: [
         { sku: "EBL-RETA-5", strengthMg: 5, priceCents: 8999, stock: 90, image: "/images/products/retatrutide-5mg.png" },
@@ -145,7 +145,7 @@ async function main() {
       slug: "klow-blend", name: "KLOW Blend",
       purity: ">=98%",
       form: ProductForm.BLEND, category: "blends", featured: true, highRisk: true,
-      description: "Multi-peptide analytical standard blend containing KPV, Larazotide, GHK-Cu and BPC-157 in a single 80mg lyophilized vial for combination-study protocols. Certified ≥98% purity by HPLC-MS. Suitable for chromatographic method development and mass spectrometry calibration only. NOTE: This blend contains peptides under FDA PCAC evaluation. Purchasers must certify analytical research intent and confirm no therapeutic use. For Research Use Only.",
+      description: "Multi-peptide analytical standard blend containing KPV, Larazotide, GHK-Cu and BPC-157 in a single 80mg lyophilized vial for combination-study protocols. Certified ≥98% purity by HPLC-MS. Suitable for chromatographic method development and mass spectrometry calibration only. Enhanced verification may apply. For Research Use Only.",
       storageInfo: "Store lyophilized powder at -20°C, protected from light and moisture. Stable as supplied for 24 months under recommended conditions.",
       // Blend — "80mg" describes the total formulation, not an interchangeable
       // strength choice, so this stays a single-variant compound.
@@ -157,7 +157,7 @@ async function main() {
       slug: "glow-blend", name: "GLOW Blend",
       purity: ">=98%",
       form: ProductForm.BLEND, category: "blends", featured: true, highRisk: true,
-      description: "Multi-peptide analytical standard blend containing GHK-Cu, BPC-157 and TB-500 in a single 70mg lyophilized vial for combination-study protocols. Certified ≥98% purity by HPLC-MS. Suitable for chromatographic method development and mass spectrometry calibration only. NOTE: This blend contains peptides under FDA PCAC evaluation. Purchasers must certify analytical research intent and confirm no therapeutic use. For Research Use Only.",
+      description: "Multi-peptide analytical standard blend containing GHK-Cu, BPC-157 and TB-500 in a single 70mg lyophilized vial for combination-study protocols. Certified ≥98% purity by HPLC-MS. Suitable for chromatographic method development and mass spectrometry calibration only. Enhanced verification may apply. For Research Use Only.",
       storageInfo: "Store lyophilized powder at -20°C, protected from light and moisture. Stable as supplied for 24 months under recommended conditions.",
       variants: [
         { sku: "EBL-GLOW-70", strengthMg: 70, priceCents: 9000, stock: 65, image: "/images/products/glow-blend-70mg.png" },
@@ -167,7 +167,7 @@ async function main() {
       slug: "bpc-157", name: "BPC-157",
       cas: "137525-51-0", purity: ">=99%",
       form: ProductForm.LYOPHILIZED, category: "recovery-repair", featured: true, highRisk: true,
-      description: "Synthetic pentadecapeptide (IUPAC: L-Val-Gly-L-Val-Ala-Pro-Gly-L-Pro-L-Ser-L-Lys-L-Ala-L-Lys-L-Glu-L-Thr-L-Ala-L-Leu-L-Arg-L-Pro-L-Ala-L-Lys-Ser) supplied as lyophilized trifluoroacetate salt. Certified ≥99% purity by HPLC-MS with full COA. For chromatography method development, mass spectrometry calibration, and in-vitro receptor binding kinetics. Requires lyophilization equipment and analytical balance (0.0001g precision) for accurate preparation of analytical standards. NOTE: This peptide is currently under FDA PCAC evaluation for bulk drug substance status. Purchasers must certify that research involves chromatographic behavior analysis, stability studies under varying pH conditions, or equivalent analytical applications and not therapeutic use. For Research Use Only.",
+      description: "Synthetic pentadecapeptide supplied as lyophilized trifluoroacetate salt. Certified ≥99% purity by HPLC-MS with full COA. Used for chromatography method development, mass spectrometry calibration, and stability studies under controlled laboratory conditions. Requires lyophilization equipment and analytical balance (0.0001g precision) for accurate preparation of analytical standards. Enhanced verification may apply. For Research Use Only.",
       storageInfo: "Store lyophilized powder at -20°C, protected from light and moisture. Stable as supplied for 24 months under recommended conditions.",
       variants: [
         { sku: "EBL-BPC-5", strengthMg: 5, priceCents: 4499, stock: 200 },
@@ -178,7 +178,7 @@ async function main() {
       slug: "tb-500", name: "TB-500",
       cas: "77591-33-4", purity: ">=98%",
       form: ProductForm.LYOPHILIZED, category: "recovery-repair", highRisk: true,
-      description: "Synthetic thymosin beta-4 fragment (Ac-LKKTETQEKNTLPTKETIEQEKQAGES) supplied as lyophilized trifluoroacetate salt. Certified ≥98% purity by HPLC-MS. Suitable for chromatography method development, mass spectrometry calibration, and in-vitro analytical studies. Requires analytical balance (0.0001g precision) and appropriate laboratory solvents. NOTE: This peptide is currently under FDA PCAC evaluation for bulk drug substance status. Purchasers must certify analytical research intent and confirm no therapeutic use. For Research Use Only.",
+      description: "Synthetic thymosin beta-4 fragment supplied as lyophilized trifluoroacetate salt. Certified ≥98% purity by HPLC-MS. Suitable for chromatography method development, mass spectrometry calibration, and in-vitro analytical characterization. Requires analytical balance (0.0001g precision) and appropriate laboratory solvents. Enhanced verification may apply. For Research Use Only.",
       storageInfo: "Store lyophilized powder at -20°C, protected from light and moisture. Stable as supplied for 24 months under recommended conditions.",
       variants: [
         { sku: "EBL-TB500-5", strengthMg: 5, priceCents: 4999, stock: 150 },
@@ -286,7 +286,7 @@ async function main() {
       slug: "wolverine-blend", name: "Wolverine Blend",
       purity: ">=98%",
       form: ProductForm.BLEND, category: "blends", highRisk: true,
-      description: "Multi-peptide analytical standard blend containing BPC-157, TB-500 and GHK-Cu in a single 20mg lyophilized vial for combination-study protocols. Certified ≥98% purity by HPLC-MS. Suitable for chromatographic method development and mass spectrometry calibration only. NOTE: This blend contains peptides under FDA PCAC evaluation. Purchasers must certify analytical research intent and confirm no therapeutic use. For Research Use Only.",
+      description: "Multi-peptide analytical standard blend containing BPC-157, TB-500 and GHK-Cu in a single 20mg lyophilized vial for combination-study protocols. Certified ≥98% purity by HPLC-MS. Suitable for chromatographic method development and mass spectrometry calibration only. Enhanced verification may apply. For Research Use Only.",
       storageInfo: "Store lyophilized powder at -20°C, protected from light and moisture. Stable as supplied for 24 months under recommended conditions.",
       variants: [
         { sku: "EBL-WOLV-20", strengthMg: 20, priceCents: 8500, stock: 75 },
@@ -434,7 +434,7 @@ async function main() {
   const docs = [
     {
       title: "Research Use Only Policy", slug: "ruo-policy", category: "RUO",
-      body: "All products sold by Elevate Bio-Labs are intended FOR RESEARCH USE ONLY (RUO) as analytical standards and laboratory reagents. They are not drugs, foods, cosmetics, or dietary supplements, and are NOT FDA-approved for the diagnosis, treatment, cure, or prevention of any disease. They are not for human or veterinary consumption. By purchasing, you certify you are a qualified researcher aged 18+ operating appropriate analytical equipment (HPLC, LC-MS, or equivalent).",
+      body: "All products sold by Elevate Bio-Labs are intended for research use only as analytical standards and laboratory reagents. They are not drugs, foods, cosmetics, or dietary supplements, and are not FDA-approved for the diagnosis, treatment, cure, or prevention of any disease. They are not for human or veterinary consumption. By purchasing, you certify you are a qualified researcher aged 18+ operating appropriate analytical equipment (HPLC, LC-MS, or equivalent).",
     },
     {
       title: "Shipping Policy", slug: "shipping-policy", category: "SHIPPING_POLICY",
@@ -443,6 +443,14 @@ async function main() {
     {
       title: "Return & Refund Policy", slug: "refund-policy", category: "REFUND",
       body: "Due to the research-grade nature of our analytical standards, all sales are final once shipped. Damaged or incorrect items are eligible for replacement within 7 days with photo proof. We do not provide dosing, reconstitution, or sample-preparation guidance.",
+    },
+    {
+      title: "Terms of Sale", slug: "terms-of-sale", category: "TERMS",
+      body: "By placing an order, you represent that you are at least 18 years old, operate a laboratory equipped for analytical work, and are purchasing reference standards for lawful in-vitro research only. These materials are not for human or veterinary consumption, diagnosis, or treatment. Misrepresentation of laboratory status, resale for human or veterinary use, or use inconsistent with their RUO labeling is a breach of these terms and may result in order cancellation and account closure. We reserve the right to cancel any order we believe is destined for non-research use.",
+    },
+    {
+      title: "Privacy Policy", slug: "privacy-policy", category: "PRIVACY",
+      body: "We collect only the information needed to process orders, verify laboratory status, and communicate with you about shipments and COA releases. This includes your account details, shipping address, order history, and verification documents. We do not sell your personal information. We use cookies and similar technologies to keep your cart and session working. You can manage cookie preferences through your browser settings. For questions about your data, contact us through the form on our Compliance page. We comply with applicable U.S. privacy laws and will notify users of any material changes to this policy.",
     },
     {
       title: "LegitScript Compliance", slug: "legitscript", category: "LEGITSCRIPT",

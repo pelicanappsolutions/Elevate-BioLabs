@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Cookie } from "lucide-react";
 
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -44,8 +45,11 @@ export function CookieConsent() {
         <div className="flex items-start gap-2 text-sm text-muted-foreground">
           <Cookie className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
           <p>
-            We use cookies to keep your cart working and improve your experience. See our
-            privacy policy for details.
+            We use cookies to keep your cart working and improve your experience. See our{" "}
+            <Link href="/compliance#privacy" className="text-primary underline">
+              privacy policy
+            </Link>{" "}
+            for details.
           </p>
         </div>
         <div className="flex w-full shrink-0 gap-2 sm:w-auto">

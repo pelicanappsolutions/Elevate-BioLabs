@@ -46,10 +46,9 @@ export function Footer() {
               <span className="text-lg font-semibold tracking-tight">Elevate Bio-Labs</span>
             </Link>
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground">
-              All products sold by Elevate Bio-Labs are analytical reference standards intended
-              strictly For Research Use Only (RUO). They are not for human or veterinary use,
-              diagnostic use, or consumption of any kind. Not for sale to minors — you must be 18
-              or older to purchase.
+              All materials are analytical reference standards intended for laboratory research;
+              they are not FDA-approved drugs and are not for human or veterinary use. Must be 18+
+              to purchase.
             </p>
             <div className="mt-6">
               <p className="mb-2 text-sm font-medium">Research updates &amp; COA releases</p>
