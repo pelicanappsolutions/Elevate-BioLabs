@@ -657,7 +657,7 @@ function VariantsDialog({
                 Add strength
               </Button>
             </div>
-            <div className="overflow-x-auto rounded-lg border border-border">
+            <div className="min-w-0 overflow-x-auto rounded-lg border border-border">
               <table className="w-full min-w-[560px] text-sm">
                 <thead className="bg-secondary/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
