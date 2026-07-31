@@ -626,7 +626,7 @@ function VariantsDialog({
 
   return (
     <Dialog open={Boolean(product)} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="max-w-[95vw] sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle>
             {editing ? (
