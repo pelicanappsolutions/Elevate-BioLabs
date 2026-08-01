@@ -51,6 +51,7 @@ enum PaymentRail {
   PAYRAM // smart-routing fallback
   STRIPE // fallback card
   COINBASE // crypto direct
+  NOWPAYMENTS // crypto (alt: BTC, ETH, altcoins via NOWPayments)
   P2P_ZELLE
   P2P_VENMO
   P2P_WIRE

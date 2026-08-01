@@ -43,6 +43,11 @@ export const env = {
     apiKey: process.env.COINBASE_COMMERCE_API_KEY ?? "",
     webhookSecret: process.env.COINBASE_COMMERCE_WEBHOOK_SECRET ?? "",
   },
+  nowpayments: {
+    apiKey: process.env.NOWPAYMENTS_API_KEY ?? "",
+    webhookSecret: process.env.NOWPAYMENTS_WEBHOOK_SECRET ?? "",
+    baseUrl: process.env.NOWPAYMENTS_BASE_URL ?? "https://api.nowpayments.io/v1",
+  },
   p2p: {
     zelle: process.env.P2P_ZELLE_HANDLE ?? "pay@elevatebiolab.com",
     venmo: process.env.P2P_VENMO_HANDLE ?? "@ElevateBioLabs",
@@ -94,6 +99,7 @@ export const isConfigured = {
   payram: () => !!env.payram.apiKey,
   stripe: () => !!env.stripe.secretKey,
   coinbase: () => !!env.coinbase.apiKey,
+  nowpayments: () => !!env.nowpayments.apiKey,
   usps: () => !!env.usps.clientId && !!env.usps.clientSecret,
   sendgrid: () => !!env.sendgrid.apiKey,
   p2pEmail: () => !!env.p2pEmail.host && !!env.p2pEmail.user && !!env.p2pEmail.password,

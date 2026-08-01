@@ -16,6 +16,7 @@ export type PaymentRailName =
   | "PAYRAM"
   | "STRIPE"
   | "COINBASE"
+  | "NOWPAYMENTS"
   | "P2P_ZELLE"
   | "P2P_VENMO"
   | "P2P_WIRE";
@@ -60,6 +61,13 @@ export const PAYMENT_RAIL_META: Record<PaymentRailName, PaymentRailMeta> = {
   COINBASE: {
     label: "Crypto (Coinbase)",
     description: "Pay with BTC, ETH, USDC and more via Coinbase Commerce.",
+    feeNote: "1% • no chargebacks",
+    type: "crypto",
+    requiresProof: false,
+  },
+  NOWPAYMENTS: {
+    label: "Crypto (NOWPayments)",
+    description: "Pay with BTC, ETH, LTC, XMR, DOGE and hundreds of altcoins via NOWPayments.",
     feeNote: "1% • no chargebacks",
     type: "crypto",
     requiresProof: false,

@@ -18,6 +18,7 @@ import { seamlesschexAdapter } from "./seamlesschex";
 import { coinbaseAdapter } from "./coinbase";
 import { payramAdapter } from "./payram";
 import { stripeAdapter } from "./stripe";
+import { nowpaymentsAdapter } from "./nowpayments";
 import { p2pAdapter, p2pAdapterFor } from "./p2p";
 
 export function getAdapter(rail: PaymentRail): PaymentAdapter {
@@ -32,6 +33,8 @@ export function getAdapter(rail: PaymentRail): PaymentAdapter {
       return stripeAdapter;
     case PaymentRail.COINBASE:
       return coinbaseAdapter;
+    case PaymentRail.NOWPAYMENTS:
+      return nowpaymentsAdapter;
     case PaymentRail.P2P_ZELLE:
     case PaymentRail.P2P_VENMO:
     case PaymentRail.P2P_WIRE:
@@ -71,6 +74,8 @@ export function railFromWebhookPath(pathSegment: string): PaymentRail | null {
       return PaymentRail.STRIPE;
     case "coinbase":
       return PaymentRail.COINBASE;
+    case "nowpayments":
+      return PaymentRail.NOWPAYMENTS;
     default:
       return null;
   }

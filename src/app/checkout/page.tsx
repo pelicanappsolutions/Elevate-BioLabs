@@ -19,6 +19,7 @@ function getAvailableRails(): PaymentRail[] {
   // production it activates automatically the moment COINBASE_COMMERCE_API_KEY
   // is present.
   if (isConfigured.coinbase() || isDev) configured.push("COINBASE");
+  if (isConfigured.nowpayments() || isDev) configured.push("NOWPAYMENTS");
   if (isConfigured.nexapay()) configured.push("NEXAPAY");
   if (isConfigured.seamlesschex()) configured.push("SEAMLESSCHEX");
   if (isConfigured.payram()) configured.push("PAYRAM");
