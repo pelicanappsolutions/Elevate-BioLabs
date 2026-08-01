@@ -120,16 +120,18 @@ export default async function HomePage() {
               </p>
             </div>
 
-            {/* Brand logo lockup */}
+            {/* Brand logo lockup — dark card matches the supplied image background. */}
             <div className="hidden items-center justify-center lg:flex">
-              <Image
-                src="/images/logo.png"
-                alt="Elevate Bio-Labs"
-                width={400}
-                height={400}
-                priority
-                className="object-contain drop-shadow-2xl"
-              />
+              <div className="relative flex w-full max-w-md items-center justify-center overflow-hidden rounded-2xl bg-black p-6 shadow-2xl ring-1 ring-border/50">
+                <Image
+                  src="/images/logo.png"
+                  alt="ELEVATE BIOLAB — Pharmaceutical grade, third-party tested, made in USA, for research purposes only."
+                  width={400}
+                  height={400}
+                  priority
+                  className="object-contain"
+                />
+              </div>
             </div>
           </div>
         </div>
