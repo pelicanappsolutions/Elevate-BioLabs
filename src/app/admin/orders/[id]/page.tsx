@@ -168,8 +168,14 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
                   </Link>
                 </>
               ) : (
-                <p className="text-muted-foreground">Guest • {order.guestEmail ?? "—"}</p>
+                <p className="text-muted-foreground">Guest</p>
               )}
+              <p className="mt-2 text-xs text-muted-foreground">
+                Order contact email (transactional):{" "}
+                <span className="font-medium text-foreground">
+                  {order.guestEmail ?? order.user?.email ?? "—"}
+                </span>
+              </p>
             </div>
           </div>
 

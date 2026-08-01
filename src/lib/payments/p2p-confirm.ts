@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { sendTransactional, trackMarketing } from "@/lib/email/index";
+import { sendTransactional } from "@/lib/email/index";
 import type { PaymentRail } from "@prisma/client";
 
 const P2P_RAILS: PaymentRail[] = ["P2P_ZELLE", "P2P_VENMO", "P2P_WIRE"];
@@ -51,10 +51,14 @@ export async function confirmP2pPaymentByOrder(
     }),
   ]);
 
-  const to = order.guestEmail ?? (await customerEmail(order.userId));
+  const to =
+    order.guestEmail ??
+    (await customerEmail(order.userId));
   if (to) {
-    await sendTransactional("PAYMENT_RECEIVED", { to, order });
-    await trackMarketing("PAYMENT_RECEIVED", to, order);
+    const mail = await sendTransactional("PAYMENT_RECEIVED", { to, order });
+    if (!mail.ok || mail.mock) {
+      console.error("[p2p-confirm] PAYMENT_RECEIVED email failed:", mail.error ?? "mock");
+    }
   }
 
   revalidatePath("/admin");

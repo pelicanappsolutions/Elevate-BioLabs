@@ -446,11 +446,11 @@ async function main() {
     },
     {
       title: "Terms of Sale", slug: "terms-of-sale", category: "TERMS",
-      body: "By placing an order, you represent that you are at least 18 years old, operate a laboratory equipped for analytical work, and are purchasing reference standards for lawful in-vitro research only. These materials are not for human or veterinary consumption, diagnosis, or treatment. Misrepresentation of laboratory status, resale for human or veterinary use, or use inconsistent with their RUO labeling is a breach of these terms and may result in order cancellation and account closure. We reserve the right to cancel any order we believe is destined for non-research use.",
+      body: "By placing an order, you represent that you are at least 18 years old, operate a laboratory equipped for analytical work, and are purchasing reference standards for lawful in-vitro research only. These materials are not for human or veterinary consumption, diagnosis, or treatment. Misrepresentation of laboratory status, resale for human or veterinary use, or use inconsistent with their RUO labeling is a breach of these terms and may result in order cancellation and account closure. We reserve the right to cancel any order we believe is destined for non-research use.\n\nOrder-related email: When you place an order you agree we may email the contact address you provide at checkout with transactional messages about that order — including order confirmation, payment instructions or payment received notices, shipping/tracking updates, and support related to the purchase. These messages are required to fulfill your order and are separate from optional marketing emails. You cannot opt out of transactional order email while an order is open; you may unsubscribe from marketing emails at any time.",
     },
     {
       title: "Privacy Policy", slug: "privacy-policy", category: "PRIVACY",
-      body: "We collect only the information needed to process orders, verify laboratory status, and communicate with you about shipments and COA releases. This includes your account details, shipping address, order history, and verification documents. We do not sell your personal information. We use cookies and similar technologies to keep your cart and session working. You can manage cookie preferences through your browser settings. For questions about your data, contact us through the form on our Compliance page. We comply with applicable U.S. privacy laws and will notify users of any material changes to this policy.",
+      body: "We collect information needed to process orders, verify laboratory status, fulfill shipments, and support your account. This includes your name, email address, phone number, shipping address, order history, payment references, and verification documents.\n\nTransactional order email: The email you enter at checkout is stored with your order so we can send order confirmation, payment status, shipping/tracking, and customer-support messages about that purchase. These transactional messages are not marketing and do not require a separate marketing opt-in.\n\nMarketing email: If you opt in at checkout, via the newsletter form, or in account settings, we may send research updates, new batch announcements, and occasional offers. Marketing messages include an unsubscribe link. Opting out of marketing does not stop transactional order emails.\n\nWe do not sell your personal information. We use cookies and similar technologies to keep your cart and session working. For questions about your data, contact info@elevatebiolab.com. We comply with applicable U.S. privacy laws and will notify users of any material changes to this policy.",
     },
     {
       title: "LegitScript Compliance", slug: "legitscript", category: "LEGITSCRIPT",
@@ -460,7 +460,7 @@ async function main() {
   for (const d of docs) {
     await prisma.complianceDoc.upsert({
       where: { slug: d.slug },
-      update: {},
+      update: { title: d.title, category: d.category, body: d.body },
       create: d,
     });
   }

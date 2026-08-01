@@ -14,12 +14,12 @@ import { adjustStock, recomputeProductAggregates } from "@/lib/inventory";
 import { uploadFile, deleteFile } from "@/lib/storage";
 import { createLabel } from "@/lib/shipping/usps";
 import { createShippoLabel } from "@/lib/shipping/shippo";
-import { sendMarketingEmail, sendTransactional, trackMarketing } from "@/lib/email/index";
+import { sendMarketingEmail, sendTransactional } from "@/lib/email/index";
 import { listMarketingEmails } from "@/lib/marketing";
 import { isConfigured } from "@/lib/env";
 import { confirmP2pPaymentByOrder } from "@/lib/payments/p2p-confirm";
 import { slugify, variantDisplayName } from "@/lib/utils";
-import type { OrderStatus, CampaignType } from "@prisma/client";
+import type { OrderStatus } from "@prisma/client";
 
 async function requireAdmin() {
   const session = await auth();
@@ -230,11 +230,15 @@ export async function createShippingLabel(
       include: { items: true },
     });
 
-    // Email + marketing shipment notification.
-    const to = order.guestEmail ?? (await customerEmail(order.userId));
+    // Transactional shipment email (order contact email — not marketing).
+    const to =
+      order.guestEmail ??
+      (await customerEmail(order.userId));
     if (to) {
-      await sendTransactional("SHIPMENT_TRACKING", { to, order: updated });
-      await trackMarketing("SHIPMENT_TRACKING", to, updated);
+      const mail = await sendTransactional("SHIPMENT_TRACKING", { to, order: updated });
+      if (!mail.ok || mail.mock) {
+        console.error("[createShippingLabel] SHIPMENT_TRACKING failed:", mail.error ?? "mock");
+      }
     }
     await audit(admin.id, "LABEL_CREATED", "Order", orderId, {
       tracking: label.trackingNumber,
@@ -270,12 +274,14 @@ export async function approveReceipt(receiptId: string): Promise<{ ok: boolean; 
 
   const order = await db.order.findUnique({
     where: { id: receipt.orderId },
-    include: { items: true },
+    include: { items: true, user: { select: { email: true } } },
   });
-  const to = order?.guestEmail ?? (await customerEmail(order?.userId ?? null));
+  const to = order?.guestEmail ?? order?.user?.email ?? (await customerEmail(order?.userId ?? null));
   if (order && to) {
-    await sendTransactional("PAYMENT_RECEIVED", { to, order });
-    await trackMarketing("PAYMENT_RECEIVED", to, order);
+    const mail = await sendTransactional("PAYMENT_RECEIVED", { to, order });
+    if (!mail.ok || mail.mock) {
+      console.error("[approveReceipt] PAYMENT_RECEIVED email failed:", mail.error ?? "mock");
+    }
   }
   await audit(admin.id, "RECEIPT_APPROVED", "PaymentReceipt", receiptId);
   revalidatePath("/admin");
@@ -312,7 +318,8 @@ export async function confirmP2pPayment(orderId: string): Promise<{ ok: boolean;
 
 /**
  * Email the customer that payment was received and the order is being prepared
- * for shipment. Uses the checkout/account email saved on the order.
+ * for shipment. Uses the checkout contact email saved on the order (guestEmail),
+ * falling back to the account email. Independent of marketing opt-in.
  * Safe to resend (e.g. customer asks "did you get my Venmo?").
  */
 export async function notifyPaymentReceived(
@@ -328,10 +335,27 @@ export async function notifyPaymentReceived(
   if (!order) return { ok: false, error: "Order not found" };
 
   const to = order.guestEmail ?? order.user?.email ?? (await customerEmail(order.userId));
-  if (!to) return { ok: false, error: "No customer email on this order." };
+  if (!to) {
+    return {
+      ok: false,
+      error: "No customer email on this order. Checkout email was not saved.",
+    };
+  }
 
-  await sendTransactional("PAYMENT_RECEIVED", { to, order });
-  await trackMarketing("PAYMENT_RECEIVED", to, order);
+  const result = await sendTransactional("PAYMENT_RECEIVED", { to, order });
+  if (!result.ok) {
+    return {
+      ok: false,
+      error: result.error || "SendGrid rejected the payment-received email.",
+    };
+  }
+  if (result.mock) {
+    return {
+      ok: false,
+      error: "SendGrid is not configured (SENDGRID_API_KEY missing). Email was not delivered.",
+    };
+  }
+
   await audit(admin.id, "PAYMENT_RECEIVED_EMAIL_SENT", "Order", orderId, { to });
   revalidatePath("/admin");
   revalidatePath(`/admin/orders/${orderId}`);
@@ -415,59 +439,82 @@ export async function deleteCoa(id: string): Promise<{ ok: boolean; error?: stri
 
 // ---------------- Email campaigns ----------------
 
-export async function triggerCampaign(input: {
-  type: string;
-  segment?: string;
+/**
+ * Send an editable promotional blast via SendGrid to marketing opted-in
+ * subscribers only. Transactional order emails are separate and never use this.
+ */
+export async function sendPromoBlast(input: {
+  subject: string;
+  headline: string;
+  body: string;
+  testOnlyTo?: string;
 }): Promise<{ ok: boolean; error?: string; count?: number }> {
   const admin = await requireAdmin().catch(() => null);
   if (!admin) return { ok: false, error: "Unauthorized" };
 
-  // Promotional blasts only go to people who opted in (account + MarketingSubscriber).
-  const emails = await listMarketingEmails(5000);
+  const subject = input.subject.trim();
+  const headline = input.headline.trim();
+  const bodyText = input.body.trim();
+  if (subject.length < 3) return { ok: false, error: "Subject is required." };
+  if (headline.length < 3) return { ok: false, error: "Headline is required." };
+  if (bodyText.length < 5) return { ok: false, error: "Email body is required." };
+
+  const bodyHtml = bodyText
+    .split(/\n{2,}/)
+    .map(
+      (para) =>
+        `<p style="margin:0 0 14px;font-size:15px;line-height:1.55;color:#6b7a89;">${escapeHtml(
+          para
+        ).replace(/\n/g, "<br/>")}</p>`
+    )
+    .join("");
+
+  const testTo = input.testOnlyTo?.trim().toLowerCase();
+  const emails = testTo
+    ? [testTo]
+    : await listMarketingEmails(5000);
+
+  if (!emails.length) {
+    return { ok: false, error: "No marketing subscribers to send to." };
+  }
 
   let count = 0;
+  let lastError: string | undefined;
   for (const email of emails) {
-    if (input.type === "PROMOTIONAL") {
-      // Real SendGrid send with unsubscribe footer + List-Unsubscribe headers.
-      const res = await sendMarketingEmail({
-        to: email,
-        subject: "Updates from Elevate Bio-Labs",
-        headline: "Updates from Elevate Bio-Labs",
-      }).catch(() => ({ ok: false }));
-      if (res.ok) count++;
-    } else {
-      await trackMarketing(input.type as CampaignType, email).catch(() => {});
-      count++;
+    const res = await sendMarketingEmail({
+      to: email,
+      subject,
+      headline,
+      bodyHtml,
+    }).catch((e) => ({
+      ok: false as const,
+      error: e instanceof Error ? e.message : "Send failed",
+    }));
+    if (res.ok && !("mock" in res && res.mock)) count++;
+    else if (!res.ok) lastError = res.error;
+    else if ("mock" in res && res.mock) {
+      lastError = "SendGrid is not configured (mock mode).";
     }
   }
-  await audit(admin.id, "CAMPAIGN_TRIGGERED", "CampaignEvent", input.type, { count });
+
+  await audit(admin.id, testTo ? "TEST_MARKETING_EMAIL" : "PROMO_BLAST_SENT", "CampaignEvent", subject, {
+    count,
+    testTo: testTo ?? null,
+  });
   revalidatePath("/admin");
+
+  if (count === 0) {
+    return { ok: false, error: lastError ?? "SendGrid send failed for all recipients." };
+  }
   return { ok: true, count };
 }
 
-/** Admin smoke-test: send one marketing email with unsubscribe footer to a single address. */
-export async function sendTestMarketingEmail(input: {
-  to: string;
-}): Promise<{ ok: boolean; error?: string }> {
-  const admin = await requireAdmin().catch(() => null);
-  if (!admin) return { ok: false, error: "Unauthorized" };
-
-  const to = input.to.trim().toLowerCase();
-  if (!to.includes("@")) return { ok: false, error: "Enter a valid email." };
-
-  const res = await sendMarketingEmail({
-    to,
-    subject: "Elevate Bio-Labs — marketing unsubscribe test",
-    headline: "Marketing email test",
-    bodyHtml: `<p style="margin:0 0 16px;font-size:15px;line-height:1.55;color:#6b7a89;">
-      This is a test of the marketing template. Use the small <strong>Unsubscribe</strong> link
-      in the footer — it should remove you from promo emails.
-    </p>`,
-  });
-
-  if (!res.ok) return { ok: false, error: res.error ?? "SendGrid send failed" };
-  await audit(admin.id, "TEST_MARKETING_EMAIL", "CampaignEvent", to, { mock: res.mock });
-  return { ok: true };
+function escapeHtml(input: string): string {
+  return input
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 async function customerEmail(userId: string | null): Promise<string | null> {

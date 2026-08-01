@@ -115,7 +115,10 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
         data: {
           orderNumber,
           userId: session.user.id,
-          guestEmail: null,
+          // Always store the checkout contact email on the order for transactional
+          // order mail (confirmation, payment received, shipping). This is NOT
+          // marketing consent — marketingOptIn is separate.
+          guestEmail: data.email.trim().toLowerCase(),
           status: "PENDING_PAYMENT",
           shipTo: data.address as object,
           subtotalCents: priced.subtotalCents,

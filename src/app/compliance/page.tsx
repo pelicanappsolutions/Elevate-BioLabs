@@ -208,9 +208,10 @@ export default async function CompliancePage() {
                   may result in order cancellation and account closure.
                 </p>
                 <p>
-                  All sales are subject to verification, quantity limits, and applicable shipping
-                  restrictions. We reserve the right to cancel any order we believe is destined for
-                  non-research use.
+                  You agree we may email the contact address provided at checkout with transactional
+                  messages about that order (confirmation, payment status, tracking, and support).
+                  Those emails are separate from optional marketing messages, which require opt-in
+                  and include an unsubscribe link.
                 </p>
               </>
             )}
@@ -228,19 +229,23 @@ export default async function CompliancePage() {
             ) : (
               <>
                 <p>
-                  We collect only the information needed to process orders, verify laboratory
-                  status, and communicate with you about shipments and COA releases. This includes
-                  your account details, shipping address, order history, and verification documents.
+                  We collect information needed to process orders, verify laboratory status, fulfill
+                  shipments, and support your account — including your name, email, phone, shipping
+                  address, order history, and verification documents.
                 </p>
                 <p>
-                  We do not sell your personal information. We use cookies and similar technologies
-                  to keep your cart and session working. You can manage cookie preferences through
-                  your browser settings.
+                  The email you enter at checkout is stored with your order for transactional
+                  messages (confirmation, payment status, tracking, and support). Those messages are
+                  not marketing and do not require a marketing opt-in. Optional marketing emails
+                  (updates and offers) are only sent if you opt in, and always include an
+                  unsubscribe link.
                 </p>
                 <p>
-                  For questions about your data, contact us through the form below. We comply with
-                  applicable U.S. privacy laws and will notify users of any material changes to this
-                  policy.
+                  We do not sell your personal information. For questions about your data, contact{" "}
+                  <a href="mailto:info@elevatebiolab.com" className="text-primary underline">
+                    info@elevatebiolab.com
+                  </a>
+                  .
                 </p>
               </>
             )}

@@ -573,8 +573,9 @@ export function CheckoutFlow({
                   className="mt-0.5"
                 />
                 <span className="text-xs leading-relaxed text-muted-foreground">
-                  Email me research updates, new batch releases, and occasional offers.
-                  You can unsubscribe anytime in account settings.
+                  Optional: email me research updates, new batch releases, and offers.
+                  Order confirmation, payment, and shipping emails are always sent to the
+                  checkout address and are separate from marketing. Unsubscribe anytime.
                 </span>
               </label>
             </div>
