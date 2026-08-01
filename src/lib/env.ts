@@ -49,8 +49,8 @@ export const env = {
     baseUrl: process.env.NOWPAYMENTS_BASE_URL ?? "https://api.nowpayments.io/v1",
   },
   p2p: {
-    zelle: process.env.P2P_ZELLE_HANDLE ?? "pay@elevatebiolab.com",
-    venmo: process.env.P2P_VENMO_HANDLE ?? "@ElevateBioLabs",
+    zelle: process.env.P2P_ZELLE_HANDLE ?? "trosclair.danny@gmail.com",
+    venmo: process.env.P2P_VENMO_HANDLE ?? "@elevateresearch",
     wire: process.env.P2P_WIRE_INSTRUCTIONS ?? "Contact support for wire details",
   },
   usps: {
