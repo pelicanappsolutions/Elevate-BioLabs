@@ -6,7 +6,7 @@ import { env } from "@/lib/env";
 import { checkoutSchema } from "@/lib/validations";
 import { priceCart } from "@/lib/pricing";
 import { decrementStock, InsufficientStockError } from "@/lib/inventory";
-import { getRates, type ShippingRate } from "@/lib/shipping/usps";
+import { getShippingRates, type ShippingRate } from "@/lib/shipping/index";
 import { createCharge } from "@/lib/payments/index";
 import { sendTransactional, trackMarketing } from "@/lib/email/index";
 import { generateOrderNumber, FREE_SHIPPING_THRESHOLD_CENTS } from "@/lib/utils";
@@ -20,15 +20,23 @@ function computeWeightOz(items: { quantity: number }[]) {
 }
 
 export async function getShippingQuote(input: {
-  toZip: string;
+  toName?: string;
+  toStreet1?: string;
+  toStreet2?: string;
+  toCity?: string;
   toState?: string;
+  toZip: string;
   items: { variantId: string; quantity: number }[];
 }): Promise<{ rates: ShippingRate[]; freeShipping: boolean }> {
   if (!input.toZip || input.items.length === 0) return { rates: [], freeShipping: false };
   const [rates, priced] = await Promise.all([
-    getRates({
-      toZip: input.toZip,
+    getShippingRates({
+      toName: input.toName,
+      toStreet1: input.toStreet1,
+      toStreet2: input.toStreet2,
+      toCity: input.toCity,
       toState: input.toState,
+      toZip: input.toZip,
       weightOz: computeWeightOz(input.items),
     }),
     // Subtotal-only pass (no shippingCents passed in) just to check the
@@ -75,9 +83,14 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
   const isP2P = P2P_RAILS.includes(rail);
 
   // 1) Authoritative shipping cost — re-quote server-side, never trust client.
-  const rates = await getRates({
-    toZip: data.address.zip,
+  // Prefer Shippo live/test rates when SHIPPO_API_KEY is set.
+  const rates = await getShippingRates({
+    toName: data.address.fullName,
+    toStreet1: data.address.street1,
+    toStreet2: data.address.street2,
+    toCity: data.address.city,
     toState: data.address.state,
+    toZip: data.address.zip,
     weightOz: computeWeightOz(data.items),
   });
   const chosen = rates.find((r) => r.service === data.shipService) ?? rates[0];

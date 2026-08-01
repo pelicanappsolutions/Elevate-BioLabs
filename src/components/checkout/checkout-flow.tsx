@@ -19,7 +19,7 @@ import { getShippingQuote, placeOrder } from "@/actions/checkout";
 // Import from ./meta, not ./index — index pulls every adapter (and node:crypto
 // plus server env) into the client bundle.
 import { PAYMENT_RAIL_META } from "@/lib/payments/meta";
-import type { ShippingRate } from "@/lib/shipping/usps";
+import type { ShippingRate } from "@/lib/shipping/index";
 import { cn, formatPrice } from "@/lib/utils";
 import { useCart } from "@/store/cart";
 import { Button } from "@/components/ui/button";
@@ -124,14 +124,18 @@ export function CheckoutFlow({
   // Display-only estimate. placeOrder re-prices everything server-side.
   const estTotal = subtotal + shippingCents;
 
-  /** Pull live USPS rates once we have a deliverable ZIP. */
+  /** Pull live Shippo (or USPS) rates once address is complete. */
   const fetchRates = React.useCallback(async () => {
     if (!/^\d{5}(-\d{4})?$/.test(address.zip) || items.length === 0) return;
     setLoadingRates(true);
     try {
       const res = await getShippingQuote({
-        toZip: address.zip,
+        toName: address.fullName,
+        toStreet1: address.street1,
+        toStreet2: address.street2 || undefined,
+        toCity: address.city,
         toState: address.state,
+        toZip: address.zip,
         items: items.map((i) => ({ variantId: i.variantId, quantity: i.quantity })),
       });
       setRates(res.rates);
@@ -141,13 +145,22 @@ export function CheckoutFlow({
     } catch {
       toast({
         title: "Couldn't load shipping rates",
-        description: "Check the ZIP code and try again.",
+        description: "Check the address and try again.",
         variant: "destructive",
       });
     } finally {
       setLoadingRates(false);
     }
-  }, [address.zip, address.state, items, toast]);
+  }, [
+    address.fullName,
+    address.street1,
+    address.street2,
+    address.city,
+    address.zip,
+    address.state,
+    items,
+    toast,
+  ]);
 
   function validateAddress(): string | null {
     if (!/^\S+@\S+\.\S+$/.test(email)) return "Enter a valid email address.";
