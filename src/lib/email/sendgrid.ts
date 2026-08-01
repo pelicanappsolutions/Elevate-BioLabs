@@ -221,11 +221,26 @@ export function orderConfirmationHtml(order: any): string {
 
   const shipCard = order?.shipTo ? card(addressBlock(order.shipTo), "Shipping to") : "";
 
+  const isP2P = ["P2P_ZELLE", "P2P_VENMO", "P2P_WIRE"].includes(order?.rail);
+  const instructions = order?.instructions;
+
+  const p2pCard = isP2P && instructions
+    ? card(`
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:${BRAND.ink};line-height:1.5;">
+        <tr><td style="padding:3px 0;"><strong>Method:</strong> ${escapeHtml(instructions.method)}</td></tr>
+        <tr><td style="padding:3px 0;"><strong>Send to:</strong> ${escapeHtml(instructions.handle)}</td></tr>
+        <tr><td style="padding:3px 0;"><strong>Memo / Reference:</strong> ${escapeHtml(instructions.memo)}</td></tr>
+        <tr><td style="padding:6px 0 0;">${escapeHtml(instructions.note)}</td></tr>
+      </table>
+    `, "Payment instructions")
+    : "";
+
   const nextSteps = card(`
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:${BRAND.ink};line-height:1.5;">
-      <tr><td style="padding:2px 0;"><strong style="color:${BRAND.accent};">1.</strong>&nbsp; We're preparing and QC-checking your order.</td></tr>
-      <tr><td style="padding:2px 0;"><strong style="color:${BRAND.accent};">2.</strong>&nbsp; You'll get a tracking email the moment it ships.</td></tr>
-      <tr><td style="padding:2px 0;"><strong style="color:${BRAND.accent};">3.</strong>&nbsp; Each vial ships with a batch-matched Certificate of Analysis.</td></tr>
+      ${isP2P ? `<tr><td style="padding:2px 0;"><strong style="color:${BRAND.accent};">1.</strong>&nbsp; Send the payment using the instructions above.</td></tr>` : ""}
+      <tr><td style="padding:2px 0;"><strong style="color:${BRAND.accent};">${isP2P ? "2." : "1."}</strong>&nbsp; We're preparing and QC-checking your order.</td></tr>
+      <tr><td style="padding:2px 0;"><strong style="color:${BRAND.accent};">${isP2P ? "3." : "2."}</strong>&nbsp; You'll get a tracking email the moment it ships.</td></tr>
+      <tr><td style="padding:2px 0;"><strong style="color:${BRAND.accent};">${isP2P ? "4." : "3."}</strong>&nbsp; Each vial ships with a batch-matched Certificate of Analysis.</td></tr>
     </table>
   `, "What happens next");
 
@@ -237,6 +252,7 @@ export function orderConfirmationHtml(order: any): string {
     </p>
     ${itemsCard}
     ${shipCard}
+    ${p2pCard}
     ${nextSteps}
     <p style="margin:14px 0 0;font-size:13px;color:${BRAND.muted};line-height:1.5;">
       Need to make a change? Reply to this email or reach us at

@@ -121,14 +121,14 @@ export default async function HomePage() {
             </div>
 
             {/* Brand logo lockup */}
-            <div className="hidden items-center justify-center lg:flex">
+            <div className="order-first mb-8 flex items-center justify-center lg:order-last lg:mb-0">
               <Image
                 src="/images/logo.png"
                 alt="ELEVATE BIOLAB — Pharmaceutical grade, third-party tested, made in USA, for research purposes only."
                 width={400}
                 height={400}
                 priority
-                className="object-contain drop-shadow-2xl"
+                className="h-auto max-h-[280px] w-auto max-w-[280px] object-contain drop-shadow-2xl sm:max-h-[320px] sm:max-w-[320px] lg:max-h-[400px] lg:max-w-[400px]"
               />
             </div>
           </div>

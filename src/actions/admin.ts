@@ -14,6 +14,7 @@ import { adjustStock, recomputeProductAggregates } from "@/lib/inventory";
 import { uploadFile, deleteFile } from "@/lib/storage";
 import { createLabel } from "@/lib/shipping/usps";
 import { sendTransactional, trackMarketing } from "@/lib/email/index";
+import { isConfigured } from "@/lib/env";
 import { confirmP2pPaymentByOrder } from "@/lib/payments/p2p-confirm";
 import { slugify, variantDisplayName } from "@/lib/utils";
 import type { OrderStatus, CampaignType } from "@prisma/client";
@@ -186,6 +187,15 @@ export async function createShippingLabel(
 
   const order = await db.order.findUnique({ where: { id: orderId }, include: { items: true } });
   if (!order) return { ok: false, error: "Order not found" };
+
+  // In production, USPS must be configured to generate real labels. Mock labels
+  // are only acceptable in local development.
+  if (process.env.NODE_ENV === "production" && !isConfigured.usps()) {
+    return {
+      ok: false,
+      error: "USPS shipping is not configured. Add USPS_CLIENT_ID and USPS_CLIENT_SECRET to Vercel to create real labels.",
+    };
+  }
 
   const shipTo = (order.shipTo ?? {}) as Record<string, string>;
   const weightOz = 4 + order.items.reduce((n, i) => n + i.quantity, 0) * 2;

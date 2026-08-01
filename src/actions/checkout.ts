@@ -8,7 +8,7 @@ import { priceCart } from "@/lib/pricing";
 import { decrementStock, InsufficientStockError } from "@/lib/inventory";
 import { getRates, type ShippingRate } from "@/lib/shipping/usps";
 import { createCharge } from "@/lib/payments/index";
-import { trackMarketing } from "@/lib/email/index";
+import { sendTransactional, trackMarketing } from "@/lib/email/index";
 import { generateOrderNumber, FREE_SHIPPING_THRESHOLD_CENTS } from "@/lib/utils";
 import { rateLimit } from "@/lib/rate-limit";
 import type { PaymentRail, PaymentStatus } from "@prisma/client";
@@ -94,9 +94,9 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
   const orderNumber = generateOrderNumber();
 
   // 3) Create order + reserve inventory with OPTIMISTIC LOCKING inside one txn.
-  let orderId: string;
+  let order: Awaited<ReturnType<typeof db.order.create>> & { items: any[]; payments: any[] };
   try {
-    const order = await db.$transaction(async (tx) => {
+    order = await db.$transaction(async (tx) => {
       const created = await tx.order.create({
         data: {
           orderNumber,
@@ -128,15 +128,15 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
             },
           },
         },
+        include: { items: true, payments: true },
       });
 
       // reserve stock — throws InsufficientStockError / retries on version race
       for (const line of priced.lines) {
         await decrementStock(tx, line.variantId, line.quantity, created.id);
       }
-      return created;
+      return created as typeof order;
     });
-    orderId = order.id;
   } catch (e) {
     if (e instanceof InsufficientStockError) {
       return { ok: false, error: `${e.productName} — only ${e.available} in stock.` };
@@ -147,7 +147,7 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
   // 4) Hand off to the payment adapter (router picks the rail; mock-safe).
   try {
     const charge = await createCharge(rail, {
-      orderId,
+      orderId: order.id,
       orderNumber,
       amountCents: priced.totalCents,
       currency: "USD",
@@ -159,7 +159,7 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
     });
 
     await db.payment.updateMany({
-      where: { orderId, rail },
+      where: { orderId: order.id, rail },
       data: {
         providerRef: charge.providerRef,
         status: (isP2P ? "MANUAL_REVIEW" : "PENDING") as PaymentStatus,
@@ -167,7 +167,18 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
     });
 
     if (isP2P) {
-      await db.order.update({ where: { id: orderId }, data: { status: "AWAITING_REVIEW" } });
+      await db.order.update({ where: { id: order.id }, data: { status: "AWAITING_REVIEW" } });
+
+      // Send the customer an order confirmation with payment instructions.
+      await sendTransactional("ORDER_CONFIRMATION", {
+        to: data.email,
+        order: {
+          ...order,
+          payments: order.payments,
+          rail,
+          instructions: charge.instructions,
+        },
+      });
     }
 
     // Marketing: fire a "started checkout"-style signal for abandoned-cart flows.
