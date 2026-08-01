@@ -180,7 +180,9 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
       instructions: charge.instructions,
       requiresProof: isP2P,
     };
-  } catch {
-    return { ok: false, error: "Payment could not be initialized. Please try another method." };
+  } catch (e) {
+    console.error("[placeOrder] payment initialization failed:", e);
+    const message = e instanceof Error ? e.message : "Unknown payment error";
+    return { ok: false, error: `Payment could not be initialized. ${message}` };
   }
 }

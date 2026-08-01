@@ -57,7 +57,7 @@ export const nowpaymentsAdapter: PaymentAdapter = {
       };
     }
 
-    const res = await fetch(`${NOWPAYMENTS_API}/payment`, {
+    const res = await fetch(`${NOWPAYMENTS_API}/invoice`, {
       method: "POST",
       headers: {
         "x-api-key": env.nowpayments.apiKey,
@@ -76,30 +76,29 @@ export const nowpaymentsAdapter: PaymentAdapter = {
       }),
     });
 
+    const rawBody = await res.text();
     if (!res.ok) {
       throw new Error(
-        `NOWPayments createCharge failed: ${res.status} ${await res.text()}`
+        `NOWPayments createCharge failed: ${res.status} ${rawBody}`
       );
     }
 
-    const json = (await res.json()) as {
+    const json = JSON.parse(rawBody) as {
+      id?: string;
       payment_id?: string;
+      invoice_url?: string;
       payment_url?: string;
-      payment_status?: string;
-      pay_address?: string;
-      pay_amount?: string;
-      pay_currency?: string;
-      price_amount?: string;
-      price_currency?: string;
+      status?: string;
     };
 
-    if (!json.payment_id) {
-      throw new Error("NOWPayments response missing payment_id");
+    const providerRef = json.id || json.payment_id;
+    if (!providerRef) {
+      throw new Error("NOWPayments response missing id/payment_id");
     }
 
     return {
-      providerRef: json.payment_id,
-      redirectUrl: json.payment_url || `${input.successUrl}?np=${json.payment_id}`,
+      providerRef,
+      redirectUrl: json.invoice_url || json.payment_url || input.successUrl,
       mock: false,
       status: "PENDING",
     };
