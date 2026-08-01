@@ -71,8 +71,6 @@ export const nowpaymentsAdapter: PaymentAdapter = {
         ipn_callback_url: `${env.SITE_URL}/api/webhooks/payment/nowpayments`,
         success_url: input.successUrl,
         cancel_url: input.cancelUrl,
-        // Let the customer choose their preferred coin on the hosted page.
-        case: "auto",
       }),
     });
 
