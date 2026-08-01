@@ -406,8 +406,9 @@ export function CheckoutFlow({
             <div className="flex flex-col gap-4">
               <h2 className="text-lg font-semibold">Delivery method</h2>
               <p className="text-sm text-muted-foreground">
-                U.S. domestic shipping only. Rates are live quotes from Shippo
-                (USPS, UPS, FedEx, and other carriers available on your account).
+                U.S. domestic shipping only. Live rates from Shippo for carriers
+                enabled on the shop account (USPS is active; UPS/FedEx appear once
+                those carriers are connected in Shippo).
               </p>
               {loadingRates ? (
                 <div className="flex flex-col gap-2">

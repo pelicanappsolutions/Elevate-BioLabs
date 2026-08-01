@@ -3,7 +3,7 @@
  *
  * - sendTransactional(): picks the right SendGrid template + subject and sends.
  *   Never throws (a failed email must not break checkout) and records a
- *   CampaignEvent row for order-confirmation / shipment-tracking sends.
+ *   CampaignEvent row with real success/failure status.
  * - trackMarketing(): fires a Klaviyo event and records a queued CampaignEvent.
  * - subscribeNewsletter(): adds a profile to the Klaviyo list.
  *
@@ -11,6 +11,7 @@
  */
 import type { CampaignType } from "@prisma/client";
 import { db } from "@/lib/db";
+import { env } from "@/lib/env";
 import {
   sendEmail,
   orderConfirmationHtml,
@@ -18,6 +19,7 @@ import {
   shipmentTrackingHtml,
   passwordResetHtml,
   welcomeHtml,
+  newOrderAdminHtml,
 } from "./sendgrid";
 import { subscribeProfile, trackEvent } from "./klaviyo";
 
@@ -26,7 +28,8 @@ export type TransactionalType =
   | "PAYMENT_RECEIVED"
   | "SHIPMENT_TRACKING"
   | "PASSWORD_RESET"
-  | "WELCOME";
+  | "WELCOME"
+  | "NEW_ORDER_ADMIN";
 
 /** Which transactional sends map to a CampaignType we persist. */
 const CAMPAIGN_TYPE_FOR: Partial<Record<TransactionalType, CampaignType>> = {
@@ -62,7 +65,7 @@ async function recordCampaignEvent(fields: {
 export async function sendTransactional(
   type: TransactionalType,
   args: { to: string; order?: any; resetUrl?: string; name?: string }
-): Promise<void> {
+): Promise<{ ok: boolean; mock?: boolean; error?: string }> {
   try {
     let subject: string;
     let html: string;
@@ -88,13 +91,22 @@ export async function sendTransactional(
         subject = "Welcome to Elevate Bio-Labs";
         html = welcomeHtml(args.name ?? "");
         break;
+      case "NEW_ORDER_ADMIN":
+        subject = `New order ${args.order?.orderNumber ?? ""} — action needed`;
+        html = newOrderAdminHtml(args.order ?? {});
+        break;
       default: {
         const _never: never = type;
         return _never;
       }
     }
 
-    await sendEmail({ to: args.to, subject, html });
+    const result = await sendEmail({
+      to: args.to,
+      subject,
+      html,
+      replyTo: env.contactEmail,
+    });
 
     const campaignType = CAMPAIGN_TYPE_FOR[type];
     if (campaignType) {
@@ -102,15 +114,40 @@ export async function sendTransactional(
         type: campaignType,
         email: args.to,
         provider: "sendgrid",
-        status: "sent",
+        status: result.ok ? (result.mock ? "mocked" : "sent") : "failed",
         orderId: args.order?.id,
       });
     }
+
+    if (!result.ok) {
+      // eslint-disable-next-line no-console
+      console.error(
+        `[email] sendTransactional(${type}) SendGrid rejected:`,
+        result.status,
+        result.error
+      );
+    }
+
+    return { ok: result.ok, mock: result.mock, error: result.error };
   } catch (err) {
     // Never throw — email failures must not break the calling flow.
     // eslint-disable-next-line no-console
     console.error(`[email] sendTransactional(${type}) failed:`, err);
+    return { ok: false, error: err instanceof Error ? err.message : "Email failed" };
   }
+}
+
+/** Notify shop inbox (info@) that a new order was placed. */
+export async function notifyAdminNewOrder(order: any): Promise<void> {
+  const to = env.contactEmail || env.sendgrid.fromEmail;
+  if (!to) return;
+  await sendTransactional("NEW_ORDER_ADMIN", {
+    to,
+    order: {
+      ...order,
+      customerEmail: order?.customerEmail ?? order?.guestEmail,
+    },
+  });
 }
 
 export async function trackMarketing(

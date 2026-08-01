@@ -10,19 +10,29 @@
 import { env, isConfigured } from "@/lib/env";
 
 export async function sendEmail(input: {
-  to: string;
+  to: string | string[];
   subject: string;
   html: string;
   text?: string;
-}): Promise<{ ok: boolean; mock: boolean }> {
+  replyTo?: string;
+}): Promise<{ ok: boolean; mock: boolean; status?: number; error?: string }> {
   if (!isConfigured.sendgrid()) {
     // MOCK mode.
     // eslint-disable-next-line no-console
     console.log(
-      `[email:sendgrid MOCK] to=${input.to} subject="${input.subject}"`
+      `[email:sendgrid MOCK] to=${JSON.stringify(input.to)} subject="${input.subject}"`
     );
     return { ok: true, mock: true };
   }
+
+  const recipients = (Array.isArray(input.to) ? input.to : [input.to])
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  if (!recipients.length) {
+    return { ok: false, mock: false, error: "No recipient email" };
+  }
+
+  const replyTo = (input.replyTo ?? env.contactEmail ?? env.sendgrid.fromEmail).trim();
 
   const res = await fetch("https://api.sendgrid.com/v3/mail/send", {
     method: "POST",
@@ -31,8 +41,9 @@ export async function sendEmail(input: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      personalizations: [{ to: [{ email: input.to }] }],
+      personalizations: [{ to: recipients.map((email) => ({ email })) }],
       from: { email: env.sendgrid.fromEmail, name: env.sendgrid.fromName },
+      ...(replyTo ? { reply_to: { email: replyTo } } : {}),
       subject: input.subject,
       content: [
         {
@@ -45,14 +56,13 @@ export async function sendEmail(input: {
   });
 
   if (!res.ok) {
+    const body = await res.text();
     // eslint-disable-next-line no-console
-    console.error(
-      `[email:sendgrid] send failed: ${res.status} ${await res.text()}`
-    );
-    return { ok: false, mock: false };
+    console.error(`[email:sendgrid] send failed: ${res.status} ${body}`);
+    return { ok: false, mock: false, status: res.status, error: body };
   }
 
-  return { ok: true, mock: false };
+  return { ok: true, mock: false, status: res.status };
 }
 
 function stripHtml(html: string): string {
@@ -264,6 +274,46 @@ export function orderConfirmationHtml(order: any): string {
     `Order ${order?.orderNumber ?? ""} confirmed — ${money(order?.totalCents)} total`,
     body
   );
+}
+
+/** Internal alert to the shop inbox when a customer places a new order. */
+export function newOrderAdminHtml(order: any): string {
+  const orderNo = escapeHtml(order?.orderNumber ?? "");
+  const rail = escapeHtml(String(order?.rail ?? order?.payments?.[0]?.rail ?? "—").replace(/_/g, " "));
+  const email = escapeHtml(order?.customerEmail ?? order?.guestEmail ?? "—");
+  const items: any[] = Array.isArray(order?.items) ? order.items : [];
+  const rows = items
+    .map(
+      (it) =>
+        `<tr>
+          <td style="padding:6px 0;font-size:14px;color:${BRAND.ink};border-top:1px solid ${BRAND.line};">${escapeHtml(it?.name ?? "Item")}</td>
+          <td style="padding:6px 0;font-size:14px;color:${BRAND.muted};border-top:1px solid ${BRAND.line};text-align:center;">× ${Number(it?.quantity ?? 1)}</td>
+          <td style="padding:6px 0;font-size:14px;color:${BRAND.ink};border-top:1px solid ${BRAND.line};text-align:right;">${money(it?.totalCents)}</td>
+        </tr>`
+    )
+    .join("");
+
+  const adminUrl = `${env.SITE_URL}/admin/orders/${escapeHtml(order?.id ?? "")}`;
+
+  const body = `
+    <div style="margin:0 0 14px;">${pill("New order", BRAND.accent)}</div>
+    <h1 style="margin:0 0 8px;font-size:24px;line-height:1.25;color:${BRAND.ink};">New order ${orderNo}</h1>
+    <p style="margin:0 0 18px;font-size:15px;line-height:1.55;color:${BRAND.muted};">
+      A customer just placed an order. Total <strong style="color:${BRAND.ink};">${money(order?.totalCents)}</strong> via <strong style="color:${BRAND.ink};">${rail}</strong>.
+    </p>
+    ${card(
+      `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:${BRAND.ink};line-height:1.5;">
+        <tr><td style="padding:3px 0;"><strong>Customer:</strong> ${email}</td></tr>
+        <tr><td style="padding:3px 0;"><strong>Status:</strong> ${escapeHtml(String(order?.status ?? "PENDING_PAYMENT").replace(/_/g, " "))}</td></tr>
+        <tr><td style="padding:3px 0;"><strong>Payment:</strong> ${rail}</td></tr>
+      </table>`,
+      "Order details"
+    )}
+    ${items.length ? card(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rows}</table>`, "Items") : ""}
+    ${order?.shipTo ? card(addressBlock(order.shipTo), "Ship to") : ""}
+    <div style="margin:18px 0 0;">${button(adminUrl, "Open in admin")}</div>`;
+
+  return shell("New Order", `New order ${order?.orderNumber ?? ""} — ${money(order?.totalCents)}`, body);
 }
 
 /** Sent when admin confirms payment / notifies that the order is being prepared to ship. */

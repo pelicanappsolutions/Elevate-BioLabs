@@ -8,7 +8,7 @@ import { priceCart } from "@/lib/pricing";
 import { decrementStock, InsufficientStockError } from "@/lib/inventory";
 import { getShippingRates, type ShippingRate } from "@/lib/shipping/index";
 import { createCharge } from "@/lib/payments/index";
-import { sendTransactional, trackMarketing } from "@/lib/email/index";
+import { notifyAdminNewOrder, sendTransactional, trackMarketing } from "@/lib/email/index";
 import { recordMarketingOptIn } from "@/lib/marketing";
 import { generateOrderNumber, FREE_SHIPPING_THRESHOLD_CENTS } from "@/lib/utils";
 import { rateLimit } from "@/lib/rate-limit";
@@ -182,18 +182,31 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
 
     if (isP2P) {
       await db.order.update({ where: { id: order.id }, data: { status: "AWAITING_REVIEW" } });
-
-      // Send the customer an order confirmation with payment instructions.
-      await sendTransactional("ORDER_CONFIRMATION", {
-        to: data.email,
-        order: {
-          ...order,
-          payments: order.payments,
-          rail,
-          instructions: charge.instructions,
-        },
-      });
     }
+
+    const orderForEmail = {
+      ...order,
+      status: isP2P ? "AWAITING_REVIEW" : order.status,
+      payments: order.payments,
+      rail,
+      instructions: charge.instructions,
+      customerEmail: data.email,
+      guestEmail: data.email,
+    };
+
+    // Always email the customer that the order was placed (P2P includes pay instructions).
+    const customerMail = await sendTransactional("ORDER_CONFIRMATION", {
+      to: data.email,
+      order: orderForEmail,
+    });
+    if (!customerMail.ok) {
+      console.error("[placeOrder] customer ORDER_CONFIRMATION failed:", customerMail.error);
+    }
+
+    // Always notify the shop inbox so ops sees every new order.
+    await notifyAdminNewOrder(orderForEmail).catch((err) => {
+      console.error("[placeOrder] admin new-order email failed:", err);
+    });
 
     // Persist marketing opt-in from checkout (local list + User flag + Klaviyo).
     if (data.marketingOptIn) {
