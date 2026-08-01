@@ -84,7 +84,7 @@ const BRAND = {
   subtle: "#f5f8fb",
 };
 
-const SUPPORT_EMAIL = "support@elevatebiolab.com";
+const SUPPORT_EMAIL = env.contactEmail;
 
 function money(cents: unknown): string {
   const n = typeof cents === "number" ? cents : Number(cents ?? 0);

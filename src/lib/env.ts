@@ -51,7 +51,9 @@ export const env = {
   p2p: {
     zelle: process.env.P2P_ZELLE_HANDLE ?? "trosclair.danny@gmail.com",
     venmo: process.env.P2P_VENMO_HANDLE ?? "@elevateresearch",
-    wire: process.env.P2P_WIRE_INSTRUCTIONS ?? "Contact support for wire details",
+    wire:
+      process.env.P2P_WIRE_INSTRUCTIONS ??
+      "Contact info@elevatebiolab.com for wire details",
   },
   usps: {
     apiKey: process.env.USPS_API_KEY ?? "",
@@ -71,9 +73,11 @@ export const env = {
   },
   sendgrid: {
     apiKey: process.env.SENDGRID_API_KEY ?? "",
-    fromEmail: process.env.SENDGRID_FROM_EMAIL ?? "orders@elevatebiolab.com",
+    fromEmail: process.env.SENDGRID_FROM_EMAIL ?? "info@elevatebiolab.com",
     fromName: process.env.SENDGRID_FROM_NAME ?? "Elevate Bio-Labs",
   },
+  /** Public contact address shown in emails / UI. */
+  contactEmail: process.env.CONTACT_EMAIL ?? "info@elevatebiolab.com",
   p2pEmail: {
     host: process.env.P2P_EMAIL_IMAP_HOST ?? "",
     port: Number(process.env.P2P_EMAIL_IMAP_PORT ?? "993"),

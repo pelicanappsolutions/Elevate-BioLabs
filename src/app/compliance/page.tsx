@@ -339,9 +339,15 @@ export default async function CompliancePage() {
       <section id="contact" className="scroll-mt-28">
         <h2 className="text-lg font-semibold">Contact us</h2>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Questions about a batch, an order, or a bulk quote? We reply within one business
-          day. We cannot provide guidance on experimental design, sample preparation, dosing,
-          or reconstitution.
+          Questions about a batch, an order, or a bulk quote? Email{" "}
+          <a
+            href="mailto:info@elevatebiolab.com"
+            className="font-medium text-foreground underline-offset-4 hover:underline"
+          >
+            info@elevatebiolab.com
+          </a>{" "}
+          or use the form below — we reply within one business day. We cannot provide
+          guidance on experimental design, sample preparation, dosing, or reconstitution.
         </p>
         <div className="mt-4 max-w-xl">
           <ContactForm />
