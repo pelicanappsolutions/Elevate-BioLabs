@@ -59,12 +59,15 @@ export const env = {
     clientSecret: process.env.USPS_CLIENT_SECRET ?? "",
     baseUrl: process.env.USPS_BASE_URL ?? "https://apis.usps.com",
     from: {
-      name: process.env.SHIP_FROM_NAME ?? "Elevate Bio-Labs Chemical Supply",
-      street: process.env.SHIP_FROM_STREET ?? "1 Research Way",
-      city: process.env.SHIP_FROM_CITY ?? "Austin",
-      state: process.env.SHIP_FROM_STATE ?? "TX",
-      zip: process.env.SHIP_FROM_ZIP ?? "78701",
+      name: process.env.SHIP_FROM_NAME ?? "C&D RESEARCH LLC",
+      street: process.env.SHIP_FROM_STREET ?? "110 Tall Pines St",
+      city: process.env.SHIP_FROM_CITY ?? "Belle Chasse",
+      state: process.env.SHIP_FROM_STATE ?? "LA",
+      zip: process.env.SHIP_FROM_ZIP ?? "70037",
     },
+  },
+  shippo: {
+    apiKey: process.env.SHIPPO_API_KEY ?? "",
   },
   sendgrid: {
     apiKey: process.env.SENDGRID_API_KEY ?? "",
@@ -101,6 +104,7 @@ export const isConfigured = {
   coinbase: () => !!env.coinbase.apiKey,
   nowpayments: () => !!env.nowpayments.apiKey,
   usps: () => !!env.usps.clientId && !!env.usps.clientSecret,
+  shippo: () => !!env.shippo.apiKey,
   sendgrid: () => !!env.sendgrid.apiKey,
   p2pEmail: () => !!env.p2pEmail.host && !!env.p2pEmail.user && !!env.p2pEmail.password,
   klaviyo: () => !!env.klaviyo.apiKey,

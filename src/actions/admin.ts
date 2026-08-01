@@ -13,6 +13,7 @@ import {
 import { adjustStock, recomputeProductAggregates } from "@/lib/inventory";
 import { uploadFile, deleteFile } from "@/lib/storage";
 import { createLabel } from "@/lib/shipping/usps";
+import { createShippoLabel } from "@/lib/shipping/shippo";
 import { sendTransactional, trackMarketing } from "@/lib/email/index";
 import { isConfigured } from "@/lib/env";
 import { confirmP2pPaymentByOrder } from "@/lib/payments/p2p-confirm";
@@ -188,29 +189,34 @@ export async function createShippingLabel(
   const order = await db.order.findUnique({ where: { id: orderId }, include: { items: true } });
   if (!order) return { ok: false, error: "Order not found" };
 
-  // In production, USPS must be configured to generate real labels. Mock labels
-  // are only acceptable in local development.
-  if (process.env.NODE_ENV === "production" && !isConfigured.usps()) {
+  // Prefer Shippo (test or live). Fall back to direct USPS. In production,
+  // refuse local mock labels when neither provider is configured.
+  const useShippo = isConfigured.shippo();
+  const useUsps = isConfigured.usps();
+  if (process.env.NODE_ENV === "production" && !useShippo && !useUsps) {
     return {
       ok: false,
-      error: "USPS shipping is not configured. Add USPS_CLIENT_ID and USPS_CLIENT_SECRET to Vercel to create real labels.",
+      error: "No shipping provider configured. Add SHIPPO_API_KEY (recommended) or USPS_CLIENT_ID / USPS_CLIENT_SECRET to Vercel.",
     };
   }
 
   const shipTo = (order.shipTo ?? {}) as Record<string, string>;
   const weightOz = 4 + order.items.reduce((n, i) => n + i.quantity, 0) * 2;
+  const labelInput = {
+    toName: shipTo.fullName ?? "Customer",
+    toStreet1: shipTo.street1 ?? "",
+    toStreet2: shipTo.street2,
+    toCity: shipTo.city ?? "",
+    toState: shipTo.state ?? "",
+    toZip: shipTo.zip ?? "",
+    weightOz,
+    service: order.shipService ?? "USPS_PRIORITY",
+  };
 
   try {
-    const label = await createLabel({
-      toName: shipTo.fullName ?? "Customer",
-      toStreet1: shipTo.street1 ?? "",
-      toStreet2: shipTo.street2,
-      toCity: shipTo.city ?? "",
-      toState: shipTo.state ?? "",
-      toZip: shipTo.zip ?? "",
-      weightOz,
-      service: order.shipService ?? "USPS_PRIORITY",
-    });
+    const label = useShippo
+      ? await createShippoLabel(labelInput)
+      : await createLabel(labelInput);
 
     const updated = await db.order.update({
       where: { id: orderId },
@@ -229,7 +235,10 @@ export async function createShippingLabel(
       await sendTransactional("SHIPMENT_TRACKING", { to, order: updated });
       await trackMarketing("SHIPMENT_TRACKING", to, updated);
     }
-    await audit(admin.id, "LABEL_CREATED", "Order", orderId, { tracking: label.trackingNumber });
+    await audit(admin.id, "LABEL_CREATED", "Order", orderId, {
+      tracking: label.trackingNumber,
+      provider: useShippo ? "shippo" : "usps",
+    });
     revalidatePath("/admin");
     return { ok: true, trackingNumber: label.trackingNumber };
   } catch (e) {
