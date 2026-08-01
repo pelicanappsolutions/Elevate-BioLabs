@@ -67,12 +67,11 @@ export async function recordMarketingOptOut(input: {
     where: { email },
     data: { active: false },
   });
-  if (input.userId) {
-    await db.user.update({
-      where: { id: input.userId },
-      data: { marketingOptIn: false },
-    });
-  }
+  // Clear account flag too — unsubscribe links only know the email.
+  await db.user.updateMany({
+    where: input.userId ? { id: input.userId } : { email },
+    data: { marketingOptIn: false },
+  });
 }
 
 /** Distinct active marketing emails for promotional blasts. */
