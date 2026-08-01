@@ -20,7 +20,10 @@ import {
   passwordResetHtml,
   welcomeHtml,
   newOrderAdminHtml,
+  promotionalHtml,
 } from "./sendgrid";
+import { getMarketingAsmGroupId } from "./asm";
+import { createUnsubscribeToken, unsubscribeUrl } from "@/lib/unsubscribe";
 import { subscribeProfile, trackEvent } from "./klaviyo";
 
 export type TransactionalType =
@@ -182,4 +185,43 @@ export async function subscribeNewsletter(
     console.error("[email] subscribeNewsletter failed:", err);
     return { ok: false };
   }
+}
+
+/**
+ * Send a marketing / promotional email via SendGrid with a legal unsubscribe
+ * footer (small font) + List-Unsubscribe headers + optional ASM group.
+ */
+export async function sendMarketingEmail(input: {
+  to: string;
+  subject: string;
+  headline?: string;
+  bodyHtml?: string;
+}): Promise<{ ok: boolean; mock?: boolean; error?: string }> {
+  const to = input.to.trim().toLowerCase();
+  const href = unsubscribeUrl(to);
+  const token = createUnsubscribeToken(to);
+  const oneClickUrl = `${env.SITE_URL}/api/unsubscribe?token=${encodeURIComponent(token)}`;
+  const asmGroupId = await getMarketingAsmGroupId().catch(() => null);
+  const html = promotionalHtml({
+    email: to,
+    headline: input.headline,
+    bodyHtml: input.bodyHtml,
+  });
+
+  const result = await sendEmail({
+    to,
+    subject: input.subject,
+    html,
+    replyTo: env.contactEmail,
+    marketing: { unsubscribeLink: href, oneClickUrl, asmGroupId },
+  });
+
+  await recordCampaignEvent({
+    type: "PROMOTIONAL",
+    email: to,
+    provider: "sendgrid",
+    status: result.ok ? (result.mock ? "mocked" : "sent") : "failed",
+  });
+
+  return { ok: result.ok, mock: result.mock, error: result.error };
 }

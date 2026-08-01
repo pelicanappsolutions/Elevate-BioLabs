@@ -8,6 +8,7 @@
  * coupling to the Prisma schema.
  */
 import { env, isConfigured } from "@/lib/env";
+import { unsubscribeUrl } from "@/lib/unsubscribe";
 
 export async function sendEmail(input: {
   to: string | string[];
@@ -15,6 +16,12 @@ export async function sendEmail(input: {
   html: string;
   text?: string;
   replyTo?: string;
+  /** When set, attach List-Unsubscribe headers + optional SendGrid ASM group. */
+  marketing?: {
+    unsubscribeLink: string;
+    oneClickUrl?: string;
+    asmGroupId?: number | null;
+  };
 }): Promise<{ ok: boolean; mock: boolean; status?: number; error?: string }> {
   if (!isConfigured.sendgrid()) {
     // MOCK mode.
@@ -33,6 +40,49 @@ export async function sendEmail(input: {
   }
 
   const replyTo = (input.replyTo ?? env.contactEmail ?? env.sendgrid.fromEmail).trim();
+  const marketing = input.marketing;
+  let oneClickApi = marketing?.oneClickUrl ?? null;
+  if (!oneClickApi && marketing?.unsubscribeLink) {
+    try {
+      const token = new URL(marketing.unsubscribeLink).searchParams.get("token");
+      if (token) {
+        oneClickApi = `${env.SITE_URL}/api/unsubscribe?token=${encodeURIComponent(token)}`;
+      }
+    } catch {
+      oneClickApi = null;
+    }
+  }
+
+  const payload: Record<string, unknown> = {
+    personalizations: [{ to: recipients.map((email) => ({ email })) }],
+    from: { email: env.sendgrid.fromEmail, name: env.sendgrid.fromName },
+    ...(replyTo ? { reply_to: { email: replyTo } } : {}),
+    subject: input.subject,
+    content: [
+      {
+        type: "text/plain",
+        value: input.text ?? stripHtml(input.html),
+      },
+      { type: "text/html", value: input.html },
+    ],
+  };
+
+  if (marketing?.unsubscribeLink) {
+    const listUnsub = oneClickApi
+      ? `<${oneClickApi}>, <${marketing.unsubscribeLink}>`
+      : `<${marketing.unsubscribeLink}>`;
+    payload.headers = {
+      "List-Unsubscribe": listUnsub,
+      ...(oneClickApi ? { "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } : {}),
+    };
+  }
+
+  if (marketing?.asmGroupId && marketing.asmGroupId > 0) {
+    payload.asm = {
+      group_id: marketing.asmGroupId,
+      groups_to_display: [marketing.asmGroupId],
+    };
+  }
 
   const res = await fetch("https://api.sendgrid.com/v3/mail/send", {
     method: "POST",
@@ -40,19 +90,7 @@ export async function sendEmail(input: {
       Authorization: `Bearer ${env.sendgrid.apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      personalizations: [{ to: recipients.map((email) => ({ email })) }],
-      from: { email: env.sendgrid.fromEmail, name: env.sendgrid.fromName },
-      ...(replyTo ? { reply_to: { email: replyTo } } : {}),
-      subject: input.subject,
-      content: [
-        {
-          type: "text/plain",
-          value: input.text ?? stripHtml(input.html),
-        },
-        { type: "text/html", value: input.html },
-      ],
-    }),
+    body: JSON.stringify(payload),
   });
 
   if (!res.ok) {
@@ -159,7 +197,20 @@ function card(inner: string, label?: string): string {
     </table>`;
 }
 
-function shell(title: string, preview: string, body: string): string {
+function shell(
+  title: string,
+  preview: string,
+  body: string,
+  opts?: { unsubscribeHref?: string }
+): string {
+  const unsub = opts?.unsubscribeHref
+    ? `<div style="margin-top:14px;font-size:11px;line-height:1.5;color:#9aa8b5;text-align:center;">
+        You're receiving this because you opted in to Elevate Bio-Labs updates.<br/>
+        <a href="${escapeHtml(opts.unsubscribeHref)}" style="color:#9aa8b5;text-decoration:underline;">Unsubscribe</a>
+        from marketing emails anytime.
+      </div>`
+    : `<span style="color:#9aa8b5;">You're receiving this because you placed an order or created an account with Elevate Bio-Labs.</span>`;
+
   return `<!-- ${title} -->
 ${preheader(preview)}
 <div style="margin:0;padding:0;background:${BRAND.canvas};">
@@ -176,12 +227,35 @@ ${preheader(preview)}
         <tr><td style="padding:22px 28px;background:${BRAND.subtle};border-top:1px solid ${BRAND.line};color:${BRAND.muted};font-size:12px;line-height:1.6;">
           <strong style="color:${BRAND.ink};">For Research Use Only (RUO)</strong> — not for human or veterinary use, food, or drug applications.<br/>
           Questions? <a href="mailto:${SUPPORT_EMAIL}" style="color:${BRAND.accent};text-decoration:none;">${SUPPORT_EMAIL}</a><br/>
-          <span style="color:#9aa8b5;">You're receiving this because you placed an order or created an account with Elevate Bio-Labs.</span>
+          ${unsub}
         </td></tr>
       </table>
     </td></tr>
   </table>
 </div>`;
+}
+
+/** Marketing / promotional blast HTML with a small-font unsubscribe footer. */
+export function promotionalHtml(input: {
+  email: string;
+  headline?: string;
+  bodyHtml?: string;
+}): string {
+  const href = unsubscribeUrl(input.email);
+  const headline = input.headline ?? "Updates from Elevate Bio-Labs";
+  const bodyInner =
+    input.bodyHtml ??
+    `<p style="margin:0 0 16px;font-size:15px;line-height:1.55;color:${BRAND.muted};">
+      New analytical standards, batch releases, and lab updates — only when they're useful.
+    </p>
+    <div style="margin:0 0 8px;">${button(env.SITE_URL + "/products", "Browse the catalog")}</div>`;
+
+  const body = `
+    <div style="margin:0 0 14px;">${pill("Update", BRAND.accent)}</div>
+    <h1 style="margin:0 0 12px;font-size:24px;line-height:1.25;color:${BRAND.ink};">${escapeHtml(headline)}</h1>
+    ${bodyInner}`;
+
+  return shell("Promotional", headline, body, { unsubscribeHref: href });
 }
 
 export function orderConfirmationHtml(order: any): string {

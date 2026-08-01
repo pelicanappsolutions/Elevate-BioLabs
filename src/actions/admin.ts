@@ -14,7 +14,7 @@ import { adjustStock, recomputeProductAggregates } from "@/lib/inventory";
 import { uploadFile, deleteFile } from "@/lib/storage";
 import { createLabel } from "@/lib/shipping/usps";
 import { createShippoLabel } from "@/lib/shipping/shippo";
-import { sendTransactional, trackMarketing } from "@/lib/email/index";
+import { sendMarketingEmail, sendTransactional, trackMarketing } from "@/lib/email/index";
 import { listMarketingEmails } from "@/lib/marketing";
 import { isConfigured } from "@/lib/env";
 import { confirmP2pPaymentByOrder } from "@/lib/payments/p2p-confirm";
@@ -427,12 +427,47 @@ export async function triggerCampaign(input: {
 
   let count = 0;
   for (const email of emails) {
-    await trackMarketing(input.type as CampaignType, email).catch(() => {});
-    count++;
+    if (input.type === "PROMOTIONAL") {
+      // Real SendGrid send with unsubscribe footer + List-Unsubscribe headers.
+      const res = await sendMarketingEmail({
+        to: email,
+        subject: "Updates from Elevate Bio-Labs",
+        headline: "Updates from Elevate Bio-Labs",
+      }).catch(() => ({ ok: false }));
+      if (res.ok) count++;
+    } else {
+      await trackMarketing(input.type as CampaignType, email).catch(() => {});
+      count++;
+    }
   }
   await audit(admin.id, "CAMPAIGN_TRIGGERED", "CampaignEvent", input.type, { count });
   revalidatePath("/admin");
   return { ok: true, count };
+}
+
+/** Admin smoke-test: send one marketing email with unsubscribe footer to a single address. */
+export async function sendTestMarketingEmail(input: {
+  to: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  const admin = await requireAdmin().catch(() => null);
+  if (!admin) return { ok: false, error: "Unauthorized" };
+
+  const to = input.to.trim().toLowerCase();
+  if (!to.includes("@")) return { ok: false, error: "Enter a valid email." };
+
+  const res = await sendMarketingEmail({
+    to,
+    subject: "Elevate Bio-Labs — marketing unsubscribe test",
+    headline: "Marketing email test",
+    bodyHtml: `<p style="margin:0 0 16px;font-size:15px;line-height:1.55;color:#6b7a89;">
+      This is a test of the marketing template. Use the small <strong>Unsubscribe</strong> link
+      in the footer — it should remove you from promo emails.
+    </p>`,
+  });
+
+  if (!res.ok) return { ok: false, error: res.error ?? "SendGrid send failed" };
+  await audit(admin.id, "TEST_MARKETING_EMAIL", "CampaignEvent", to, { mock: res.mock });
+  return { ok: true };
 }
 
 async function customerEmail(userId: string | null): Promise<string | null> {

@@ -4,9 +4,10 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Mail, Send } from "lucide-react";
 
-import { triggerCampaign } from "@/actions/admin";
+import { sendTestMarketingEmail, triggerCampaign } from "@/actions/admin";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -69,7 +70,8 @@ const CAMPAIGNS = [
   {
     type: "PROMOTIONAL",
     label: "Promotional blast",
-    description: "Manual send to opted-in subscribers only — new batches, restocks, offers.",
+    description:
+      "SendGrid send to opted-in subscribers only — includes a small unsubscribe footer + one-click List-Unsubscribe.",
     automated: false,
   },
 ];
@@ -87,6 +89,8 @@ export function EmailCampaignManager({
     null
   );
   const [pending, setPending] = React.useState(false);
+  const [testTo, setTestTo] = React.useState("info@elevatebiolab.com");
+  const [testing, setTesting] = React.useState(false);
 
   function statsFor(type: string) {
     const rows = recentCampaigns.filter((c) => c.type === type);
@@ -104,8 +108,11 @@ export function EmailCampaignManager({
       const res = await triggerCampaign({ type: confirming.type });
       if (res.ok) {
         toast({
-          title: "Campaign queued",
-          description: `${res.count} recipient${res.count === 1 ? "" : "s"} queued via Klaviyo.`,
+          title: confirming.type === "PROMOTIONAL" ? "Blast sent" : "Campaign queued",
+          description:
+            confirming.type === "PROMOTIONAL"
+              ? `${res.count} marketing email${res.count === 1 ? "" : "s"} sent via SendGrid with unsubscribe footer.`
+              : `${res.count} recipient${res.count === 1 ? "" : "s"} queued via Klaviyo.`,
         });
         setConfirming(null);
         router.refresh();
@@ -117,16 +124,54 @@ export function EmailCampaignManager({
     }
   }
 
+  async function sendTest() {
+    setTesting(true);
+    try {
+      const res = await sendTestMarketingEmail({ to: testTo });
+      if (res.ok) {
+        toast({
+          title: "Test marketing email sent",
+          description: `Check ${testTo} — use the footer Unsubscribe link to verify opt-out.`,
+        });
+      } else {
+        toast({ title: "Test send failed", description: res.error, variant: "destructive" });
+      }
+    } finally {
+      setTesting(false);
+    }
+  }
+
   return (
     <div>
       <p className="mb-4 text-sm text-muted-foreground">
         Automated flows are triggered by app events and run in Klaviyo. Transactional
-        mail goes out through SendGrid. Counts cover the last 30 days.{" "}
+        and promotional mail goes out through SendGrid. Counts cover the last 30 days.{" "}
         <span className="font-medium text-foreground">
           {subscriberCount} opted-in subscriber{subscriberCount === 1 ? "" : "s"}
         </span>{" "}
         stored for future promos (checkout, newsletter, account settings).
       </p>
+
+      <div className="mb-6 flex flex-col gap-2 rounded-lg border border-border bg-card p-4 sm:flex-row sm:items-end">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium">Test unsubscribe footer</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Sends one marketing email with a small Unsubscribe link. Clicking it removes
+            that address from the promo list.
+          </p>
+          <Input
+            type="email"
+            value={testTo}
+            onChange={(e) => setTestTo(e.target.value)}
+            className="mt-2"
+            aria-label="Test recipient email"
+          />
+        </div>
+        <Button size="sm" onClick={sendTest} disabled={testing || !testTo.includes("@")}>
+          {testing ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Send className="mr-1.5 h-3.5 w-3.5" />}
+          Send test
+        </Button>
+      </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
         {CAMPAIGNS.map((c) => {
@@ -176,9 +221,10 @@ export function EmailCampaignManager({
           <DialogHeader>
             <DialogTitle>Send {confirming?.label}?</DialogTitle>
             <DialogDescription>
-              This queues an email to every customer on file. It can&apos;t be recalled
-              once it leaves Klaviyo. Make sure the campaign content is RUO-compliant and
-              free of therapeutic claims.
+              {confirming?.type === "PROMOTIONAL"
+                ? "This sends a SendGrid marketing email to every opted-in subscriber, with a legal unsubscribe footer. It can't be recalled once sent."
+                : "This queues an email via Klaviyo. It can't be recalled once it leaves the provider."}{" "}
+              Make sure the campaign content is RUO-compliant and free of therapeutic claims.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="mt-4">
