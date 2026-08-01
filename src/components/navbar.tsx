@@ -1,10 +1,11 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { FlaskConical, LayoutDashboard, LogOut, Menu, Search, ShieldCheck, ShoppingCart, User } from "lucide-react";
+import { LayoutDashboard, LogOut, Menu, Search, ShieldCheck, ShoppingCart, User } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { useCart } from "@/store/cart";
@@ -92,7 +93,7 @@ export function Navbar() {
         <div className="container-tight flex h-16 items-center justify-between gap-4">
           {/* Left: logo */}
           <Link href="/" className="flex shrink-0 items-center gap-2 tap" aria-label="Elevate Bio-Labs home">
-            <FlaskConical className="h-6 w-6 text-primary" aria-hidden="true" />
+            <Image src="/icons/icon-192.png" alt="" width={28} height={28} className="h-7 w-7 object-contain" aria-hidden="true" />
             <span className="text-base font-semibold tracking-tight sm:text-lg">
               Elevate Bio-Labs
             </span>
@@ -181,7 +182,7 @@ export function Navbar() {
               <SheetContent side="left" className="flex w-[85vw] flex-col gap-6 sm:max-w-sm">
                 <SheetHeader>
                   <SheetTitle className="flex items-center gap-2 text-left">
-                    <FlaskConical className="h-5 w-5 text-primary" />
+                    <Image src="/icons/icon-192.png" alt="" width={24} height={24} className="h-6 w-6 object-contain" aria-hidden="true" />
                     Elevate Bio-Labs
                   </SheetTitle>
                 </SheetHeader>

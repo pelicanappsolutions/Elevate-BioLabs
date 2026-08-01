@@ -1,5 +1,5 @@
+import Image from "next/image";
 import Link from "next/link";
-import { FlaskConical } from "lucide-react";
 
 import { NewsletterSignup } from "@/components/newsletter-signup";
 
@@ -42,7 +42,7 @@ export function Footer() {
           {/* Brand + disclaimer */}
           <div className="lg:col-span-2">
             <Link href="/" className="flex items-center gap-2">
-              <FlaskConical className="h-6 w-6 text-primary" aria-hidden="true" />
+              <Image src="/icons/icon-192.png" alt="" width={28} height={28} className="h-7 w-7 object-contain" aria-hidden="true" />
               <span className="text-lg font-semibold tracking-tight">Elevate Bio-Labs</span>
             </Link>
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground">
