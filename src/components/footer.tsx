@@ -30,7 +30,7 @@ const SUPPORT_LINKS = [
   { href: "/compliance#about", label: "About Us" },
 ];
 
-const PAYMENT_RAILS = ["Card", "ACH", "Crypto", "Zelle"];
+const PAYMENT_RAILS = ["Crypto", "Zelle", "Venmo", "ACH"];
 
 export function Footer() {
   const year = new Date().getFullYear();

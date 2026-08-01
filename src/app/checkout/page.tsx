@@ -7,24 +7,20 @@ import { db } from "@/lib/db";
 import { isConfigured } from "@/lib/env";
 import { CheckoutFlow } from "@/components/checkout/checkout-flow";
 
-// Card/crypto rails only show at checkout once real credentials are set —
-// P2P rails (Zelle/Venmo/Wire) need no external account and are always on.
-// This means enabling/disabling a rail is purely an env-var decision on the
-// hosting side; it never requires a code change here.
+// Active rails for this launch:
+//   - Crypto (NOWPayments)
+//   - ACH / eCheck (SeamlessChex) when credentials are present
+//   - Zelle + Venmo (manual P2P)
+// Card rails (NexaPay/PayRam/Stripe), Coinbase, and Wire stay in the codebase
+// but are muted at checkout until we intentionally re-enable them.
 function getAvailableRails(): PaymentRail[] {
   const isDev = process.env.NODE_ENV !== "production";
   const configured: PaymentRail[] = [];
-  // Crypto (Coinbase Commerce) is a primary rail for this vertical. Shown when
-  // its key is set — and also in dev so it's testable without live keys. In
-  // production it activates automatically the moment COINBASE_COMMERCE_API_KEY
-  // is present.
-  if (isConfigured.coinbase() || isDev) configured.push("COINBASE");
+
   if (isConfigured.nowpayments() || isDev) configured.push("NOWPAYMENTS");
-  if (isConfigured.nexapay()) configured.push("NEXAPAY");
-  if (isConfigured.seamlesschex()) configured.push("SEAMLESSCHEX");
-  if (isConfigured.payram()) configured.push("PAYRAM");
-  if (isConfigured.stripe()) configured.push("STRIPE");
-  return [...configured, "P2P_WIRE", "P2P_ZELLE", "P2P_VENMO"];
+  if (isConfigured.seamlesschex() || isDev) configured.push("SEAMLESSCHEX");
+
+  return [...configured, "P2P_ZELLE", "P2P_VENMO"];
 }
 
 export const metadata: Metadata = {

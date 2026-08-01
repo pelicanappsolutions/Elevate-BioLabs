@@ -38,8 +38,8 @@ export const PAYMENT_RAIL_META: Record<PaymentRailName, PaymentRailMeta> = {
     requiresProof: false,
   },
   SEAMLESSCHEX: {
-    label: "ACH / eCheck",
-    description: "Pay directly from your bank account (verified via Plaid).",
+    label: "ACH / Bank transfer",
+    description: "Pay directly from your bank account. Settles in 1–2 business days.",
     feeNote: "<2% • next-day funding",
     type: "ach",
     requiresProof: false,
