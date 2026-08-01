@@ -9,6 +9,7 @@ import { decrementStock, InsufficientStockError } from "@/lib/inventory";
 import { getShippingRates, type ShippingRate } from "@/lib/shipping/index";
 import { createCharge } from "@/lib/payments/index";
 import { sendTransactional, trackMarketing } from "@/lib/email/index";
+import { recordMarketingOptIn } from "@/lib/marketing";
 import { generateOrderNumber, FREE_SHIPPING_THRESHOLD_CENTS } from "@/lib/utils";
 import { rateLimit } from "@/lib/rate-limit";
 import type { PaymentRail, PaymentStatus } from "@prisma/client";
@@ -192,6 +193,17 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
           instructions: charge.instructions,
         },
       });
+    }
+
+    // Persist marketing opt-in from checkout (local list + User flag + Klaviyo).
+    if (data.marketingOptIn) {
+      await recordMarketingOptIn({
+        email: data.email,
+        source: "checkout",
+        name: data.address.fullName,
+        phone: data.address.phone,
+        userId: session.user.id,
+      }).catch(() => {});
     }
 
     // Marketing: fire a "started checkout"-style signal for abandoned-cart flows.

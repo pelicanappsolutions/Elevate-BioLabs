@@ -96,6 +96,7 @@ export function CheckoutFlow({
   const [step, setStep] = React.useState(0);
   const [email, setEmail] = React.useState(defaultEmail);
   const [ageConfirm, setAgeConfirm] = React.useState(false);
+  const [marketingOptIn, setMarketingOptIn] = React.useState(false);
 
   const defaultSaved = savedAddresses.find((a) => a.isDefault) ?? savedAddresses[0];
   const [address, setAddress] = React.useState<AddressForm>(
@@ -216,6 +217,7 @@ export function CheckoutFlow({
         items: items.map((i) => ({ variantId: i.variantId, quantity: i.quantity })),
         rail,
         shipService,
+        marketingOptIn,
       });
 
       if (!result.ok) {
@@ -560,6 +562,18 @@ export function CheckoutFlow({
                     compliance policy
                   </Link>
                   .
+                </span>
+              </label>
+
+              <label className="flex cursor-pointer items-start gap-2.5 rounded-md border border-border p-3">
+                <Checkbox
+                  checked={marketingOptIn}
+                  onCheckedChange={(v) => setMarketingOptIn(Boolean(v))}
+                  className="mt-0.5"
+                />
+                <span className="text-xs leading-relaxed text-muted-foreground">
+                  Email me research updates, new batch releases, and occasional offers.
+                  You can unsubscribe anytime in account settings.
                 </span>
               </label>
             </div>

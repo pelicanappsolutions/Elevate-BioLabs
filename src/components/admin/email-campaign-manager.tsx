@@ -45,13 +45,19 @@ const CAMPAIGNS = [
   {
     type: "ORDER_CONFIRMATION",
     label: "Order confirmation",
-    description: "Transactional — sent by SendGrid the moment payment succeeds.",
+    description: "Transactional — sent at checkout (includes P2P payment instructions).",
+    automated: true,
+  },
+  {
+    type: "PAYMENT_RECEIVED",
+    label: "Payment received / preparing",
+    description: "Transactional — admin button or confirm-payment: payment got, shipping soon.",
     automated: true,
   },
   {
     type: "SHIPMENT_TRACKING",
     label: "Shipment tracking",
-    description: "Transactional — fires when a USPS label is created.",
+    description: "Transactional — fires when a shipping label is created.",
     automated: true,
   },
   {
@@ -63,15 +69,17 @@ const CAMPAIGNS = [
   {
     type: "PROMOTIONAL",
     label: "Promotional blast",
-    description: "Manual send to all customers — new batches, restocks, offers.",
+    description: "Manual send to opted-in subscribers only — new batches, restocks, offers.",
     automated: false,
   },
 ];
 
 export function EmailCampaignManager({
   recentCampaigns,
+  subscriberCount = 0,
 }: {
   recentCampaigns: CampaignStat[];
+  subscriberCount?: number;
 }) {
   const { toast } = useToast();
   const router = useRouter();
@@ -113,7 +121,11 @@ export function EmailCampaignManager({
     <div>
       <p className="mb-4 text-sm text-muted-foreground">
         Automated flows are triggered by app events and run in Klaviyo. Transactional
-        mail goes out through SendGrid. Counts cover the last 30 days.
+        mail goes out through SendGrid. Counts cover the last 30 days.{" "}
+        <span className="font-medium text-foreground">
+          {subscriberCount} opted-in subscriber{subscriberCount === 1 ? "" : "s"}
+        </span>{" "}
+        stored for future promos (checkout, newsletter, account settings).
       </p>
 
       <div className="grid gap-3 sm:grid-cols-2">

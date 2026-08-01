@@ -136,10 +136,24 @@ export async function updateMarketingPref(input: {
   const user = await requireUser().catch(() => null);
   if (!user) return { ok: false, error: "Unauthorized" };
 
-  await db.user.update({
+  const dbUser = await db.user.findUnique({
     where: { id: user.id },
-    data: { marketingOptIn: Boolean(input.optIn) },
+    select: { email: true, name: true },
   });
+  if (!dbUser) return { ok: false, error: "Account not found" };
+
+  if (input.optIn) {
+    const { recordMarketingOptIn } = await import("@/lib/marketing");
+    await recordMarketingOptIn({
+      email: dbUser.email,
+      source: "account",
+      name: dbUser.name,
+      userId: user.id,
+    });
+  } else {
+    const { recordMarketingOptOut } = await import("@/lib/marketing");
+    await recordMarketingOptOut({ email: dbUser.email, userId: user.id });
+  }
   revalidateAccount();
   return { ok: true };
 }

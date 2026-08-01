@@ -93,6 +93,8 @@ export const checkoutSchema = z.object({
   items: z.array(cartLineSchema).min(1, "Cart is empty"),
   rail: paymentRailSchema,
   shipService: z.string().default("USPS_PRIORITY"),
+  /** Optional marketing / promo email opt-in at checkout. */
+  marketingOptIn: z.boolean().optional().default(false),
 });
 
 // ---- Admin: compound (parent Product) CRUD ----

@@ -192,7 +192,12 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
 
           <div className="rounded-lg border border-border bg-card p-4">
             <h2 className="mb-3 text-sm font-semibold">Actions</h2>
-            <OrderDetailActions orderId={order.id} status={order.status} notes={order.notes ?? ""} />
+            <OrderDetailActions
+              orderId={order.id}
+              status={order.status}
+              notes={order.notes ?? ""}
+              trackingNumber={order.trackingNumber}
+            />
           </div>
         </div>
       </div>

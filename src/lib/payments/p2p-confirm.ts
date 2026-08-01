@@ -53,8 +53,8 @@ export async function confirmP2pPaymentByOrder(
 
   const to = order.guestEmail ?? (await customerEmail(order.userId));
   if (to) {
-    await sendTransactional("ORDER_CONFIRMATION", { to, order });
-    await trackMarketing("ORDER_CONFIRMATION", to, order);
+    await sendTransactional("PAYMENT_RECEIVED", { to, order });
+    await trackMarketing("PAYMENT_RECEIVED", to, order);
   }
 
   revalidatePath("/admin");

@@ -14,6 +14,7 @@ import { db } from "@/lib/db";
 import {
   sendEmail,
   orderConfirmationHtml,
+  paymentReceivedHtml,
   shipmentTrackingHtml,
   passwordResetHtml,
   welcomeHtml,
@@ -22,6 +23,7 @@ import { subscribeProfile, trackEvent } from "./klaviyo";
 
 export type TransactionalType =
   | "ORDER_CONFIRMATION"
+  | "PAYMENT_RECEIVED"
   | "SHIPMENT_TRACKING"
   | "PASSWORD_RESET"
   | "WELCOME";
@@ -29,6 +31,7 @@ export type TransactionalType =
 /** Which transactional sends map to a CampaignType we persist. */
 const CAMPAIGN_TYPE_FOR: Partial<Record<TransactionalType, CampaignType>> = {
   ORDER_CONFIRMATION: "ORDER_CONFIRMATION",
+  PAYMENT_RECEIVED: "PAYMENT_RECEIVED",
   SHIPMENT_TRACKING: "SHIPMENT_TRACKING",
 };
 
@@ -68,6 +71,10 @@ export async function sendTransactional(
       case "ORDER_CONFIRMATION":
         subject = `Order ${args.order?.orderNumber ?? ""} confirmed`;
         html = orderConfirmationHtml(args.order ?? {});
+        break;
+      case "PAYMENT_RECEIVED":
+        subject = `Payment received — order ${args.order?.orderNumber ?? ""} is being prepared`;
+        html = paymentReceivedHtml(args.order ?? {});
         break;
       case "SHIPMENT_TRACKING":
         subject = `Your order ${args.order?.orderNumber ?? ""} has shipped`;

@@ -2,10 +2,15 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Mail, Save } from "lucide-react";
 import type { OrderStatus } from "@prisma/client";
 
-import { updateOrderStatus, updateOrderNotes, refundOrder } from "@/actions/admin";
+import {
+  notifyPaymentReceived,
+  updateOrderStatus,
+  updateOrderNotes,
+  refundOrder,
+} from "@/actions/admin";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -19,15 +24,17 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { ORDER_STATUSES } from "@/lib/order-status";
 
-/** Admin order-detail mutations: status change, notes edit, refund. */
+/** Admin order-detail mutations: status change, notify email, notes edit, refund. */
 export function OrderDetailActions({
   orderId,
   status,
   notes,
+  trackingNumber,
 }: {
   orderId: string;
   status: OrderStatus;
   notes: string;
+  trackingNumber?: string | null;
 }) {
   const { toast } = useToast();
   const router = useRouter();
@@ -80,6 +87,27 @@ export function OrderDetailActions({
     }
   }
 
+  async function notifyCustomer() {
+    setBusy(true);
+    try {
+      const res = await notifyPaymentReceived(orderId);
+      if (res.ok) {
+        toast({
+          title: "Customer notified",
+          description: `Payment-received email sent to ${res.emailed}.`,
+        });
+      } else {
+        toast({ title: "Email failed", description: res.error, variant: "destructive" });
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const canNotify =
+    !trackingNumber &&
+    (status === "PAID" || status === "PROCESSING" || status === "AWAITING_REVIEW");
+
   return (
     <div className="flex flex-col gap-4">
       <div>
@@ -110,6 +138,28 @@ export function OrderDetailActions({
           )}
         </div>
       </div>
+
+      {canNotify && (
+        <div>
+          <Label className="text-xs">Customer email</Label>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Tell them payment was received and the order is being prepared for shipment.
+          </p>
+          <Button
+            size="sm"
+            className="mt-2"
+            disabled={busy}
+            onClick={notifyCustomer}
+          >
+            {busy ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Mail className="mr-2 h-4 w-4" />
+            )}
+            Email: payment received / preparing
+          </Button>
+        </div>
+      )}
 
       <div>
         <Label htmlFor="order-notes" className="text-xs">Internal notes</Label>

@@ -2,12 +2,17 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Check, FileText, Loader2, Truck } from "lucide-react";
+import { Check, FileText, Loader2, Mail, Truck } from "lucide-react";
 import type { OrderStatus, PaymentRail } from "@prisma/client";
 
 import Link from "next/link";
 
-import { confirmP2pPayment, createShippingLabel, updateOrderStatus } from "@/actions/admin";
+import {
+  confirmP2pPayment,
+  createShippingLabel,
+  notifyPaymentReceived,
+  updateOrderStatus,
+} from "@/actions/admin";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -98,6 +103,24 @@ export function AdminOrders({ orders }: { orders: AdminOrder[] }) {
         router.refresh();
       } else {
         toast({ title: "Label failed", description: res.error, variant: "destructive" });
+      }
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  /** Emails the customer that payment was received and the order is being prepared. */
+  async function notifyPreparing(orderId: string) {
+    setBusyId(orderId);
+    try {
+      const res = await notifyPaymentReceived(orderId);
+      if (res.ok) {
+        toast({
+          title: "Customer notified",
+          description: `Payment-received email sent to ${res.emailed}.`,
+        });
+      } else {
+        toast({ title: "Email failed", description: res.error, variant: "destructive" });
       }
     } finally {
       setBusyId(null);
@@ -198,6 +221,25 @@ export function AdminOrders({ orders }: { orders: AdminOrder[] }) {
                       <Check className="mr-1.5 h-3.5 w-3.5" />
                     )}
                     Confirm payment received
+                  </Button>
+                )}
+
+                {(order.status === "PAID" ||
+                  order.status === "PROCESSING" ||
+                  order.status === "AWAITING_REVIEW") &&
+                  !order.trackingNumber && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={busyId === order.id}
+                    onClick={() => notifyPreparing(order.id)}
+                  >
+                    {busyId === order.id ? (
+                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Mail className="mr-1.5 h-3.5 w-3.5" />
+                    )}
+                    Email: payment received / preparing
                   </Button>
                 )}
 

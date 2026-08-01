@@ -79,6 +79,7 @@ enum CampaignType {
   ABANDONED_CART_24H
   ABANDONED_CART_48H
   ORDER_CONFIRMATION
+  PAYMENT_RECEIVED
   SHIPMENT_TRACKING
   POST_PURCHASE_REVIEW
   PROMOTIONAL
@@ -101,19 +102,41 @@ model User {
   verificationTier VerificationTier @default(PENDING)
   labProfile       LabProfile?
 
-  accounts      Account[]
-  sessions      Session[]
-  orders        Order[]
-  addresses     Address[]
-  savedProducts SavedProduct[]
-  dosageLogs    DosageLog[]
-  auditLogs     AuditLog[]
+  accounts              Account[]
+  sessions              Session[]
+  orders                Order[]
+  addresses             Address[]
+  savedProducts         SavedProduct[]
+  dosageLogs            DosageLog[]
+  auditLogs             AuditLog[]
+  marketingSubscribers  MarketingSubscriber[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([role])
   @@index([verificationTier])
+  @@index([marketingOptIn])
+}
+
+// Local marketing list for opted-in emails (checkout / newsletter / account).
+// Kept in sync with User.marketingOptIn when a matching account exists.
+model MarketingSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  phone     String?
+  source    String // checkout | newsletter | account | contact
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  active    Boolean  @default(true)
+  optedInAt DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([active])
+  @@index([userId])
+  @@index([source])
 }
 
 // Enhanced liability documentation for the Independent Laboratory track.

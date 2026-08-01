@@ -15,6 +15,7 @@ import { uploadFile, deleteFile } from "@/lib/storage";
 import { createLabel } from "@/lib/shipping/usps";
 import { createShippoLabel } from "@/lib/shipping/shippo";
 import { sendTransactional, trackMarketing } from "@/lib/email/index";
+import { listMarketingEmails } from "@/lib/marketing";
 import { isConfigured } from "@/lib/env";
 import { confirmP2pPaymentByOrder } from "@/lib/payments/p2p-confirm";
 import { slugify, variantDisplayName } from "@/lib/utils";
@@ -273,8 +274,8 @@ export async function approveReceipt(receiptId: string): Promise<{ ok: boolean; 
   });
   const to = order?.guestEmail ?? (await customerEmail(order?.userId ?? null));
   if (order && to) {
-    await sendTransactional("ORDER_CONFIRMATION", { to, order });
-    await trackMarketing("ORDER_CONFIRMATION", to, order);
+    await sendTransactional("PAYMENT_RECEIVED", { to, order });
+    await trackMarketing("PAYMENT_RECEIVED", to, order);
   }
   await audit(admin.id, "RECEIPT_APPROVED", "PaymentReceipt", receiptId);
   revalidatePath("/admin");
@@ -307,6 +308,34 @@ export async function confirmP2pPayment(orderId: string): Promise<{ ok: boolean;
     actor: "admin",
     reason: "Admin confirmed payment via Venmo/Zelle activity",
   });
+}
+
+/**
+ * Email the customer that payment was received and the order is being prepared
+ * for shipment. Uses the checkout/account email saved on the order.
+ * Safe to resend (e.g. customer asks "did you get my Venmo?").
+ */
+export async function notifyPaymentReceived(
+  orderId: string
+): Promise<{ ok: boolean; error?: string; emailed?: string }> {
+  const admin = await requireAdmin().catch(() => null);
+  if (!admin) return { ok: false, error: "Unauthorized" };
+
+  const order = await db.order.findUnique({
+    where: { id: orderId },
+    include: { items: true, user: { select: { email: true } } },
+  });
+  if (!order) return { ok: false, error: "Order not found" };
+
+  const to = order.guestEmail ?? order.user?.email ?? (await customerEmail(order.userId));
+  if (!to) return { ok: false, error: "No customer email on this order." };
+
+  await sendTransactional("PAYMENT_RECEIVED", { to, order });
+  await trackMarketing("PAYMENT_RECEIVED", to, order);
+  await audit(admin.id, "PAYMENT_RECEIVED_EMAIL_SENT", "Order", orderId, { to });
+  revalidatePath("/admin");
+  revalidatePath(`/admin/orders/${orderId}`);
+  return { ok: true, emailed: to };
 }
 
 // ---------------- COA upload ----------------
@@ -393,16 +422,12 @@ export async function triggerCampaign(input: {
   const admin = await requireAdmin().catch(() => null);
   if (!admin) return { ok: false, error: "Unauthorized" };
 
-  // Resolve a recipient set from the segment (all customers for a blast).
-  const users = await db.user.findMany({
-    where: { role: "CUSTOMER" },
-    select: { email: true },
-    take: 5000,
-  });
+  // Promotional blasts only go to people who opted in (account + MarketingSubscriber).
+  const emails = await listMarketingEmails(5000);
 
   let count = 0;
-  for (const u of users) {
-    await trackMarketing(input.type as CampaignType, u.email).catch(() => {});
+  for (const email of emails) {
+    await trackMarketing(input.type as CampaignType, email).catch(() => {});
     count++;
   }
   await audit(admin.id, "CAMPAIGN_TRIGGERED", "CampaignEvent", input.type, { count });

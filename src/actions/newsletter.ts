@@ -1,8 +1,8 @@
 "use server";
 
 import { newsletterSchema } from "@/lib/validations";
-import { subscribeNewsletter as klaviyoSubscribe } from "@/lib/email/index";
 import { sendEmail } from "@/lib/email/sendgrid";
+import { recordMarketingOptIn } from "@/lib/marketing";
 import { env } from "@/lib/env";
 import { rateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
@@ -17,7 +17,17 @@ export async function subscribeNewsletter(input: {
   const rl = rateLimit(`newsletter:${parsed.data.email}`, { limit: 3, windowMs: 60_000 });
   if (!rl.success) return { ok: false, error: "Too many attempts. Try again shortly." };
 
-  await klaviyoSubscribe(parsed.data.email, parsed.data.source);
+  const source =
+    parsed.data.source === "checkout" ||
+    parsed.data.source === "account" ||
+    parsed.data.source === "contact"
+      ? parsed.data.source
+      : "newsletter";
+
+  await recordMarketingOptIn({
+    email: parsed.data.email,
+    source,
+  });
   return { ok: true };
 }
 

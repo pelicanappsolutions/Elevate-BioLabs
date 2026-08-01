@@ -55,6 +55,7 @@ export default async function AdminPage() {
     customerSpend,
     auditLogs,
     inventoryLogs,
+    marketingSubscriberCount,
   ] = await Promise.all([
     db.product.findMany({
       include: {
@@ -146,6 +147,7 @@ export default async function AdminPage() {
         variant: { select: { strengthMg: true, product: { select: { name: true } } } },
       },
     }),
+    db.marketingSubscriber.count({ where: { active: true } }),
   ]);
 
   // InventoryLog.orderId is a plain scalar (no relation), so resolve order
@@ -384,6 +386,7 @@ export default async function AdminPage() {
 
         <TabsContent value="email" className="mt-6">
           <EmailCampaignManager
+            subscriberCount={marketingSubscriberCount}
             recentCampaigns={recentCampaigns.map((c) => ({
               type: c.type,
               status: c.status,

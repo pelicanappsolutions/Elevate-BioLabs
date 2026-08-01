@@ -266,6 +266,52 @@ export function orderConfirmationHtml(order: any): string {
   );
 }
 
+/** Sent when admin confirms payment / notifies that the order is being prepared to ship. */
+export function paymentReceivedHtml(order: any): string {
+  const orderNo = escapeHtml(order?.orderNumber ?? "");
+  const items: any[] = Array.isArray(order?.items) ? order.items : [];
+  const rows = items
+    .map(
+      (it, i) =>
+        `<div style="font-size:14px;color:${BRAND.ink};padding:${i === 0 ? "0" : "8px"} 0 0;${
+          i === 0 ? "" : `border-top:1px solid ${BRAND.line};margin-top:8px;`
+        }"><strong>${escapeHtml(it?.name ?? "Research compound")}</strong> <span style="color:${BRAND.muted};">× ${Number(
+          it?.quantity ?? 1
+        )}</span></div>`
+    )
+    .join("");
+
+  const itemsCard = items.length ? card(rows, "Your order") : "";
+  const shipCard = order?.shipTo ? card(addressBlock(order.shipTo), "Shipping to") : "";
+
+  const body = `
+    <div style="margin:0 0 14px;">${pill("Payment received", BRAND.green)}</div>
+    <h1 style="margin:0 0 8px;font-size:24px;line-height:1.25;color:${BRAND.ink};">We've got your payment.</h1>
+    <p style="margin:0 0 22px;font-size:15px;line-height:1.55;color:${BRAND.muted};">
+      Order <strong style="color:${BRAND.ink};">${orderNo}</strong> is confirmed and being prepared for shipment. You'll get another email with tracking as soon as it leaves our facility.
+    </p>
+    ${itemsCard}
+    ${shipCard}
+    ${card(
+      `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:${BRAND.ink};line-height:1.5;">
+        <tr><td style="padding:2px 0;"><strong style="color:${BRAND.accent};">1.</strong>&nbsp; Payment verified — thank you.</td></tr>
+        <tr><td style="padding:2px 0;"><strong style="color:${BRAND.accent};">2.</strong>&nbsp; We're packing and QC-checking your order now.</td></tr>
+        <tr><td style="padding:2px 0;"><strong style="color:${BRAND.accent};">3.</strong>&nbsp; Tracking details arrive the moment it ships.</td></tr>
+      </table>`,
+      "What happens next"
+    )}
+    <p style="margin:14px 0 0;font-size:13px;color:${BRAND.muted};line-height:1.5;">
+      Questions? Reply to this email or reach us at
+      <a href="mailto:${SUPPORT_EMAIL}" style="color:${BRAND.accent};text-decoration:none;">${SUPPORT_EMAIL}</a>.
+    </p>`;
+
+  return shell(
+    "Payment Received",
+    `Payment received for order ${order?.orderNumber ?? ""} — preparing to ship`,
+    body
+  );
+}
+
 export function shipmentTrackingHtml(order: any): string {
   const tracking = order?.trackingNumber ?? order?.tracking ?? "";
   const carrier = order?.carrier ?? "USPS";
