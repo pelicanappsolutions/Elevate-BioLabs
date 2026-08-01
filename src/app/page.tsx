@@ -292,15 +292,8 @@ export default async function HomePage() {
 
       {/* ─────────────── Research tools teaser ────────────────── */}
       <section className="container-tight py-12 sm:py-16">
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
           {[
-          {
-            icon: Beaker,
-            title: "Analytical standard calculator",
-            body: "Enter vial strength, diluent volume, and analyte mass — get the reference concentration in mcg/mL.",
-            href: "/products",
-            cta: "Try it on any product",
-          },
             {
               icon: FileCheck2,
               title: "Batch & COA lookup",

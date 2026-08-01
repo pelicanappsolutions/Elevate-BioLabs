@@ -73,6 +73,7 @@ export const paymentRailSchema = z.enum([
   "PAYRAM",
   "STRIPE",
   "COINBASE",
+  "NOWPAYMENTS",
   "P2P_ZELLE",
   "P2P_VENMO",
   "P2P_WIRE",

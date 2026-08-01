@@ -66,7 +66,7 @@ export const PAYMENT_RAIL_META: Record<PaymentRailName, PaymentRailMeta> = {
     requiresProof: false,
   },
   NOWPAYMENTS: {
-    label: "Crypto (NOWPayments)",
+    label: "Crypto",
     description: "Pay with BTC, ETH, LTC, XMR, DOGE and hundreds of altcoins via NOWPayments.",
     feeNote: "1% • no chargebacks",
     type: "crypto",

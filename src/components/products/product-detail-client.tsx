@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/select";
 import { ProductGallery } from "@/components/products/product-gallery";
 import { AddToCartPanel } from "@/components/products/add-to-cart-panel";
-import { DosageCalculator } from "@/components/products/dosage-calculator";
 
 interface VariantData {
   id: string;
@@ -149,22 +148,6 @@ export function ProductDetailClient({
         </div>
       </div>
 
-      {/* Analytical standard calculator — strength-aware, swaps with selection */}
-      <div>
-        <h2 className="text-lg font-semibold">Analytical standard calculator</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Calculate reference concentration for in-vitro analytical work. Figures are
-          arithmetic only and are not experimental protocols or dosing guidance.
-        </p>
-        <div className="mt-3">
-          <DosageCalculator
-            variantId={selected.id}
-            productName={`${productName} ${selected.strengthMg}mg`}
-            vialMg={selected.strengthMg}
-            reconstitutionVolumeMl={selected.reconstitutionVolumeMl}
-          />
-        </div>
-      </div>
     </>
   );
 }
