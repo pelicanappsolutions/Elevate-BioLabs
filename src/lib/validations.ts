@@ -53,7 +53,15 @@ export const addressSchema = z.object({
   city: z.string().min(2),
   state: z.string().min(2).max(2),
   zip: z.string().regex(/^\d{5}(-\d{4})?$/, "Valid US ZIP required"),
-  country: z.string().default("US"),
+  // Domestic U.S. shipping only — reject anything else server-side.
+  country: z
+    .string()
+    .default("US")
+    .transform((v) => v.trim().toUpperCase())
+    .refine((v) => v === "US" || v === "USA" || v === "UNITED STATES", {
+      message: "We only ship within the United States",
+    })
+    .transform(() => "US"),
   // Required — carriers need a contact number, and it ties every order to a
   // reachable customer. Validated on digit count so formatting is irrelevant.
   phone: z

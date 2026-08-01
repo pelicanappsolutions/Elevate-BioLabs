@@ -403,6 +403,10 @@ export function CheckoutFlow({
           {step === 1 && (
             <div className="flex flex-col gap-4">
               <h2 className="text-lg font-semibold">Delivery method</h2>
+              <p className="text-sm text-muted-foreground">
+                U.S. domestic shipping only. Rates are live quotes from Shippo
+                (USPS, UPS, FedEx, and other carriers available on your account).
+              </p>
               {loadingRates ? (
                 <div className="flex flex-col gap-2">
                   {[0, 1, 2].map((i) => (

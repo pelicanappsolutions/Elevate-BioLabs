@@ -1,7 +1,7 @@
 /**
  * Shippo adapter — preferred rate + label provider while USPS direct API
- * credentials are pending. Uses Shippo's REST API to create a shipment,
- * quote rates, pick a USPS rate matching our service code, and purchase a label.
+ * credentials are pending. Quotes all domestic carriers Shippo returns for a
+ * US address, then purchases a label for the selected service.
  *
  * Auth: Authorization: ShippoToken <SHIPPO_API_KEY>
  * Test keys (shippo_test_*) return test rates/labels with no charge.
@@ -11,41 +11,17 @@ import type { ShippingRate } from "@/lib/shipping/usps";
 
 const SHIPPO_API = "https://api.goshippo.com";
 
-/** Our checkout service codes → Shippo USPS servicelevel tokens (prefer first). */
-const SERVICE_DEFS: Array<{
-  service: string;
-  label: string;
-  tokens: string[];
-  estDaysFallback: string;
-}> = [
-  {
-    service: "USPS_GROUND_ADVANTAGE",
-    label: "USPS Ground Advantage",
-    tokens: ["usps_ground_advantage", "ground_advantage", "parcel_select", "usps_parcel_select"],
-    estDaysFallback: "5-7",
-  },
-  {
-    service: "USPS_PRIORITY",
-    label: "USPS Priority Mail",
-    tokens: ["usps_priority", "priority"],
-    estDaysFallback: "2-3",
-  },
-  {
-    service: "USPS_PRIORITY_EXPRESS",
-    label: "USPS Priority Mail Express",
-    tokens: ["usps_priority_express", "priority_express", "express"],
-    estDaysFallback: "1-2",
-  },
-];
-
-/** Map our internal shipService codes to Shippo USPS servicelevel tokens. */
-function serviceLevelTokens(service: string): string[] {
-  return (
-    SERVICE_DEFS.find((d) => d.service === service)?.tokens ??
-    SERVICE_DEFS[0]?.tokens ??
-    ["usps_ground_advantage"]
-  );
-}
+/** Legacy USPS checkout codes → Shippo servicelevel tokens. */
+const LEGACY_USPS_TOKENS: Record<string, string[]> = {
+  USPS_PRIORITY_EXPRESS: ["usps_priority_express", "priority_express", "express"],
+  USPS_PRIORITY: ["usps_priority", "priority"],
+  USPS_GROUND_ADVANTAGE: [
+    "usps_ground_advantage",
+    "ground_advantage",
+    "parcel_select",
+    "usps_parcel_select",
+  ],
+};
 
 async function shippoFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${SHIPPO_API}${path}`, {
@@ -66,6 +42,7 @@ async function shippoFetch<T>(path: string, init?: RequestInit): Promise<T> {
 interface ShippoRate {
   object_id: string;
   amount: string;
+  currency?: string;
   provider?: string;
   estimated_days?: number;
   duration_terms?: string;
@@ -86,37 +63,56 @@ interface ShippoTransaction {
   messages?: Array<{ text?: string }>;
 }
 
-function uspsPool(rates: ShippoRate[]): ShippoRate[] {
-  const usps = rates.filter((r) => (r.provider ?? "").toUpperCase() === "USPS");
-  return usps.length ? usps : rates;
+/** Stable checkout service code: PROVIDER__TOKEN (e.g. USPS__USPS_PRIORITY). */
+export function rateServiceCode(rate: ShippoRate): string {
+  const provider = (rate.provider ?? "CARRIER")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  const token = (rate.servicelevel?.token ?? rate.object_id)
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  return `${provider}__${token}`;
 }
 
-/** Exact servicelevel token match only (no cheapest-rate fallback). */
-function findRateByTokens(rates: ShippoRate[], tokens: string[]): ShippoRate | null {
-  const pool = uspsPool(rates);
-  for (const token of tokens) {
-    const match = pool.find(
-      (r) => (r.servicelevel?.token ?? "").toLowerCase() === token.toLowerCase()
-    );
-    if (match) return match;
-  }
-  return null;
+function rateLabel(rate: ShippoRate): string {
+  const provider = (rate.provider ?? "Carrier").trim();
+  const name = rate.servicelevel?.name?.trim();
+  if (!name) return provider;
+  if (name.toUpperCase().startsWith(provider.toUpperCase())) return name;
+  return `${provider} ${name}`;
 }
 
-function pickRate(rates: ShippoRate[], service: string): ShippoRate | null {
-  if (!rates.length) return null;
-  const exact = findRateByTokens(rates, serviceLevelTokens(service));
-  if (exact) return exact;
-  // Label purchase fallback: cheapest USPS (or cheapest overall).
-  return [...uspsPool(rates)].sort((a, b) => parseFloat(a.amount) - parseFloat(b.amount))[0] ?? null;
-}
-
-function estDaysFromRate(rate: ShippoRate, fallback: string): string {
+function estDaysFromRate(rate: ShippoRate): string {
   if (typeof rate.estimated_days === "number" && rate.estimated_days > 0) {
     return `${rate.estimated_days} day${rate.estimated_days === 1 ? "" : "s"}`;
   }
   if (rate.duration_terms?.trim()) return rate.duration_terms.trim();
-  return fallback;
+  return "Transit time varies";
+}
+
+function findRateByService(rates: ShippoRate[], service: string): ShippoRate | null {
+  if (!rates.length) return null;
+
+  const byCode = rates.find((r) => rateServiceCode(r) === service);
+  if (byCode) return byCode;
+
+  // Legacy USPS_* codes from older orders / checkout defaults.
+  const legacyTokens = LEGACY_USPS_TOKENS[service];
+  if (legacyTokens) {
+    const usps = rates.filter((r) => (r.provider ?? "").toUpperCase() === "USPS");
+    const pool = usps.length ? usps : rates;
+    for (const token of legacyTokens) {
+      const match = pool.find(
+        (r) => (r.servicelevel?.token ?? "").toLowerCase() === token.toLowerCase()
+      );
+      if (match) return match;
+    }
+  }
+
+  // Cheapest overall fallback so label purchase still works.
+  return [...rates].sort((a, b) => parseFloat(a.amount) - parseFloat(b.amount))[0] ?? null;
 }
 
 async function createShipment(input: {
@@ -165,7 +161,8 @@ async function createShipment(input: {
 
 /**
  * Live checkout rates via Shippo (works with shippo_test_* keys).
- * Maps returned USPS rates onto our USPS_* service codes so label purchase stays consistent.
+ * Returns every domestic carrier/service Shippo quotes for the US address,
+ * cheapest first, deduped by provider+service token.
  */
 export async function getShippoRates(input: {
   toName?: string;
@@ -181,50 +178,35 @@ export async function getShippoRates(input: {
   }
 
   const shipment = await createShipment(input);
-  const raw = shipment.rates ?? [];
+  const raw = (shipment.rates ?? []).filter((r) => {
+    // Domestic USD quotes only — we ship within the U.S.
+    const currency = (r.currency ?? "USD").toUpperCase();
+    return currency === "USD" && Number.isFinite(parseFloat(r.amount));
+  });
+
   if (!raw.length) {
     const msg = shipment.messages?.map((m) => m.text).filter(Boolean).join("; ");
     throw new Error(msg || "Shippo returned no shipping rates for this address.");
   }
 
-  const rates: ShippingRate[] = [];
-  for (const def of SERVICE_DEFS) {
-    const match = findRateByTokens(raw, def.tokens);
-    if (!match) continue;
-
-    const name = match.servicelevel?.name?.trim();
-    rates.push({
-      service: def.service,
-      label: name
-        ? name.toUpperCase().startsWith("USPS")
-          ? name
-          : `USPS ${name}`
-        : def.label,
-      amountCents: Math.round(parseFloat(match.amount) * 100),
-      estDays: estDaysFromRate(match, def.estDaysFallback),
-    });
-  }
-
-  // If token matching yielded nothing (carrier naming drift), fall back to
-  // cheapest USPS rate under Ground Advantage so checkout still works.
-  if (!rates.length) {
-    const cheapest = pickRate(raw, "USPS_GROUND_ADVANTAGE");
-    if (cheapest) {
-      const name = cheapest.servicelevel?.name?.trim();
-      rates.push({
-        service: "USPS_GROUND_ADVANTAGE",
-        label: name
-          ? name.toUpperCase().startsWith("USPS")
-            ? name
-            : `USPS ${name}`
-          : "USPS Ground Advantage",
-        amountCents: Math.round(parseFloat(cheapest.amount) * 100),
-        estDays: estDaysFromRate(cheapest, "5-7"),
-      });
+  // Keep the cheapest quote per provider+service token.
+  const best = new Map<string, ShippoRate>();
+  for (const rate of raw) {
+    const code = rateServiceCode(rate);
+    const prev = best.get(code);
+    if (!prev || parseFloat(rate.amount) < parseFloat(prev.amount)) {
+      best.set(code, rate);
     }
   }
 
-  return rates.sort((a, b) => a.amountCents - b.amountCents);
+  return [...best.values()]
+    .map((rate) => ({
+      service: rateServiceCode(rate),
+      label: rateLabel(rate),
+      amountCents: Math.round(parseFloat(rate.amount) * 100),
+      estDays: estDaysFromRate(rate),
+    }))
+    .sort((a, b) => a.amountCents - b.amountCents);
 }
 
 export async function createShippoLabel(input: {
@@ -244,7 +226,7 @@ export async function createShippoLabel(input: {
   const isTest = env.shippo.apiKey.startsWith("shippo_test_");
   const shipment = await createShipment(input);
 
-  const rate = pickRate(shipment.rates ?? [], input.service);
+  const rate = findRateByService(shipment.rates ?? [], input.service);
   if (!rate) {
     const msg = shipment.messages?.map((m) => m.text).filter(Boolean).join("; ");
     throw new Error(msg || "Shippo returned no shipping rates for this address.");
