@@ -106,7 +106,9 @@ function AuditView({ rows }: { rows: AuditRow[] }) {
           </SelectTrigger>
           <SelectContent>
             {actions.map((a) => (
-              <SelectItem key={a} value={a}>{a === "ALL" ? "All actions" : a.replace(/_/g, " ")}</SelectItem>
+              <SelectItem key={a} value={a}>
+                {a === "ALL" ? "All actions" : humanizeAction(a)}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -117,24 +119,34 @@ function AuditView({ rows }: { rows: AuditRow[] }) {
         <Empty label="No audit activity yet." />
       ) : (
         <div className="flex flex-col gap-2">
-          {shown.map((r) => (
-            <div key={r.id} className="rounded-lg border border-border bg-card p-3 text-sm">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="font-mono text-xs font-semibold">{r.action}</span>
-                <span className="text-xs text-muted-foreground">{formatDateTime(r.createdAt)}</span>
+          {shown.map((r) => {
+            const summary = formatAuditSummary(r);
+            return (
+              <div key={r.id} className="rounded-lg border border-border bg-card p-3 text-sm">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-xs font-semibold">{humanizeAction(r.action)}</span>
+                  <span className="text-xs text-muted-foreground">{formatDateTime(r.createdAt)}</span>
+                </div>
+                <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
+                  <span>{r.userEmail}</span>
+                  {r.entity === "Order" && r.entityId ? (
+                    <Link href={`/admin/orders/${r.entityId}`} className="text-primary hover:underline">
+                      View order
+                    </Link>
+                  ) : r.entity ? (
+                    <span>{r.entity}</span>
+                  ) : null}
+                </div>
+                {summary.length > 0 && (
+                  <ul className="mt-1.5 flex flex-col gap-0.5 text-xs text-muted-foreground">
+                    {summary.map((line) => (
+                      <li key={line}>{line}</li>
+                    ))}
+                  </ul>
+                )}
               </div>
-              <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
-                <span>{r.userEmail}</span>
-                {r.entity && <span>{r.entity}{r.entityId ? `:${r.entityId.slice(0, 8)}…` : ""}</span>}
-                {r.ip && <span>{r.ip}</span>}
-              </div>
-              {r.meta != null && Object.keys(r.meta as object).length > 0 && (
-                <pre className="mt-1.5 overflow-x-auto rounded bg-secondary/50 p-2 text-[11px] text-muted-foreground">
-                  {JSON.stringify(r.meta, null, 2)}
-                </pre>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -227,6 +239,51 @@ function Empty({ label }: { label: string }) {
       {label}
     </div>
   );
+}
+
+function humanizeAction(action: string): string {
+  return action
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/** Turn audit meta into short human-readable lines — never raw JSON. */
+function formatAuditSummary(row: AuditRow): string[] {
+  const meta =
+    row.meta && typeof row.meta === "object" && !Array.isArray(row.meta)
+      ? (row.meta as Record<string, unknown>)
+      : null;
+  if (!meta) return [];
+
+  const lines: string[] = [];
+  const str = (v: unknown) => (v == null ? "" : String(v));
+
+  if (meta.to) lines.push(`Sent to ${str(meta.to)}`);
+  if (meta.testTo) lines.push(`Test sent to ${str(meta.testTo)}`);
+  if (meta.status) lines.push(`Status → ${humanizeAction(str(meta.status))}`);
+  if (meta.from && meta.to && meta.status == null) {
+    lines.push(`${humanizeAction(str(meta.from))} → ${humanizeAction(str(meta.to))}`);
+  } else if (meta.from && !meta.status) {
+    lines.push(`From ${humanizeAction(str(meta.from))}`);
+  }
+  if (meta.rail) lines.push(`Payment: ${humanizeAction(str(meta.rail))}`);
+  if (meta.method && !meta.rail) lines.push(`Method: ${humanizeAction(str(meta.method))}`);
+  if (meta.actor) lines.push(`By ${str(meta.actor)}`);
+  if (meta.reason) lines.push(str(meta.reason));
+  if (meta.tracking) lines.push(`Tracking ${str(meta.tracking)}`);
+  if (meta.provider) lines.push(`Via ${humanizeAction(str(meta.provider))}`);
+  if (typeof meta.count === "number") lines.push(`${meta.count} recipient${meta.count === 1 ? "" : "s"}`);
+  if (meta.batchLot) lines.push(`Batch ${str(meta.batchLot)}`);
+  if (meta.filename) lines.push(str(meta.filename));
+  if (meta.note) lines.push(str(meta.note));
+  // Skip noise like mock:false — only mention mock when true
+  if (meta.mock === true) lines.push("SendGrid mock mode (not delivered)");
+
+  // Campaign / subject stored as entityId sometimes — show subject from meta if present
+  if (meta.subject) lines.push(`Subject: ${str(meta.subject)}`);
+
+  return lines;
 }
 
 function Pager({
