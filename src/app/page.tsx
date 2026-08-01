@@ -23,13 +23,6 @@ import { NewsletterSignup } from "@/components/newsletter-signup";
 // stay fresh without paying for a DB read on every request.
 export const revalidate = 300;
 
-// Hero product shots — real vial photography, staggered like a product-line shot.
-const HERO_VIALS = [
-  { src: "/images/products/tirzepatide-10mg.png", alt: "Tirzepatide 10mg vial", offset: "mt-10" },
-  { src: "/images/products/klow-blend-80mg.png", alt: "KLOW Blend 80mg vial", offset: "mt-0" },
-  { src: "/images/products/ghk-cu-50mg.png", alt: "GHK-Cu 50mg vial", offset: "mt-12" },
-];
-
 const HOW_IT_WORKS = [
   {
     icon: Search,
@@ -127,17 +120,18 @@ export default async function HomePage() {
               </p>
             </div>
 
-            {/* Real product photography — staggered bottle line, hidden below lg to
-                keep the mobile hero short and text-first. */}
-            <div className="hidden items-end justify-center gap-4 lg:flex">
-              {HERO_VIALS.map((v) => (
-                <div
-                  key={v.src}
-                  className={`relative h-64 w-32 shrink-0 drop-shadow-2xl ${v.offset}`}
-                >
-                  <Image src={v.src} alt={v.alt} fill sizes="140px" className="object-contain" />
-                </div>
-              ))}
+            {/* Brand logo lockup — dark card so the supplied logo stays legible. */}
+            <div className="hidden items-center justify-center lg:flex">
+              <div className="relative flex aspect-square w-full max-w-md items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-8 shadow-2xl ring-1 ring-border/50">
+                <Image
+                  src="/images/logo.png"
+                  alt="Elevate Bio-Labs"
+                  width={400}
+                  height={400}
+                  priority
+                  className="object-contain"
+                />
+              </div>
             </div>
           </div>
         </div>
