@@ -6,26 +6,18 @@ import { headers } from "next/headers";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { rateLimit } from "@/lib/rate-limit";
-import { registerSchema, resetPasswordSchema, forgotPasswordSchema, isInstitutionalEmail } from "@/lib/validations";
+import { registerSchema, resetPasswordSchema, forgotPasswordSchema } from "@/lib/validations";
 import { sendTransactional } from "@/lib/email/index";
 import { trackMarketing } from "@/lib/email/index";
 import { passwordResetHtml } from "@/lib/email/sendgrid";
 import { sendEmail } from "@/lib/email/sendgrid";
-import type { VerificationTier } from "@prisma/client";
-
-function getClientIp() {
-  const h = headers();
-  const forwarded = h.get("x-forwarded-for");
-  if (forwarded) return forwarded.split(",")[0]?.trim();
-  return h.get("x-real-ip") ?? "unknown";
-}
 
 export async function registerUser(input: unknown): Promise<{ ok: boolean; error?: string }> {
   const parsed = registerSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: parsed.error.errors[0]?.message ?? "Invalid input" };
   }
-  const { name, email, password, verificationTier, labProfile } = parsed.data;
+  const { name, email, password } = parsed.data;
 
   const rl = rateLimit(`register:${email}`, { limit: 5, windowMs: 600_000 });
   if (!rl.success) return { ok: false, error: "Too many attempts. Try again later." };
@@ -33,45 +25,17 @@ export async function registerUser(input: unknown): Promise<{ ok: boolean; error
   const existing = await db.user.findUnique({ where: { email } });
   if (existing) return { ok: false, error: "An account with that email already exists." };
 
-  // Auto-detect institutional tier if the user somehow picked the wrong track.
-  const resolvedTier: VerificationTier =
-    verificationTier === "INSTITUTIONAL" || isInstitutionalEmail(email)
-      ? "INSTITUTIONAL"
-      : "INDEPENDENT";
-
   const passwordHash = await bcrypt.hash(password, 10);
 
-  await db.$transaction(async (tx) => {
-    const user = await tx.user.create({
-      data: {
-        name,
-        email,
-        passwordHash,
-        ageVerified: true,
-        role: "CUSTOMER",
-        verificationTier: resolvedTier,
-      },
-    });
-
-    if (resolvedTier === "INDEPENDENT" && labProfile) {
-      await tx.labProfile.create({
-        data: {
-          userId: user.id,
-          labName: labProfile.labName,
-          einOrRegistration: labProfile.einOrRegistration,
-          street1: labProfile.labStreet1,
-          street2: labProfile.labStreet2 ?? null,
-          city: labProfile.labCity,
-          state: labProfile.labState,
-          zip: labProfile.labZip,
-          researchApplication: labProfile.researchApplication,
-          equipmentCertified: labProfile.equipmentCertified,
-          certificationText: labProfile.certificationText,
-          signedAt: new Date(),
-          ipAddress: getClientIp(),
-        },
-      });
-    }
+  await db.user.create({
+    data: {
+      name,
+      email,
+      passwordHash,
+      ageVerified: true,
+      role: "CUSTOMER",
+      verificationTier: "PENDING",
+    },
   });
 
   // Welcome flow (SendGrid transactional + Klaviyo marketing series)

@@ -143,9 +143,9 @@ async function main() {
     },
     {
       slug: "klow-blend", name: "KLOW Blend",
-      purity: ">=98%",
+      purity: ">=99%",
       form: ProductForm.BLEND, category: "blends", featured: true, highRisk: true,
-      description: "Multi-peptide analytical standard blend containing KPV, Larazotide, GHK-Cu and BPC-157 in a single 80mg lyophilized vial for combination-study protocols. Certified ≥98% purity by HPLC-MS. Suitable for chromatographic method development and mass spectrometry calibration only. Enhanced verification may apply. For Research Use Only.",
+      description: "Multi-peptide analytical standard blend containing KPV, Larazotide, GHK-Cu and BPC-157 in a single 80mg lyophilized vial for combination-study protocols. Certified ≥99% purity by HPLC-MS. Suitable for chromatographic method development and mass spectrometry calibration only. Enhanced verification may apply. For Research Use Only.",
       storageInfo: "Store lyophilized powder at -20°C, protected from light and moisture. Stable as supplied for 24 months under recommended conditions.",
       // Blend — "80mg" describes the total formulation, not an interchangeable
       // strength choice, so this stays a single-variant compound.
@@ -155,9 +155,9 @@ async function main() {
     },
     {
       slug: "glow-blend", name: "GLOW Blend",
-      purity: ">=98%",
+      purity: ">=99%",
       form: ProductForm.BLEND, category: "blends", featured: true, highRisk: true,
-      description: "Multi-peptide analytical standard blend containing GHK-Cu, BPC-157 and TB-500 in a single 70mg lyophilized vial for combination-study protocols. Certified ≥98% purity by HPLC-MS. Suitable for chromatographic method development and mass spectrometry calibration only. Enhanced verification may apply. For Research Use Only.",
+      description: "Multi-peptide analytical standard blend containing GHK-Cu, BPC-157 and TB-500 in a single 70mg lyophilized vial for combination-study protocols. Certified ≥99% purity by HPLC-MS. Suitable for chromatographic method development and mass spectrometry calibration only. Enhanced verification may apply. For Research Use Only.",
       storageInfo: "Store lyophilized powder at -20°C, protected from light and moisture. Stable as supplied for 24 months under recommended conditions.",
       variants: [
         { sku: "EBL-GLOW-70", strengthMg: 70, priceCents: 9000, stock: 65, image: "/images/products/glow-blend-70mg.png" },
@@ -176,9 +176,9 @@ async function main() {
     },
     {
       slug: "tb-500", name: "TB-500",
-      cas: "77591-33-4", purity: ">=98%",
+      cas: "77591-33-4", purity: ">=99%",
       form: ProductForm.LYOPHILIZED, category: "recovery-repair", highRisk: true,
-      description: "Synthetic thymosin beta-4 fragment supplied as lyophilized trifluoroacetate salt. Certified ≥98% purity by HPLC-MS. Suitable for chromatography method development, mass spectrometry calibration, and in-vitro analytical characterization. Requires analytical balance (0.0001g precision) and appropriate laboratory solvents. Enhanced verification may apply. For Research Use Only.",
+      description: "Synthetic thymosin beta-4 fragment supplied as lyophilized trifluoroacetate salt. Certified ≥99% purity by HPLC-MS. Suitable for chromatography method development, mass spectrometry calibration, and in-vitro analytical characterization. Requires analytical balance (0.0001g precision) and appropriate laboratory solvents. Enhanced verification may apply. For Research Use Only.",
       storageInfo: "Store lyophilized powder at -20°C, protected from light and moisture. Stable as supplied for 24 months under recommended conditions.",
       variants: [
         { sku: "EBL-TB500-5", strengthMg: 5, priceCents: 4999, stock: 150 },
@@ -211,9 +211,9 @@ async function main() {
     },
     {
       slug: "semax", name: "Semax",
-      cas: "80714-61-0", purity: ">=98%",
+      cas: "80714-61-0", purity: ">=99%",
       form: ProductForm.NASAL_SPRAY, category: "cognitive",
-      description: "Synthetic heptapeptide (Met-Glu-His-Phe-Pro-Gly-Pro) supplied as buffered aqueous analytical reference formulation. Certified ≥98% purity by HPLC-MS. Suitable for chromatography method development, mass spectrometry calibration, and in-vitro analytical studies. For Research Use Only.",
+      description: "Synthetic heptapeptide (Met-Glu-His-Phe-Pro-Gly-Pro) supplied as buffered aqueous analytical reference formulation. Certified ≥99% purity by HPLC-MS. Suitable for chromatography method development, mass spectrometry calibration, and in-vitro analytical studies. For Research Use Only.",
       storageInfo: "Refrigerate formulation at 2–8°C, protected from light. Do not freeze. Stable for 12 months under recommended conditions.",
       variants: [
         { sku: "EBL-SEMAX-10", strengthMg: 10, priceCents: 5000, stock: 120 },
@@ -222,9 +222,9 @@ async function main() {
     },
     {
       slug: "selank", name: "Selank",
-      cas: "129954-34-3", purity: ">=98%",
+      cas: "129954-34-3", purity: ">=99%",
       form: ProductForm.NASAL_SPRAY, category: "cognitive",
-      description: "Synthetic tuftsin analog peptide (Thr-Lys-Pro-Arg-Pro-Gly-Pro) supplied as buffered aqueous analytical reference formulation. Certified ≥98% purity by HPLC-MS. Suitable for chromatography method development, mass spectrometry calibration, and in-vitro analytical studies. For Research Use Only.",
+      description: "Synthetic tuftsin analog peptide (Thr-Lys-Pro-Arg-Pro-Gly-Pro) supplied as buffered aqueous analytical reference formulation. Certified ≥99% purity by HPLC-MS. Suitable for chromatography method development, mass spectrometry calibration, and in-vitro analytical studies. For Research Use Only.",
       storageInfo: "Refrigerate formulation at 2–8°C, protected from light. Do not freeze. Stable for 12 months under recommended conditions.",
       variants: [
         { sku: "EBL-SELANK-5", strengthMg: 5, priceCents: 2999, stock: 130 },
@@ -233,9 +233,9 @@ async function main() {
     },
     {
       slug: "mots-c", name: "MOTS-c",
-      purity: ">=98%",
+      purity: ">=99%",
       form: ProductForm.LYOPHILIZED, category: "metabolic",
-      description: "Mitochondrial-derived peptide (MRWQEMGYIFYPRKLR) supplied as lyophilized trifluoroacetate salt. Certified ≥98% purity by HPLC-MS. Suitable for chromatography method development, mass spectrometry calibration, and in-vitro metabolic research. For Research Use Only.",
+      description: "Mitochondrial-derived peptide (MRWQEMGYIFYPRKLR) supplied as lyophilized trifluoroacetate salt. Certified ≥99% purity by HPLC-MS. Suitable for chromatography method development, mass spectrometry calibration, and in-vitro metabolic research. For Research Use Only.",
       storageInfo: "Store lyophilized powder at -20°C, protected from light and moisture. Stable as supplied for 24 months under recommended conditions.",
       variants: [
         { sku: "EBL-MOTSC-20", strengthMg: 20, priceCents: 6000, stock: 100 },
@@ -264,9 +264,9 @@ async function main() {
     },
     {
       slug: "tesa-ipa-blend", name: "Tesamorelin/Ipamorelin Blend",
-      purity: ">=98%",
+      purity: ">=99%",
       form: ProductForm.BLEND, category: "blends",
-      description: "Multi-peptide analytical standard blend containing Tesamorelin and Ipamorelin (5mg/5mg) in a single 10mg lyophilized vial for combination-study protocols. Certified ≥98% purity by HPLC-MS. Suitable for chromatographic method development and mass spectrometry calibration only. For Research Use Only.",
+      description: "Multi-peptide analytical standard blend containing Tesamorelin and Ipamorelin (5mg/5mg) in a single 10mg lyophilized vial for combination-study protocols. Certified ≥99% purity by HPLC-MS. Suitable for chromatographic method development and mass spectrometry calibration only. For Research Use Only.",
       storageInfo: "Store lyophilized powder at -20°C, protected from light and moisture. Stable as supplied for 24 months under recommended conditions.",
       variants: [
         { sku: "EBL-TI-10", strengthMg: 10, priceCents: 7500, stock: 80 },
@@ -274,9 +274,9 @@ async function main() {
     },
     {
       slug: "tesa-ipa-cjc-blend", name: "Tesamorelin/Ipamorelin/CJC-1295 Blend",
-      purity: ">=98%",
+      purity: ">=99%",
       form: ProductForm.BLEND, category: "blends",
-      description: "Multi-peptide analytical standard blend containing Tesamorelin, Ipamorelin and CJC-1295 no-DAC (6mg/3mg/3mg) in a single 12mg lyophilized vial for combination-study protocols. Certified ≥98% purity by HPLC-MS. Suitable for chromatographic method development and mass spectrometry calibration only. For Research Use Only.",
+      description: "Multi-peptide analytical standard blend containing Tesamorelin, Ipamorelin and CJC-1295 no-DAC (6mg/3mg/3mg) in a single 12mg lyophilized vial for combination-study protocols. Certified ≥99% purity by HPLC-MS. Suitable for chromatographic method development and mass spectrometry calibration only. For Research Use Only.",
       storageInfo: "Store lyophilized powder at -20°C, protected from light and moisture. Stable as supplied for 24 months under recommended conditions.",
       variants: [
         { sku: "EBL-TIC-12", strengthMg: 12, priceCents: 8500, stock: 70 },
@@ -284,9 +284,9 @@ async function main() {
     },
     {
       slug: "wolverine-blend", name: "Wolverine Blend",
-      purity: ">=98%",
+      purity: ">=99%",
       form: ProductForm.BLEND, category: "blends", highRisk: true,
-      description: "Multi-peptide analytical standard blend containing BPC-157, TB-500 and GHK-Cu in a single 20mg lyophilized vial for combination-study protocols. Certified ≥98% purity by HPLC-MS. Suitable for chromatographic method development and mass spectrometry calibration only. Enhanced verification may apply. For Research Use Only.",
+      description: "Multi-peptide analytical standard blend containing BPC-157, TB-500 and GHK-Cu in a single 20mg lyophilized vial for combination-study protocols. Certified ≥99% purity by HPLC-MS. Suitable for chromatographic method development and mass spectrometry calibration only. Enhanced verification may apply. For Research Use Only.",
       storageInfo: "Store lyophilized powder at -20°C, protected from light and moisture. Stable as supplied for 24 months under recommended conditions.",
       variants: [
         { sku: "EBL-WOLV-20", strengthMg: 20, priceCents: 8500, stock: 75 },

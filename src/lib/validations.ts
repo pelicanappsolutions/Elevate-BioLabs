@@ -8,59 +8,6 @@ export const passwordRule = z
   .regex(/[A-Z]/, "Needs an uppercase letter")
   .regex(/[0-9]/, "Needs a number");
 
-// ---- Dual-track verification under 21 CFR § 201.128 ----
-export const verificationTierSchema = z.enum(["INSTITUTIONAL", "INDEPENDENT"]);
-
-const INSTITUTIONAL_DOMAINS = [
-  ".edu",
-  ".gov",
-  ".ac.uk",
-  ".ac.jp",
-  ".ac.au",
-  ".edu.au",
-  ".edu.uk",
-];
-
-export function isInstitutionalEmail(email: string): boolean {
-  const lower = email.toLowerCase().trim();
-  return INSTITUTIONAL_DOMAINS.some((d) => lower.endsWith(d));
-}
-
-export const labProfileSchema = z.object({
-  labName: z
-    .string()
-    .min(3, "Laboratory name is required")
-    .regex(/\S/, "Laboratory name cannot be blank")
-    .refine(
-      (v) => !/^\s*(home|personal)\s*$/i.test(v),
-      "Laboratory name cannot be 'Home' or 'Personal'. Use '[LastName] Analytical Services' or similar."
-    ),
-  einOrRegistration: z
-    .string()
-    .min(5, "EIN or business registration number is required")
-    .regex(/^\S+$/, "Enter a valid EIN or registration number"),
-  labStreet1: z.string().min(3, "Street address is required"),
-  labStreet2: z.string().optional(),
-  labCity: z.string().min(2, "City is required"),
-  labState: z.string().min(2, "State is required").max(2, "Use 2-letter state code"),
-  labZip: z.string().regex(/^\d{5}(-\d{4})?$/, "Valid US ZIP required"),
-  researchApplication: z.enum(
-    [
-      "HPLC_REFERENCE_STANDARD",
-      "MASS_SPECTROMETRY_CALIBRATION",
-      "RECEPTOR_BINDING_ASSAY",
-      "CHROMATOGRAPHY_METHOD_DEVELOPMENT",
-    ],
-    { errorMap: () => ({ message: "Select a valid research application" }) }
-  ),
-  equipmentCertified: z.literal(true, {
-    errorMap: () => ({
-      message: "You must certify access to analytical equipment suitable for peptide analysis",
-    }),
-  }),
-  certificationText: z.string().min(20, "Certification text is required"),
-});
-
 // ---- Auth ----
 export const registerSchema = z
   .object({
@@ -71,37 +18,11 @@ export const registerSchema = z
     ageConfirm: z.literal(true, {
       errorMap: () => ({ message: "You must confirm you are 18+" }),
     }),
-    verificationTier: verificationTierSchema,
-    labProfile: labProfileSchema.optional(),
   })
   .refine((d) => d.password === d.confirmPassword, {
     message: "Passwords do not match",
     path: ["confirmPassword"],
-  })
-  .refine(
-    (d) => {
-      if (d.verificationTier === "INSTITUTIONAL") {
-        return isInstitutionalEmail(d.email);
-      }
-      return true;
-    },
-    {
-      message: "Institutional track requires an .edu, .gov, or recognized academic/government email domain.",
-      path: ["email"],
-    }
-  )
-  .refine(
-    (d) => {
-      if (d.verificationTier === "INDEPENDENT") {
-        return d.labProfile !== undefined;
-      }
-      return true;
-    },
-    {
-      message: "Independent Laboratory verification details are required.",
-      path: ["labProfile"],
-    }
-  );
+  });
 
 export const loginSchema = z.object({
   email: z.string().email(),
