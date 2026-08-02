@@ -74,7 +74,7 @@ export const env = {
   sendgrid: {
     apiKey: process.env.SENDGRID_API_KEY ?? "",
     fromEmail: process.env.SENDGRID_FROM_EMAIL ?? "info@elevatebiolab.com",
-    fromName: process.env.SENDGRID_FROM_NAME ?? "Elevate Bio-Labs",
+    fromName: process.env.SENDGRID_FROM_NAME ?? "ElevateBioLab",
   },
   /** Public contact address shown in emails / UI. */
   contactEmail: process.env.CONTACT_EMAIL ?? "info@elevatebiolab.com",

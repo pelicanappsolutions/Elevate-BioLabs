@@ -14,11 +14,11 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
   title: {
-    default: "Elevate Bio-Labs — Analytical Reference Standards (RUO)",
-    template: "%s | Elevate Bio-Labs",
+    default: "ElevateBioLab — Analytical Reference Standards (RUO)",
+    template: "%s | ElevateBioLab",
   },
   description:
-    "Elevate Bio-Labs supplies third-party tested, batch-tracked analytical reference standards for laboratory use. For Research Use Only — not for human or veterinary consumption.",
+    "ElevateBioLab supplies third-party tested, batch-tracked analytical reference standards for laboratory use. For Research Use Only — not for human or veterinary consumption.",
   manifest: "/manifest.json",
 };
 

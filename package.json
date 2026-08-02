@@ -2,7 +2,7 @@
   "name": "elevate-bio-labs",
   "version": "1.0.0",
   "private": true,
-  "description": "Elevate Bio-Labs — research peptide e-commerce platform (RUO)",
+  "description": "ElevateBioLab — research peptide e-commerce platform (RUO)",
   "scripts": {
     "dev": "next dev",
     "build": "prisma migrate deploy && prisma generate && next build",

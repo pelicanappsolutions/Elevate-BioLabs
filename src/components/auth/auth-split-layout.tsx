@@ -46,7 +46,7 @@ export function AuthSplitLayout({
         <div className="relative mx-auto flex max-w-sm flex-col items-center text-center">
           <Link href="/" className="flex items-center gap-2">
             <FlaskConical className="h-8 w-8 text-primary" aria-hidden="true" />
-            <span className="text-2xl font-semibold tracking-tight">Elevate Bio-Labs</span>
+            <span className="text-2xl font-semibold tracking-tight">ElevateBioLab</span>
           </Link>
 
           <h1 className="mt-10 text-3xl font-bold leading-tight tracking-tight">
@@ -68,7 +68,7 @@ export function AuthSplitLayout({
         <div className="mx-auto w-full max-w-sm">
           <div className="mb-2 flex items-center gap-2 lg:hidden">
             <FlaskConical className="h-6 w-6 text-primary" aria-hidden="true" />
-            <span className="text-base font-semibold tracking-tight">Elevate Bio-Labs</span>
+            <span className="text-base font-semibold tracking-tight">ElevateBioLab</span>
           </div>
 
           <h2 className="text-2xl font-bold tracking-tight">{formTitle}</h2>

@@ -4,7 +4,7 @@
 
 **Last updated:** 2026-07-21 (after dashboard build-out, require-account checkout, crypto reactivation, age-gate audit logging, and the compliance planning doc)
 
-> ⚠️ **OPEN DECISION BLOCKING COMPLIANCE WORK:** Two legal guidance inputs conflict on the business model — **Path A (sell only to verified research institutions, IRB + chain-of-custody gate)** vs **Path B (sell to individuals as a lab-supply vendor, no gate, but hard RUO labeling + no claims + ≥98% third-party COAs)**. The institutional verification gate is Path-A-only and must NOT be built until counsel picks the path. Full analysis in [LEGAL_OPERATIONS.md](./LEGAL_OPERATIONS.md). **All compliance feature-building is PAUSED** per user until this is resolved.
+> ✅ **PATH DECISION RESOLVED (2026-08-01):** Client confirmed **Path B — sell to individuals as a lab-supply vendor**, no institutional gate, but hard RUO labeling + no health claims + ≥98% third-party COAs. The institutional verification gate (Path A) will **not** be built. Compliance feature-building is unblocked — see [LEGAL_OPERATIONS.md](./LEGAL_OPERATIONS.md) for the Path B build list (enhanced COA fields, MSDS management, US-only hardening, claims/labeling audit).
 
 ---
 

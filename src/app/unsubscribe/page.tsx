@@ -36,7 +36,7 @@ export default async function UnsubscribePage({
           <h1 className="text-2xl font-bold tracking-tight">You&apos;re unsubscribed</h1>
           <p className="mt-3 text-sm text-muted-foreground">
             <span className="font-medium text-foreground">{email}</span> will no longer
-            receive marketing or promotional emails from Elevate Bio-Labs. You will still
+            receive marketing or promotional emails from ElevateBioLab. You will still
             get transactional messages about orders you place.
           </p>
         </>

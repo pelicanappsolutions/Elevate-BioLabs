@@ -8,7 +8,7 @@ import { formatDate, variantDisplayName } from "@/lib/utils";
 export const metadata: Metadata = {
   title: "Certificate Archive",
   description:
-    "The full archive of Certificates of Analysis for every batch Elevate Bio-Labs has shipped. For Research Use Only — not for human consumption.",
+    "The full archive of Certificates of Analysis for every batch ElevateBioLab has shipped. For Research Use Only — not for human consumption.",
 };
 
 export const revalidate = 300;

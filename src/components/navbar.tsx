@@ -92,10 +92,10 @@ export function Navbar() {
       <header className="w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="container-tight flex h-16 items-center justify-between gap-4">
           {/* Left: logo */}
-          <Link href="/" className="flex shrink-0 items-center gap-2 tap" aria-label="Elevate Bio-Labs home">
-            <Image src="/icons/icon-192.png" alt="" width={28} height={28} className="h-7 w-7 object-contain" aria-hidden="true" />
+          <Link href="/" className="flex shrink-0 items-center gap-2 tap" aria-label="ElevateBioLab home">
+            <Image src="/icons/icon-192.png" alt="" width={36} height={36} className="h-9 w-9 object-contain" aria-hidden="true" />
             <span className="text-base font-semibold tracking-tight sm:text-lg">
-              Elevate Bio-Labs
+              ElevateBioLab
             </span>
           </Link>
 
@@ -182,8 +182,8 @@ export function Navbar() {
               <SheetContent side="left" className="flex w-[85vw] flex-col gap-6 sm:max-w-sm">
                 <SheetHeader>
                   <SheetTitle className="flex items-center gap-2 text-left">
-                    <Image src="/icons/icon-192.png" alt="" width={24} height={24} className="h-6 w-6 object-contain" aria-hidden="true" />
-                    Elevate Bio-Labs
+                    <Image src="/icons/icon-192.png" alt="" width={30} height={30} className="h-[30px] w-[30px] object-contain" aria-hidden="true" />
+                    ElevateBioLab
                   </SheetTitle>
                 </SheetHeader>
 

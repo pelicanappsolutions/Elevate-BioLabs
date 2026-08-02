@@ -205,11 +205,11 @@ function shell(
 ): string {
   const unsub = opts?.unsubscribeHref
     ? `<div style="margin-top:14px;font-size:11px;line-height:1.5;color:#9aa8b5;text-align:center;">
-        You're receiving this because you opted in to Elevate Bio-Labs updates.<br/>
+        You're receiving this because you opted in to ElevateBioLab updates.<br/>
         <a href="${escapeHtml(opts.unsubscribeHref)}" style="color:#9aa8b5;text-decoration:underline;">Unsubscribe</a>
         from marketing emails anytime.
       </div>`
-    : `<span style="color:#9aa8b5;">You're receiving this because you placed an order or created an account with Elevate Bio-Labs.</span>`;
+    : `<span style="color:#9aa8b5;">You're receiving this because you placed an order or created an account with ElevateBioLab.</span>`;
 
   return `<!-- ${title} -->
 ${preheader(preview)}
@@ -242,7 +242,7 @@ export function promotionalHtml(input: {
   bodyHtml?: string;
 }): string {
   const href = unsubscribeUrl(input.email);
-  const headline = input.headline ?? "Updates from Elevate Bio-Labs";
+  const headline = input.headline ?? "Updates from ElevateBioLab";
   const bodyInner =
     input.bodyHtml ??
     `<p style="margin:0 0 16px;font-size:15px;line-height:1.55;color:${BRAND.muted};">
@@ -503,7 +503,7 @@ export function passwordResetHtml(url: string): string {
     <div style="margin:0 0 14px;">${pill("Security", BRAND.navy)}</div>
     <h1 style="margin:0 0 8px;font-size:24px;line-height:1.25;color:${BRAND.ink};">Reset your password</h1>
     <p style="margin:0 0 20px;font-size:15px;line-height:1.55;color:${BRAND.muted};">
-      We received a request to reset the password for your Elevate Bio-Labs account. Click below to choose a new one.
+      We received a request to reset the password for your ElevateBioLab account. Click below to choose a new one.
     </p>
     <div style="margin:0 0 18px;">${button(url, "Reset password")}</div>
     ${card(
@@ -515,7 +515,7 @@ export function passwordResetHtml(url: string): string {
       Didn't request this? You can safely ignore this email — your password won't change.
     </p>`;
 
-  return shell("Password Reset", "Reset your Elevate Bio-Labs password (link expires in 1 hour)", body);
+  return shell("Password Reset", "Reset your ElevateBioLab password (link expires in 1 hour)", body);
 }
 
 export function welcomeHtml(name: string): string {
@@ -534,7 +534,7 @@ export function welcomeHtml(name: string): string {
       name ? `, ${escapeHtml(name)}` : ""
     }.</h1>
     <p style="margin:0 0 20px;font-size:15px;line-height:1.55;color:${BRAND.muted};">
-      Thanks for joining Elevate Bio-Labs — your source for third-party tested, batch-tracked analytical reference standards. Every order ships with a matching Certificate of Analysis.
+      Thanks for joining ElevateBioLab — your source for third-party tested, batch-tracked analytical reference standards. Every order ships with a matching Certificate of Analysis.
     </p>
     ${card(`<div style="margin-bottom:2px;">${chips}</div>`, "Popular research categories")}
     <div style="margin:0 0 18px;">${button(env.SITE_URL + "/products", "Browse the catalog")}</div>
@@ -543,7 +543,7 @@ export function welcomeHtml(name: string): string {
       <a href="mailto:${SUPPORT_EMAIL}" style="color:${BRAND.accent};text-decoration:none;">${SUPPORT_EMAIL}</a>.
     </p>`;
 
-  return shell("Welcome", "Welcome to Elevate Bio-Labs — analytical standards with a COA on every order", body);
+  return shell("Welcome", "Welcome to ElevateBioLab — analytical standards with a COA on every order", body);
 }
 
 function escapeHtml(input: unknown): string {

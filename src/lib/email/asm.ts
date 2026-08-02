@@ -6,7 +6,7 @@
 import { env, isConfigured } from "@/lib/env";
 
 const GROUP_NAME = "Marketing";
-const GROUP_DESC = "Research updates, new batches, and occasional offers from Elevate Bio-Labs.";
+const GROUP_DESC = "Research updates, new batches, and occasional offers from ElevateBioLab.";
 
 let cachedGroupId: number | null = null;
 

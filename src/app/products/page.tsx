@@ -145,7 +145,7 @@ export default async function ProductsPage({
           Use Only
         </p>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-          Elevate Bio-Labs supplies third-party tested reference standards for qualified
+          ElevateBioLab supplies third-party tested reference standards for qualified
           researchers. Every compound is sold for laboratory use only — not for human or
           veterinary administration.
         </p>

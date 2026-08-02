@@ -66,7 +66,7 @@ export async function requestPasswordReset(input: { email: string }): Promise<{ 
   const url = `${env.SITE_URL}/reset-password?token=${token}`;
   await sendEmail({
     to: user.email,
-    subject: "Reset your Elevate Bio-Labs password",
+    subject: "Reset your ElevateBioLab password",
     html: passwordResetHtml(url),
     text: `Reset your password: ${url}`,
   });

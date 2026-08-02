@@ -59,7 +59,7 @@ export function EmailCampaignManager({
 }) {
   const { toast } = useToast();
   const router = useRouter();
-  const [subject, setSubject] = React.useState("Updates from Elevate Bio-Labs");
+  const [subject, setSubject] = React.useState("Updates from ElevateBioLab");
   const [headline, setHeadline] = React.useState("What's new in the lab");
   const [body, setBody] = React.useState(
     "New analytical standards and batch releases are available.\n\nBrowse the catalog for the latest COA-backed materials."

@@ -45,7 +45,7 @@ export default async function InvoicePage({ params }: { params: { id: string } }
       <div className="mx-auto max-w-2xl rounded-lg border border-border bg-card p-8 print:border-0 print:p-0">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-lg font-bold tracking-tight">Elevate Bio-Labs</p>
+            <p className="text-lg font-bold tracking-tight">ElevateBioLab</p>
             <p className="text-xs text-muted-foreground">Research compounds — For Research Use Only</p>
           </div>
           <div className="text-right">

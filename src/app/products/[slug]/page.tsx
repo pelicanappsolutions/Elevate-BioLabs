@@ -50,7 +50,7 @@ export async function generateMetadata({
       product.cas ? `, CAS ${product.cas}` : ""
     }. Third-party tested with downloadable COA. For Research Use Only.`,
     openGraph: {
-      title: `${product.name} | Elevate Bio-Labs`,
+      title: `${product.name} | ElevateBioLab`,
       images: product.variants[0]?.images[0] ? [product.variants[0].images[0].url] : [],
     },
   };

@@ -169,7 +169,7 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
       amountCents: priced.totalCents,
       currency: "USD",
       customerEmail: data.email,
-      description: `Elevate Bio-Labs order ${orderNumber}`,
+      description: `ElevateBioLab order ${orderNumber}`,
       successUrl: `${env.SITE_URL}/checkout/success?order=${orderNumber}`,
       cancelUrl: `${env.SITE_URL}/checkout?canceled=1`,
       metadata: { orderNumber },

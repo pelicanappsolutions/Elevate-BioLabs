@@ -43,7 +43,7 @@ export function Footer() {
           <div className="lg:col-span-2">
             <Link href="/" className="flex items-center gap-2">
               <Image src="/icons/icon-192.png" alt="" width={28} height={28} className="h-7 w-7 object-contain" aria-hidden="true" />
-              <span className="text-lg font-semibold tracking-tight">Elevate Bio-Labs</span>
+              <span className="text-lg font-semibold tracking-tight">ElevateBioLab</span>
             </Link>
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground">
               All materials are analytical reference standards intended for laboratory research;
@@ -71,7 +71,7 @@ export function Footer() {
 
         <div className="mt-10 flex flex-col items-center gap-4 border-t border-border pt-6 text-xs text-muted-foreground sm:flex-row sm:justify-between">
           <p>
-            &copy; {year} Elevate Bio-Labs. All rights reserved. Must be 18+ to purchase.
+            &copy; {year} ElevateBioLab. All rights reserved. Must be 18+ to purchase.
           </p>
           <div className="flex items-center gap-3">
             <span className="sr-only">Accepted payment methods:</span>

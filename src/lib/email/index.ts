@@ -87,11 +87,11 @@ export async function sendTransactional(
         html = shipmentTrackingHtml(args.order ?? {});
         break;
       case "PASSWORD_RESET":
-        subject = "Reset your Elevate Bio-Labs password";
+        subject = "Reset your ElevateBioLab password";
         html = passwordResetHtml(args.resetUrl ?? "#");
         break;
       case "WELCOME":
-        subject = "Welcome to Elevate Bio-Labs";
+        subject = "Welcome to ElevateBioLab";
         html = welcomeHtml(args.name ?? "");
         break;
       case "NEW_ORDER_ADMIN":

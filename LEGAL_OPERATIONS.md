@@ -2,7 +2,7 @@
 
 **Purpose:** Translate the compliance requirements Elevate Bio-Labs received from legal/regulatory sources into a concrete map of site/software work, content work, physical operations, and business tasks. This is a **development & operations planning document**, not legal advice. Counsel is the authority on *what* is required; this doc organizes *how* the software supports it.
 
-**Prepared:** 2026-07-20 · **Updated:** 2026-07-21 · **Status:** planning (no build started — captured for review with counsel)
+**Prepared:** 2026-07-20 · **Updated:** 2026-08-01 · **Status:** Path B (grey-area / individual-sales) confirmed by client 2026-08-01. Path A (institutional/IRB gate) is out of scope — do not build it. Shared + Path B build items below are unblocked.
 
 **Guidance inputs absorbed:**
 - **Input A ("institutional" model):** RUO is not a shield; sell **only to licensed research facilities** with IRB/oversight, institutional documentation, and chain-of-custody. FDA Final Guidance on Research-Grade Peptides (Mar 2025 / enforceable Jan 2026).
@@ -10,8 +10,10 @@
 
 ---
 
-## ⚠️ The one decision that changes everything — resolve with counsel first
-Inputs A and B point at **two different business models**, and which one you choose determines the whole software build:
+## ✅ Decision made: Path B (grey-area / individual sales)
+Client confirmed 2026-08-01: operating as a lab-supply vendor selling to individuals, not institution-only. The institutional verification gate (Path A) will **not** be built. This is the client's business directive, not a legal opinion from BDS — counsel remains the authority on whether the underlying RUO labeling/claims/COA rigor this path requires is actually being met; nothing here substitutes for that review.
+
+Inputs A and B originally pointed at **two different business models**, and which one you choose determines the whole software build:
 
 | | **Path A — Institutional (B2B only)** | **Path B — Grey-area (sell to individuals)** |
 |---|---|---|
@@ -109,8 +111,8 @@ Disclaimers are already strong, but a scan flagged **benefit-framed labels** to 
 | No health / "generic" / "proven" claims | 🟨 | Both | Claims audit + rewrites (counsel approves) | ⬜ |
 | High-purity 3rd-party COA (≥98%, ICP-MS panel) | 🟦+🟨 | Both (heavier B) | Extend COA data + surface it | ⬜ |
 | MSDS with every shipment | 🟦+🟥 | Both | Host/attach per order; enclose = ops | ⬜ |
-| Institutional (IRB) verification of purchaser | 🟦 | **A only** | Verification gate before checkout | ⬜ (blocked on path decision) |
-| Chain-of-custody to a protocol | 🟦 | **A only** | Protocol capture + custody export | ⬜ (Path A) |
+| Institutional (IRB) verification of purchaser | 🟦 | **A only** | Verification gate before checkout | N/A — Path B chosen, not building |
+| Chain-of-custody to a protocol | 🟦 | **A only** | Protocol capture + custody export | N/A — Path B chosen, not building |
 | Reconsider BPC-157 / TB-500 as finished products | ⬜ | Both | One-click disable available | client + counsel |
 | High-risk merchant account | ⬜ | Both | Architecture ready | client action |
 | LegitScript certification | ⬜ | Both | Readiness tracker in admin | client action |
@@ -126,8 +128,8 @@ Disclaimers are already strong, but a scan flagged **benefit-framed labels** to 
 3. **US-only enforcement** — hard block.
 4. **Claims/content audit** — flag + propose rewrites for counsel (low risk, parallel).
 
-**Path-dependent — build only after counsel confirms the model:**
-5. **(Path A only) Institutional verification gate**, then **chain-of-custody records.**
+**Path-dependent — not applicable, Path B chosen:**
+5. ~~(Path A only) Institutional verification gate, then chain-of-custody records~~ — out of scope.
 
 **Client-side in parallel:** physical labeling/MSDS enclosure (🟥), high-risk merchant + LegitScript (⬜), and the BPC-157/TB-500 catalog decision (one-click disable ready).
 

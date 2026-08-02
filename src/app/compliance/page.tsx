@@ -10,7 +10,7 @@ import { ContactForm } from "@/components/compliance/contact-form";
 export const metadata: Metadata = {
   title: "Compliance & Policies",
   description:
-    "FDA Research Use Only labeling, batch/lot tracking, shipping policy, returns, FAQ, and contact for Elevate Bio-Labs.",
+    "FDA Research Use Only labeling, batch/lot tracking, shipping policy, returns, FAQ, and contact for ElevateBioLab.",
 };
 
 export const revalidate = 3600;
@@ -68,7 +68,7 @@ export default async function CompliancePage() {
               ) : (
                 <>
                   <p>
-                    All products sold by Elevate Bio-Labs are analytical chemistry reference
+                    All products sold by ElevateBioLab are analytical chemistry reference
                     standards supplied for in-vitro laboratory research by qualified
                     professionals. They are not drugs, foods, cosmetics, dietary supplements, or
                     medical devices.
@@ -300,12 +300,12 @@ export default async function CompliancePage() {
       <section id="about" className="scroll-mt-28">
         <div className="flex items-center gap-2">
           <PackageCheck className="h-5 w-5 text-primary" />
-          <h2 className="text-lg font-semibold">About Elevate Bio-Labs</h2>
+          <h2 className="text-lg font-semibold">About ElevateBioLab</h2>
         </div>
         <div className="mt-3 grid gap-6 lg:grid-cols-2">
           <div className="flex flex-col gap-2 text-sm leading-relaxed text-muted-foreground">
             <p>
-              Elevate Bio-Labs supplies analytical reference standards and research reagents
+              ElevateBioLab supplies analytical reference standards and research reagents
               to laboratories, universities, and independent researchers across the United States.
               We exist because the research supply market has a verification problem: too much
               material ships with no traceable provenance and no independent testing.

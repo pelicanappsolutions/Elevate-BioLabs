@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("🌱 Seeding Elevate Bio-Labs...");
+  console.log("🌱 Seeding ElevateBioLab...");
 
   // ---- Admin user ----
   const adminPassword = await bcrypt.hash("Admin123!change-me", 10);
@@ -434,7 +434,7 @@ async function main() {
   const docs = [
     {
       title: "Research Use Only Policy", slug: "ruo-policy", category: "RUO",
-      body: "All products sold by Elevate Bio-Labs are intended for research use only as analytical standards and laboratory reagents. They are not drugs, foods, cosmetics, or dietary supplements, and are not FDA-approved for the diagnosis, treatment, cure, or prevention of any disease. They are not for human or veterinary consumption. By purchasing, you certify you are a qualified researcher aged 18+ operating appropriate analytical equipment (HPLC, LC-MS, or equivalent).",
+      body: "All products sold by ElevateBioLab are intended for research use only as analytical standards and laboratory reagents. They are not drugs, foods, cosmetics, or dietary supplements, and are not FDA-approved for the diagnosis, treatment, cure, or prevention of any disease. They are not for human or veterinary consumption. By purchasing, you certify you are a qualified researcher aged 18+ operating appropriate analytical equipment (HPLC, LC-MS, or equivalent).",
     },
     {
       title: "Shipping Policy", slug: "shipping-policy", category: "SHIPPING_POLICY",
@@ -454,7 +454,7 @@ async function main() {
     },
     {
       title: "LegitScript Compliance", slug: "legitscript", category: "LEGITSCRIPT",
-      body: "Elevate Bio-Labs maintains RUO labeling, batch/lot COA traceability, independent-laboratory verification for non-institutional buyers, and monitors chargeback ratios against the 2026 Visa VAMP 1.5% threshold to preserve processing eligibility.",
+      body: "ElevateBioLab maintains RUO labeling, batch/lot COA traceability, independent-laboratory verification for non-institutional buyers, and monitors chargeback ratios against the 2026 Visa VAMP 1.5% threshold to preserve processing eligibility.",
     },
   ];
   for (const d of docs) {

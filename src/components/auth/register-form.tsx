@@ -57,7 +57,7 @@ export function RegisterForm() {
 
       const signInRes = await signIn("credentials", { email, password, redirect: false });
       if (signInRes?.ok) {
-        toast({ title: "Account created", description: "Welcome to Elevate Bio-Labs." });
+        toast({ title: "Account created", description: "Welcome to ElevateBioLab." });
         router.push(callbackUrl);
         router.refresh();
       } else {
