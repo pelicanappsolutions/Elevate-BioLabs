@@ -44,7 +44,11 @@ const HOW_IT_WORKS = [
 async function getHomeData() {
   const [rawFeatured, categories, productCount] = await Promise.all([
     db.product.findMany({
-      where: { active: true, featured: true },
+      where: {
+        active: true,
+        featured: true,
+        form: { notIn: ["SOLUTION", "CAPSULE", "NASAL_SPRAY"] },
+      },
       include: {
         variants: {
           where: { active: true },

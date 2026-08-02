@@ -17,12 +17,10 @@ interface CategoryOption {
   slug: string;
 }
 
+/** Storefront forms only — no ready-to-use / administration-looking options. */
 const FORMS = [
   { value: "LYOPHILIZED", label: "Lyophilized powder" },
-  { value: "SOLUTION", label: "Pre-mixed solution" },
-  { value: "CAPSULE", label: "Capsule" },
-  { value: "BLEND", label: "Blend" },
-  { value: "NASAL_SPRAY", label: "Nasal spray" },
+  { value: "BLEND", label: "Multi-peptide blend" },
 ];
 
 export function ProductFilters({ categories }: { categories: CategoryOption[] }) {

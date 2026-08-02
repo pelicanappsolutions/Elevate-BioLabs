@@ -12,15 +12,17 @@ export const revalidate = 120;
 
 const FORM_LABELS: Record<string, string> = {
   LYOPHILIZED: "Lyophilized powder",
-  SOLUTION: "Pre-mixed solution",
-  CAPSULE: "Capsule",
-  BLEND: "Blend",
-  NASAL_SPRAY: "Nasal spray",
+  BLEND: "Multi-peptide blend",
 };
 
 async function getProduct(slug: string) {
   return db.product.findFirst({
-    where: { slug, active: true },
+    where: {
+      slug,
+      active: true,
+      // Never serve ready-to-use / administration-looking forms on the storefront.
+      form: { notIn: ["SOLUTION", "CAPSULE", "NASAL_SPRAY"] },
+    },
     include: {
       category: true,
       variants: {

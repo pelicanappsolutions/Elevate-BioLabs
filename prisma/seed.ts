@@ -209,28 +209,9 @@ async function main() {
         { sku: "EBL-CJC-10", strengthMg: 10, priceCents: 5000, stock: 90 },
       ],
     },
-    {
-      slug: "semax", name: "Semax",
-      cas: "80714-61-0", purity: ">=99%",
-      form: ProductForm.NASAL_SPRAY, category: "cognitive",
-      description: "Synthetic heptapeptide (Met-Glu-His-Phe-Pro-Gly-Pro) supplied as buffered aqueous analytical reference formulation. Certified ≥99% purity by HPLC-MS. Suitable for chromatography method development, mass spectrometry calibration, and in-vitro analytical studies. For Research Use Only.",
-      storageInfo: "Refrigerate formulation at 2–8°C, protected from light. Do not freeze. Stable for 12 months under recommended conditions.",
-      variants: [
-        { sku: "EBL-SEMAX-10", strengthMg: 10, priceCents: 5000, stock: 120 },
-        { sku: "EBL-SEMAX-30", strengthMg: 30, priceCents: 5499, stock: 90 },
-      ],
-    },
-    {
-      slug: "selank", name: "Selank",
-      cas: "129954-34-3", purity: ">=99%",
-      form: ProductForm.NASAL_SPRAY, category: "cognitive",
-      description: "Synthetic tuftsin analog peptide (Thr-Lys-Pro-Arg-Pro-Gly-Pro) supplied as buffered aqueous analytical reference formulation. Certified ≥99% purity by HPLC-MS. Suitable for chromatography method development, mass spectrometry calibration, and in-vitro analytical studies. For Research Use Only.",
-      storageInfo: "Refrigerate formulation at 2–8°C, protected from light. Do not freeze. Stable for 12 months under recommended conditions.",
-      variants: [
-        { sku: "EBL-SELANK-5", strengthMg: 5, priceCents: 2999, stock: 130 },
-        { sku: "EBL-SELANK-10", strengthMg: 10, priceCents: 5000, stock: 110 },
-      ],
-    },
+    // Semax / Selank nasal-spray SKUs are intentionally omitted — ready-to-use /
+    // administration-looking forms are not offered on the storefront.
+
     {
       slug: "mots-c", name: "MOTS-c",
       purity: ">=99%",

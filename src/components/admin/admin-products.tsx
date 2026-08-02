@@ -80,7 +80,8 @@ interface AdminProduct {
   variants: AdminVariant[];
 }
 
-const FORMS = ["LYOPHILIZED", "SOLUTION", "CAPSULE", "BLEND", "NASAL_SPRAY"];
+/** No SOLUTION / CAPSULE / NASAL_SPRAY — those look ready-to-use to regulators. */
+const FORMS = ["LYOPHILIZED", "BLEND"];
 
 interface CompoundFormState {
   id?: string;

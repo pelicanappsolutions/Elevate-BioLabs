@@ -106,7 +106,7 @@ export const compoundSchema = z.object({
   purity: z.string().optional(),
   molarMass: z.coerce.number().optional(),
   sequence: z.string().optional(),
-  form: z.enum(["LYOPHILIZED", "SOLUTION", "CAPSULE", "BLEND", "NASAL_SPRAY"]),
+  form: z.enum(["LYOPHILIZED", "BLEND"]),
   storageInfo: z.string().optional(),
   categoryId: z.string().optional(),
   active: z.boolean().default(true),

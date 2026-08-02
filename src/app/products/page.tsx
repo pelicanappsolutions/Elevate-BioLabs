@@ -41,8 +41,14 @@ interface SearchParams {
 
 /** Build the Prisma filter from URL state. URL is the single source of truth,
  *  so filters survive refresh, share, and back-button. */
+/** Forms that imply ready-to-use / administration — never list on the storefront. */
+const BLOCKED_FORMS: ProductForm[] = ["SOLUTION", "CAPSULE", "NASAL_SPRAY"];
+
 function buildWhere(sp: SearchParams): Prisma.ProductWhereInput {
-  const where: Prisma.ProductWhereInput = { active: true };
+  const where: Prisma.ProductWhereInput = {
+    active: true,
+    form: { notIn: BLOCKED_FORMS },
+  };
 
   if (sp.q) {
     where.OR = [
@@ -53,7 +59,10 @@ function buildWhere(sp: SearchParams): Prisma.ProductWhereInput {
     ];
   }
   if (sp.category) where.category = { slug: sp.category };
-  if (sp.form) where.form = sp.form as ProductForm;
+  // Ignore blocked form filters even if present in the URL.
+  if (sp.form && !BLOCKED_FORMS.includes(sp.form as ProductForm)) {
+    where.form = sp.form as ProductForm;
+  }
   if (sp.inStock === "1") where.inStock = true;
 
   // Matches if the compound's cheapest variant falls in range — same "From $X"
