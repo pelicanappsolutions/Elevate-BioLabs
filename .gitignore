@@ -32,6 +32,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 
+# test coverage
+/coverage
+
 # prisma
 /prisma/*.db
 /prisma/*.db-journal
