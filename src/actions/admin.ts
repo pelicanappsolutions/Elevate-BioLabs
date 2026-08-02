@@ -63,16 +63,32 @@ export async function upsertProduct(input: unknown): Promise<{ ok: boolean; erro
   return { ok: true };
 }
 
-export async function deleteProduct(id: string): Promise<{ ok: boolean }> {
+export async function deleteProduct(
+  id: string
+): Promise<{ ok: boolean; outcome?: "removed" | "deactivated" }> {
   const admin = await requireAdmin().catch(() => null);
   if (!admin) return { ok: false };
-  // Soft-delete to preserve order history integrity. Parent-level kill switch —
-  // hides the whole compound regardless of individual variant active flags.
-  await db.product.update({ where: { id }, data: { active: false } });
-  await audit(admin.id, "PRODUCT_DEACTIVATED", "Product", id);
+
+  // OrderItem.product is a required relation with no cascade, so a compound
+  // that has ever been purchased can't be removed without destroying order
+  // history — deactivate those instead. Anything never ordered is deleted for
+  // real (variants/images/COAs/tiers cascade) so it leaves the admin list.
+  const ordered = await db.orderItem.count({ where: { productId: id } });
+
+  if (ordered > 0) {
+    await db.product.update({ where: { id }, data: { active: false } });
+    await audit(admin.id, "PRODUCT_DEACTIVATED", "Product", id, { reason: "has order history" });
+    revalidatePath("/admin");
+    revalidatePath("/products");
+    return { ok: true, outcome: "deactivated" };
+  }
+
+  await db.product.delete({ where: { id } });
+  await audit(admin.id, "PRODUCT_DELETED", "Product", id);
   revalidatePath("/admin");
   revalidatePath("/products");
-  return { ok: true };
+  revalidatePath("/");
+  return { ok: true, outcome: "removed" };
 }
 
 // ---------------- Variants (mg strength / SKU) ----------------
@@ -99,17 +115,31 @@ export async function upsertVariant(input: unknown): Promise<{ ok: boolean; erro
   return { ok: true };
 }
 
-export async function deleteVariant(id: string): Promise<{ ok: boolean }> {
+export async function deleteVariant(
+  id: string
+): Promise<{ ok: boolean; outcome?: "removed" | "deactivated" }> {
   const admin = await requireAdmin().catch(() => null);
   if (!admin) return { ok: false };
-  // Soft-delete, independent of the parent compound — lets one strength be
-  // discontinued without touching its siblings.
-  const variant = await db.productVariant.update({ where: { id }, data: { active: false } });
+
+  // Same rule as deleteProduct: a strength that has been purchased stays as a
+  // deactivated record so its order lines keep resolving; one that hasn't is
+  // removed outright. Either way the parent's price/stock aggregates refresh.
+  const ordered = await db.orderItem.count({ where: { variantId: id } });
+  const variant = ordered > 0
+    ? await db.productVariant.update({ where: { id }, data: { active: false } })
+    : await db.productVariant.delete({ where: { id } });
+
   await db.$transaction((tx) => recomputeProductAggregates(tx, variant.productId));
-  await audit(admin.id, "VARIANT_DEACTIVATED", "ProductVariant", id);
+  await audit(
+    admin.id,
+    ordered > 0 ? "VARIANT_DEACTIVATED" : "VARIANT_DELETED",
+    "ProductVariant",
+    id,
+    ordered > 0 ? { reason: "has order history" } : undefined
+  );
   revalidatePath("/admin");
   revalidatePath("/products");
-  return { ok: true };
+  return { ok: true, outcome: ordered > 0 ? "deactivated" : "removed" };
 }
 
 export async function uploadVariantImage(

@@ -131,6 +131,7 @@ export function AdminProducts({
   const [busyId, setBusyId] = React.useState<string | null>(null);
   const [variantsFor, setVariantsFor] = React.useState<AdminProduct | null>(null);
   const [restockOpen, setRestockOpen] = React.useState<AdminVariant | null>(null);
+  const [showInactive, setShowInactive] = React.useState(false);
 
   function openNew() {
     setForm(EMPTY_COMPOUND);
@@ -195,27 +196,46 @@ export function AdminProducts({
   async function deactivate(p: AdminProduct) {
     setBusyId(p.id);
     try {
-      await deleteProduct(p.id);
-      toast({
-        title: "Product deactivated",
-        description: "Hidden from the catalog; order history is preserved.",
-      });
+      const res = await deleteProduct(p.id);
+      toast(
+        res.outcome === "deactivated"
+          ? {
+              title: "Product deactivated",
+              description:
+                "It has order history, so the record is kept and hidden from the catalog.",
+            }
+          : { title: "Product deleted" }
+      );
       router.refresh();
     } finally {
       setBusyId(null);
     }
   }
 
+  const inactiveCount = products.filter((p) => !p.active).length;
+  const visibleProducts = showInactive ? products : products.filter((p) => p.active);
+
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
-          {products.length} compound{products.length === 1 ? "" : "s"}
+          {visibleProducts.length} compound{visibleProducts.length === 1 ? "" : "s"}
         </p>
-        <Button size="sm" onClick={openNew}>
-          <Plus className="mr-1.5 h-4 w-4" />
-          New compound
-        </Button>
+        <div className="flex items-center gap-3">
+          {inactiveCount > 0 && (
+            <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+              <Checkbox
+                checked={showInactive}
+                onCheckedChange={(v) => setShowInactive(Boolean(v))}
+              />
+              Show deactivated ({inactiveCount})
+            </label>
+          )}
+          <Button size="sm" onClick={openNew}>
+            <Plus className="mr-1.5 h-4 w-4" />
+            New compound
+          </Button>
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-border">
@@ -231,7 +251,7 @@ export function AdminProducts({
             </tr>
           </thead>
           <tbody className="align-top">
-            {products.map((p) => {
+            {visibleProducts.map((p) => {
               const activeVariants = p.variants.filter((v) => v.active);
               const prices = activeVariants.map((v) => v.priceCents);
               const minPrice = prices.length ? Math.min(...prices) : null;
@@ -636,8 +656,15 @@ function VariantsDialog({
   async function deactivateVariant(v: AdminVariant) {
     setBusyId(v.id);
     try {
-      await deleteVariant(v.id);
-      toast({ title: "Variant deactivated" });
+      const res = await deleteVariant(v.id);
+      toast(
+        res.outcome === "deactivated"
+          ? {
+              title: "Strength deactivated",
+              description: "It has order history, so the record is kept.",
+            }
+          : { title: "Strength deleted" }
+      );
       router.refresh();
     } finally {
       setBusyId(null);
