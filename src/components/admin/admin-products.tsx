@@ -436,11 +436,31 @@ export function AdminProducts({
                 </label>
               </div>
 
-              {!form.id && (
+              {!form.id ? (
                 <p className="text-xs text-muted-foreground sm:col-span-2">
                   Save the compound first, then add strengths (variants) — price, stock,
                   and photos live on each strength, not the compound itself.
                 </p>
+              ) : (
+                <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-secondary/40 p-2.5 sm:col-span-2">
+                  <p className="text-xs text-muted-foreground">
+                    No photo field here — price, stock, and photos live on each strength.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const p = products.find((pr) => pr.id === form.id);
+                      if (p) {
+                        setOpen(false);
+                        setVariantsFor(p);
+                      }
+                    }}
+                  >
+                    Manage strengths →
+                  </Button>
+                </div>
               )}
 
               {error && (

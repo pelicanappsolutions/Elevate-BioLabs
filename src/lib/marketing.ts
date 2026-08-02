@@ -18,8 +18,11 @@ export async function recordMarketingOptIn(input: {
 
   let userId = input.userId ?? null;
   if (!userId) {
-    const existing = await db.user.findUnique({
-      where: { email },
+    // User.email isn't normalized to lowercase at registration, so match
+    // case-insensitively — otherwise a mixed-case account email silently
+    // fails to link here and never gets User.marketingOptIn set.
+    const existing = await db.user.findFirst({
+      where: { email: { equals: email, mode: "insensitive" } },
       select: { id: true },
     });
     userId = existing?.id ?? null;
@@ -67,9 +70,14 @@ export async function recordMarketingOptOut(input: {
     where: { email },
     data: { active: false },
   });
-  // Clear account flag too — unsubscribe links only know the email.
+  // Clear account flag too — unsubscribe links only know the email, and
+  // User.email isn't normalized to lowercase at registration, so an exact-case
+  // match here would silently miss the account and leave marketingOptIn stuck
+  // on true (the account would keep receiving blasts despite "unsubscribing").
   await db.user.updateMany({
-    where: input.userId ? { id: input.userId } : { email },
+    where: input.userId
+      ? { id: input.userId }
+      : { email: { equals: email, mode: "insensitive" } },
     data: { marketingOptIn: false },
   });
 }
