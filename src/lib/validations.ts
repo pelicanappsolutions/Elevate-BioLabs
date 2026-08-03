@@ -106,7 +106,40 @@ export const checkoutSchema = z.object({
   }),
   /** Optional marketing / promo email opt-in at checkout. */
   marketingOptIn: z.boolean().optional().default(false),
+  /** Optional affiliate / promo coupon (validated server-side in priceCart). */
+  couponCode: z.string().max(40).optional(),
 });
+
+export const couponAdminSchema = z
+  .object({
+    id: z.string().cuid().optional(),
+    code: z.string().min(3).max(40),
+    type: z.enum(["PERCENT", "FIXED_CENTS"]),
+    percentOff: z.coerce.number().int().min(1).max(100).optional().nullable(),
+    /** Dollars for FIXED — converted to cents in the action. */
+    amountOffDollars: z.coerce.number().min(0.01).optional().nullable(),
+    active: z.boolean().default(true),
+    startsAt: z.string().optional().nullable(),
+    endsAt: z.string().optional().nullable(),
+    maxRedemptions: z.coerce.number().int().min(1).optional().nullable(),
+    minSubtotalDollars: z.coerce.number().min(0).optional().nullable(),
+    affiliateName: z.string().max(120).optional().nullable(),
+    affiliateEmail: z.string().email().optional().nullable().or(z.literal("")),
+    affiliateNote: z.string().max(2000).optional().nullable(),
+    commissionPercent: z.coerce.number().int().min(0).max(100).optional().nullable(),
+  })
+  .superRefine((val, ctx) => {
+    if (val.type === "PERCENT" && (val.percentOff == null || val.percentOff < 1)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Percent off is required.", path: ["percentOff"] });
+    }
+    if (val.type === "FIXED_CENTS" && (val.amountOffDollars == null || val.amountOffDollars < 0.01)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Fixed amount is required.",
+        path: ["amountOffDollars"],
+      });
+    }
+  });
 
 // ---- Admin: catalog category CRUD ----
 export const categorySchema = z.object({

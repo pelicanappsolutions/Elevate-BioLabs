@@ -15,7 +15,7 @@ import { notifyAdminNewOrder, sendTransactional, trackMarketing } from "@/lib/em
 import { recordMarketingOptIn } from "@/lib/marketing";
 import { generateOrderNumber, FREE_SHIPPING_THRESHOLD_CENTS } from "@/lib/utils";
 import { rateLimit } from "@/lib/rate-limit";
-import type { PaymentRail, PaymentStatus } from "@prisma/client";
+import type { PaymentRail, PaymentStatus, Prisma } from "@prisma/client";
 
 /** ~2oz per vial + 4oz packaging/cold-pack. */
 function computeWeightOz(items: { quantity: number }[]) {
@@ -116,10 +116,14 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
   const chosen = rates.find((r) => r.service === data.shipService) ?? rates[0];
   const shippingCents = chosen?.amountCents ?? 0;
 
-  // 2) Authoritative pricing (bulk tiers + tax + shipping).
+  // 2) Authoritative pricing (bulk tiers + coupon + tax + shipping).
   let priced;
   try {
-    priced = await priceCart(data.items, { state: data.address.state, shippingCents });
+    priced = await priceCart(data.items, {
+      state: data.address.state,
+      shippingCents,
+      couponCode: data.couponCode,
+    });
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Pricing failed" };
   }
@@ -130,6 +134,18 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
   let order: Awaited<ReturnType<typeof db.order.create>> & { items: any[]; payments: any[] };
   try {
     order = await db.$transaction(async (tx) => {
+      // Re-check coupon capacity inside the txn to avoid over-redemption races.
+      if (priced.couponId) {
+        const coupon = await tx.coupon.findUnique({ where: { id: priced.couponId } });
+        if (
+          !coupon ||
+          !coupon.active ||
+          (coupon.maxRedemptions != null && coupon.redemptionCount >= coupon.maxRedemptions)
+        ) {
+          throw new Error("That coupon is no longer available.");
+        }
+      }
+
       const created = await tx.order.create({
         data: {
           orderNumber,
@@ -143,7 +159,10 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
           subtotalCents: priced.subtotalCents,
           shippingCents: priced.shippingCents,
           taxCents: priced.taxCents,
+          discountCents: priced.discountCents,
           totalCents: priced.totalCents,
+          couponCode: priced.couponCode,
+          couponId: priced.couponId,
           shipService: chosen?.service ?? data.shipService,
           items: {
             create: priced.lines.map((l) => ({
@@ -167,6 +186,27 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
         include: { items: true, payments: true },
       });
 
+      if (priced.couponId && priced.couponCode && priced.discountCents > 0) {
+        const coupon = await tx.coupon.update({
+          where: { id: priced.couponId },
+          data: { redemptionCount: { increment: 1 } },
+        });
+        await tx.couponRedemption.create({
+          data: {
+            couponId: priced.couponId,
+            orderId: created.id,
+            userId: session.user.id,
+            code: priced.couponCode,
+            discountCents: priced.discountCents,
+            orderSubtotalCents: priced.subtotalCents,
+            orderTotalCents: priced.totalCents,
+            commissionCents: priced.commissionCents ?? 0,
+            affiliateName: coupon.affiliateName,
+            affiliateEmail: coupon.affiliateEmail,
+          },
+        });
+      }
+
       // reserve stock — throws InsufficientStockError / retries on version race
       for (const line of priced.lines) {
         await decrementStock(tx, line.variantId, line.quantity, created.id);
@@ -176,6 +216,9 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
   } catch (e) {
     if (e instanceof InsufficientStockError) {
       return { ok: false, error: `${e.productName} — only ${e.available} in stock.` };
+    }
+    if (e instanceof Error && e.message.includes("coupon")) {
+      return { ok: false, error: e.message };
     }
     return { ok: false, error: "Could not create order. Please try again." };
   }
@@ -235,7 +278,7 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
             providerRaw: buildCheckoutMeta({
               invoiceUrl: charge.redirectUrl,
               invoiceId: charge.providerRef,
-            }),
+            }) as Prisma.InputJsonValue,
           }
         : {}),
     },

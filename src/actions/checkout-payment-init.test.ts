@@ -87,6 +87,7 @@ beforeEach(() => {
   ]);
   priceCartMock.mockResolvedValue({
     subtotalCents: 10000,
+    discountCents: 0,
     shippingCents: 995,
     taxCents: 0,
     totalCents: 10995,

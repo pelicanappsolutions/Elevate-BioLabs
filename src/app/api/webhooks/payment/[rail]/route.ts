@@ -7,7 +7,7 @@ import {
 } from "@/lib/orders/release-reservation";
 import { notifyAdminNewOrder, sendTransactional, trackMarketing } from "@/lib/email/index";
 import { mergePaymentProviderRaw } from "@/lib/payments/checkout-url";
-import type { OrderStatus, PaymentStatus } from "@prisma/client";
+import type { OrderStatus, PaymentStatus, Prisma } from "@prisma/client";
 
 /**
  * Unified payment webhook: POST /api/webhooks/payment/{rail}
@@ -101,7 +101,9 @@ export async function POST(
           status: "SUCCEEDED",
           feeCents: event.feeCents,
           // Keep invoiceUrl from checkout; nest IPN under `ipn` for audit.
-          providerRaw: mergePaymentProviderRaw(payment.providerRaw, { ipn: event.raw }),
+          providerRaw: mergePaymentProviderRaw(payment.providerRaw, {
+            ipn: event.raw,
+          }) as Prisma.InputJsonValue,
         },
       }),
       db.order.update({ where: { id: order.id }, data: { status: "PAID" } }),

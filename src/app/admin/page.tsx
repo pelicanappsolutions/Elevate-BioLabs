@@ -19,6 +19,7 @@ import { EmailCampaignManager } from "@/components/admin/email-campaign-manager"
 import { ComplianceTracker } from "@/components/admin/compliance-tracker";
 import { SendGridTrialAlert } from "@/components/admin/sendgrid-trial-alert";
 import { AccountSettings } from "@/components/account/account-settings";
+import { AdminCoupons } from "@/components/admin/admin-coupons";
 
 export const metadata: Metadata = {
   title: "Admin",
@@ -150,6 +151,70 @@ export default async function AdminPage() {
     db.marketingSubscriber.count({ where: { active: true } }),
   ]);
 
+  const [couponRows, redemptionRows] = await Promise.all([
+    db.coupon.findMany({
+      orderBy: { createdAt: "desc" },
+      include: {
+        redemptions: {
+          select: {
+            commissionCents: true,
+            paidOut: true,
+            orderSubtotalCents: true,
+          },
+        },
+      },
+    }),
+    db.couponRedemption.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      include: { order: { select: { id: true, orderNumber: true } } },
+    }),
+  ]);
+
+  const couponsForAdmin = couponRows.map((c) => {
+    const salesCents = c.redemptions.reduce((s, r) => s + r.orderSubtotalCents, 0);
+    const commissionPaidCents = c.redemptions
+      .filter((r) => r.paidOut)
+      .reduce((s, r) => s + r.commissionCents, 0);
+    const commissionOwedCents = c.redemptions
+      .filter((r) => !r.paidOut)
+      .reduce((s, r) => s + r.commissionCents, 0);
+    return {
+      id: c.id,
+      code: c.code,
+      type: c.type,
+      percentOff: c.percentOff,
+      amountOffCents: c.amountOffCents,
+      active: c.active,
+      startsAt: c.startsAt?.toISOString() ?? null,
+      endsAt: c.endsAt?.toISOString() ?? null,
+      maxRedemptions: c.maxRedemptions,
+      redemptionCount: c.redemptionCount,
+      minSubtotalCents: c.minSubtotalCents,
+      affiliateName: c.affiliateName,
+      affiliateEmail: c.affiliateEmail,
+      affiliateNote: c.affiliateNote,
+      commissionPercent: c.commissionPercent,
+      salesCents,
+      commissionOwedCents,
+      commissionPaidCents,
+    };
+  });
+
+  const redemptionsForAdmin = redemptionRows.map((r) => ({
+    id: r.id,
+    code: r.code,
+    orderNumber: r.order.orderNumber,
+    orderId: r.order.id,
+    discountCents: r.discountCents,
+    orderTotalCents: r.orderTotalCents,
+    commissionCents: r.commissionCents,
+    affiliateName: r.affiliateName,
+    affiliateEmail: r.affiliateEmail,
+    paidOut: r.paidOut,
+    createdAt: r.createdAt.toISOString(),
+  }));
+
   // InventoryLog.orderId is a plain scalar (no relation), so resolve order
   // numbers for the ones that reference an order in one batched lookup.
   const invOrderIds = Array.from(
@@ -243,6 +308,7 @@ export default async function AdminPage() {
               {pendingEmailNotifications.length > 0 ? ` (${pendingEmailNotifications.length})` : ""}
             </TabsTrigger>
             <TabsTrigger value="products">Products</TabsTrigger>
+            <TabsTrigger value="coupons">Coupons</TabsTrigger>
             <TabsTrigger value="coa">COAs</TabsTrigger>
             <TabsTrigger value="email">Email</TabsTrigger>
             <TabsTrigger value="activity">Activity</TabsTrigger>
@@ -369,6 +435,10 @@ export default async function AdminPage() {
               productCount: products.filter((p) => p.categoryId === c.id).length,
             }))}
           />
+        </TabsContent>
+
+        <TabsContent value="coupons" className="mt-6">
+          <AdminCoupons coupons={couponsForAdmin} redemptions={redemptionsForAdmin} />
         </TabsContent>
 
         <TabsContent value="coa" className="mt-6">

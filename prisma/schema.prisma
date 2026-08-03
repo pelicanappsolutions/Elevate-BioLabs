@@ -74,6 +74,11 @@ enum InventoryReason {
   RESERVATION_RELEASE
 }
 
+enum CouponType {
+  PERCENT // percentOff 1–100 off merchandise subtotal
+  FIXED_CENTS // amountOffCents off merchandise subtotal
+}
+
 enum CampaignType {
   WELCOME
   ABANDONED_CART_24H
@@ -355,6 +360,65 @@ model COA {
   @@index([batchLot])
 }
 
+// ============================ COUPONS / AFFILIATES ============================
+
+model Coupon {
+  id               String     @id @default(cuid())
+  code             String     @unique // stored uppercase
+  type             CouponType
+  percentOff       Int? // 1–100 when PERCENT
+  amountOffCents   Int? // when FIXED_CENTS
+  active           Boolean    @default(true)
+  startsAt         DateTime?
+  endsAt           DateTime?
+  maxRedemptions   Int? // null = unlimited
+  redemptionCount  Int        @default(0)
+  minSubtotalCents Int        @default(0)
+
+  // Affiliate / partner attribution for payouts
+  affiliateName      String?
+  affiliateEmail     String?
+  affiliateNote      String?  @db.Text
+  /// Commission owed to affiliate as % of order merchandise subtotal (before discount).
+  commissionPercent  Int?
+
+  redemptions CouponRedemption[]
+  orders      Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([active])
+  @@index([affiliateEmail])
+}
+
+model CouponRedemption {
+  id                 String  @id @default(cuid())
+  couponId           String
+  orderId            String  @unique
+  userId             String?
+  code               String // snapshot
+  discountCents      Int
+  orderSubtotalCents Int
+  orderTotalCents    Int
+  commissionCents    Int     @default(0)
+  affiliateName      String?
+  affiliateEmail     String?
+  /// Admin marks true after paying the affiliate for this sale.
+  paidOut            Boolean @default(false)
+  paidOutAt          DateTime?
+
+  coupon Coupon @relation(fields: [couponId], references: [id], onDelete: Restrict)
+  order  Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([couponId])
+  @@index([affiliateEmail])
+  @@index([paidOut])
+  @@index([createdAt])
+}
+
 // ============================ ORDERS ============================
 
 model Order {
@@ -377,6 +441,11 @@ model Order {
   totalCents    Int
   currency      String @default("USD")
 
+  // Coupon snapshot (authoritative math also on CouponRedemption)
+  couponCode String?
+  couponId   String?
+  coupon     Coupon? @relation(fields: [couponId], references: [id], onDelete: SetNull)
+
   // shipping
   shipService   String? // e.g. "USPS_PRIORITY"
   trackingNumber String?
@@ -389,6 +458,7 @@ model Order {
   receipts             PaymentReceipt[]
   campaignEvents       CampaignEvent[]
   emailNotifications   EmailPaymentNotification[]
+  couponRedemption     CouponRedemption?
 
   notes     String? @db.Text
   createdAt DateTime @default(now())
@@ -398,6 +468,8 @@ model Order {
   @@index([status])
   @@index([orderNumber])
   @@index([createdAt])
+  @@index([couponId])
+  @@index([couponCode])
 }
 
 model OrderItem {

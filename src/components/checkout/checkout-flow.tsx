@@ -16,6 +16,7 @@ import {
 import type { PaymentRail } from "@prisma/client";
 
 import { getShippingQuote, placeOrder } from "@/actions/checkout";
+import { previewCoupon } from "@/actions/coupons";
 // Import from ./meta, not ./index — index pulls every adapter (and node:crypto
 // plus server env) into the client bundle.
 import { PAYMENT_RAIL_META } from "@/lib/payments/meta";
@@ -119,11 +120,19 @@ export function CheckoutFlow({
   const [rail, setRail] = React.useState<PaymentRail>(availableRails[0] ?? "P2P_WIRE");
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [couponInput, setCouponInput] = React.useState("");
+  const [appliedCoupon, setAppliedCoupon] = React.useState<{
+    code: string;
+    discountCents: number;
+  } | null>(null);
+  const [couponBusy, setCouponBusy] = React.useState(false);
+  const [couponError, setCouponError] = React.useState<string | null>(null);
 
   const selectedRate = rates.find((r) => r.service === shipService);
   const shippingCents = selectedRate?.amountCents ?? 0;
+  const discountCents = appliedCoupon?.discountCents ?? 0;
   // Display-only estimate. placeOrder re-prices everything server-side.
-  const estTotal = subtotal + shippingCents;
+  const estTotal = Math.max(0, subtotal - discountCents) + shippingCents;
 
   /** Pull live Shippo (or USPS) rates once address is complete. */
   const fetchRates = React.useCallback(async () => {
@@ -219,6 +228,7 @@ export function CheckoutFlow({
         shipService,
         ageConfirm,
         marketingOptIn,
+        couponCode: appliedCoupon?.code || undefined,
       });
 
       if (!result.ok) {
@@ -648,11 +658,95 @@ export function CheckoutFlow({
 
           <Separator className="my-4" />
 
+          <div className="space-y-2">
+            <Label htmlFor="coupon" className="text-xs">
+              Coupon / affiliate code
+            </Label>
+            <div className="flex gap-2">
+              <Input
+                id="coupon"
+                className="font-mono uppercase"
+                placeholder="CODE"
+                value={couponInput}
+                disabled={Boolean(appliedCoupon) || couponBusy}
+                onChange={(e) => {
+                  setCouponInput(e.target.value.toUpperCase());
+                  setCouponError(null);
+                }}
+              />
+              {appliedCoupon ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setAppliedCoupon(null);
+                    setCouponInput("");
+                    setCouponError(null);
+                  }}
+                >
+                  Remove
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={couponBusy || !couponInput.trim()}
+                  onClick={async () => {
+                    setCouponBusy(true);
+                    setCouponError(null);
+                    try {
+                      const res = await previewCoupon({
+                        code: couponInput,
+                        items: items.map((i) => ({
+                          variantId: i.variantId,
+                          quantity: i.quantity,
+                        })),
+                        state: address.state || undefined,
+                        shippingCents,
+                      });
+                      if (!res.ok) {
+                        setCouponError(res.error);
+                        return;
+                      }
+                      setAppliedCoupon({
+                        code: res.code,
+                        discountCents: res.discountCents,
+                      });
+                      toast({
+                        title: "Coupon applied",
+                        description: `${res.code} · save ${formatPrice(res.discountCents)}`,
+                      });
+                    } finally {
+                      setCouponBusy(false);
+                    }
+                  }}
+                >
+                  {couponBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
+                </Button>
+              )}
+            </div>
+            {couponError ? (
+              <p className="text-xs text-destructive">{couponError}</p>
+            ) : appliedCoupon ? (
+              <p className="text-xs text-primary">
+                {appliedCoupon.code} applied (−{formatPrice(appliedCoupon.discountCents)})
+              </p>
+            ) : null}
+          </div>
+
+          <Separator className="my-4" />
+
           <dl className="flex flex-col gap-2 text-sm">
             <div className="flex justify-between">
               <dt className="text-muted-foreground">Subtotal</dt>
               <dd>{formatPrice(subtotal)}</dd>
             </div>
+            {discountCents > 0 ? (
+              <div className="flex justify-between text-primary">
+                <dt>Discount{appliedCoupon ? ` (${appliedCoupon.code})` : ""}</dt>
+                <dd>−{formatPrice(discountCents)}</dd>
+              </div>
+            ) : null}
             <div className="flex justify-between">
               <dt className="text-muted-foreground">Shipping</dt>
               <dd>
@@ -674,7 +768,7 @@ export function CheckoutFlow({
 
           <p className="mt-3 flex items-center gap-1.5 text-[11px] text-muted-foreground">
             <Lock className="h-3 w-3" />
-            Bulk tiers, tax, and shipping are re-verified server-side before charging.
+            Bulk tiers, coupons, tax, and shipping are re-verified server-side before charging.
           </p>
         </div>
       </div>
