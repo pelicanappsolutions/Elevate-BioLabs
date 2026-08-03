@@ -310,6 +310,7 @@ Every integration in this codebase follows the same pattern: `isConfigured.<name
 - [ ] Production seed run (or real catalog/admin data loaded manually)
 - [ ] All required env vars set in Vercel (Production scope)
 - [ ] `AUTH_SECRET` generated fresh via `openssl rand -base64 32`
+- [ ] `CRON_SECRET` set in Vercel (Production) so scheduled cron routes authorize
 - [ ] Domain attached, `NEXTAUTH_URL` and `NEXT_PUBLIC_SITE_URL` match it exactly (https, no trailing slash)
 - [ ] Each enabled payment rail: keys set, webhook registered, signing secret pasted, one test transaction verified
 - [ ] USPS credentials set (or explicitly deferred, running shipping in MOCK)
