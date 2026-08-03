@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { env, isConfigured } from "@/lib/env";
+import { isConfigured } from "@/lib/env";
+import { isAuthorizedCronRequest } from "@/lib/cron-auth";
 import { syncP2pEmailPayments } from "@/lib/payments/p2p-email-sync";
 
 export const runtime = "nodejs";
@@ -12,11 +13,10 @@ export const runtime = "nodejs";
  * parses the order number from the memo, and either auto-confirms the order
  * or queues it for manual review.
  *
- * Protected by the same AUTH_SECRET bearer check used by sync-tracking.
+ * Auth: Vercel sends Authorization: Bearer $CRON_SECRET when CRON_SECRET is set.
  */
 export async function GET(req: Request) {
-  const authz = req.headers.get("authorization");
-  if (env.AUTH_SECRET && authz !== `Bearer ${env.AUTH_SECRET}`) {
+  if (!isAuthorizedCronRequest(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getTracking } from "@/lib/shipping/usps";
-import { env } from "@/lib/env";
+import { isAuthorizedCronRequest } from "@/lib/cron-auth";
 
 /**
  * Tracking sync. USPS tracking is pull-based, so instead of an inbound webhook
@@ -9,11 +9,10 @@ import { env } from "@/lib/env";
  * SHIPPED orders, pulls the latest USPS status, and flips the order to DELIVERED
  * when USPS reports delivery.
  *
- * Protect with a bearer secret so only Vercel Cron / ops can trigger it.
+ * Auth: Vercel sends Authorization: Bearer $CRON_SECRET when CRON_SECRET is set.
  */
 export async function GET(req: Request) {
-  const authz = req.headers.get("authorization");
-  if (env.AUTH_SECRET && authz !== `Bearer ${env.AUTH_SECRET}`) {
+  if (!isAuthorizedCronRequest(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

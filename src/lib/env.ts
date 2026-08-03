@@ -7,6 +7,11 @@ export const env = {
   DATABASE_URL: process.env.DATABASE_URL ?? "",
 
   AUTH_SECRET: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET ?? "dev-secret",
+  /**
+   * Vercel Cron bearer secret. When set on the Vercel project, Cron invocations
+   * send `Authorization: Bearer $CRON_SECRET`. Required for production crons.
+   */
+  CRON_SECRET: process.env.CRON_SECRET ?? "",
   NEXTAUTH_URL: process.env.NEXTAUTH_URL ?? "http://localhost:3000",
   SITE_URL: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
 

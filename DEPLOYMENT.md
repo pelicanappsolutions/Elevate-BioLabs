@@ -174,7 +174,10 @@ Set every variable from `.env.example` in Vercel → Project → Settings → En
 - `AUTH_TRUST_HOST="true"`
 - `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` (optional — omit to disable Google sign-in)
 
-Generate the secret:
+**Vercel Cron**
+- `CRON_SECRET` — required for `/api/cron/sync-tracking` and `/api/cron/p2p-email-sync`. Generate with the same `openssl` command below and set it on the Vercel project; Vercel sends it as `Authorization: Bearer $CRON_SECRET` on cron invocations. Without it, production crons 401.
+
+Generate secrets:
 ```bash
 openssl rand -base64 32
 ```
