@@ -8,10 +8,14 @@ export const runtime = "nodejs";
 /**
  * P2P payment notification sync.
  *
- * Vercel Cron should invoke this endpoint every few minutes (e.g. 5m).
+ * Scheduled every 15 minutes via vercel.json so Zelle/Venmo confirmations can
+ * land within the "few hours" window promised at checkout (not once daily).
  * It polls the configured inbound email mailbox for Venmo/Zelle notifications,
  * parses the order number from the memo, and either auto-confirms the order
  * or queues it for manual review.
+ *
+ * Requires Vercel Pro (or higher) for sub-daily cron frequency — Hobby only
+ * allows once-per-day schedules and will fail the deploy otherwise.
  *
  * Auth: Vercel sends Authorization: Bearer $CRON_SECRET when CRON_SECRET is set.
  */

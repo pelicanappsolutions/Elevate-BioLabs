@@ -5,9 +5,9 @@ import { isAuthorizedCronRequest } from "@/lib/cron-auth";
 
 /**
  * Tracking sync. USPS tracking is pull-based, so instead of an inbound webhook
- * we poll: this endpoint (wire it to a Vercel Cron, e.g. every 6h) walks all
- * SHIPPED orders, pulls the latest USPS status, and flips the order to DELIVERED
- * when USPS reports delivery.
+ * we poll: vercel.json runs this every 6 hours. It walks SHIPPED orders, pulls
+ * the latest USPS status, and flips the order to DELIVERED when USPS reports
+ * delivery.
  *
  * Auth: Vercel sends Authorization: Bearer $CRON_SECRET when CRON_SECRET is set.
  */
