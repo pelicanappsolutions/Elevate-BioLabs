@@ -74,10 +74,15 @@ export async function sendTransactional(
     let html: string;
 
     switch (type) {
-      case "ORDER_CONFIRMATION":
-        subject = `Order ${args.order?.orderNumber ?? ""} confirmed`;
+      case "ORDER_CONFIRMATION": {
+        const rail = args.order?.rail ?? args.order?.payments?.[0]?.rail;
+        const isP2P = ["P2P_ZELLE", "P2P_VENMO", "P2P_WIRE"].includes(String(rail ?? ""));
+        subject = isP2P
+          ? `Action needed: complete payment for order ${args.order?.orderNumber ?? ""}`
+          : `Order ${args.order?.orderNumber ?? ""} confirmed`;
         html = orderConfirmationHtml(args.order ?? {});
         break;
+      }
       case "PAYMENT_RECEIVED":
         subject = `Payment received — order ${args.order?.orderNumber ?? ""} is being prepared`;
         html = paymentReceivedHtml(args.order ?? {});

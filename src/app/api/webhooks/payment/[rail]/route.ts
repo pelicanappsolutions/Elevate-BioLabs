@@ -82,10 +82,13 @@ export async function POST(
       }),
     ]);
 
+    // Payment already cleared — send the "payment received" template, not a
+    // second "order placed" confirmation (that was emailed at checkout).
     const to = order.guestEmail ?? (await emailForUser(order.userId));
     if (to) {
-      await sendTransactional("ORDER_CONFIRMATION", { to, order });
-      await trackMarketing("ORDER_CONFIRMATION", to, order);
+      const paidOrder = { ...order, rail: payment.rail, status: "PAID" as const };
+      await sendTransactional("PAYMENT_RECEIVED", { to, order: paidOrder });
+      await trackMarketing("ORDER_CONFIRMATION", to, paidOrder);
     }
   } else if (event.status === "FAILED") {
     await cancelOrderAndReleaseReservation(

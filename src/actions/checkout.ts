@@ -235,6 +235,8 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
     payments: order.payments,
     rail,
     instructions: charge.instructions,
+    // Hosted checkout / crypto — so the confirmation email can deep-link back.
+    redirectUrl: charge.redirectUrl,
     customerEmail: data.email,
     guestEmail: data.email,
   };

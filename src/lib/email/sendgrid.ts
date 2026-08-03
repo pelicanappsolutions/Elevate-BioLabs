@@ -9,6 +9,10 @@
  */
 import { env, isConfigured } from "@/lib/env";
 import { unsubscribeUrl } from "@/lib/unsubscribe";
+import {
+  PAYMENT_RAIL_META,
+  type PaymentRailName,
+} from "@/lib/payments/meta";
 
 export async function sendEmail(input: {
   to: string | string[];
@@ -177,6 +181,9 @@ function pill(label: string, color: string): string {
 function addressBlock(shipTo: any): string {
   if (!shipTo || typeof shipTo !== "object") return "";
   const line2 = shipTo.street2 ? `${escapeHtml(shipTo.street2)}<br/>` : "";
+  const phone = shipTo.phone
+    ? `<br/><span style="color:${BRAND.muted};">Phone: ${escapeHtml(String(shipTo.phone))}</span>`
+    : "";
   return `
     <div style="font-size:14px;line-height:1.5;color:${BRAND.ink};">
       ${shipTo.fullName ? `<strong>${escapeHtml(shipTo.fullName)}</strong><br/>` : ""}
@@ -185,7 +192,18 @@ function addressBlock(shipTo: any): string {
       ${escapeHtml(shipTo.city ?? "")}${shipTo.city ? ", " : ""}${escapeHtml(shipTo.state ?? "")} ${escapeHtml(
         shipTo.zip ?? ""
       )}
+      ${phone}
     </div>`;
+}
+
+function paymentRailLabel(rail: unknown): string {
+  const key = String(rail ?? "") as PaymentRailName;
+  return PAYMENT_RAIL_META[key]?.label ?? String(rail ?? "Payment").replace(/_/g, " ");
+}
+
+function formatShipService(service: unknown): string {
+  if (!service) return "";
+  return String(service).replace(/_/g, " ");
 }
 
 /** A light "info card" wrapper with an optional label. */
@@ -261,7 +279,19 @@ export function promotionalHtml(input: {
 export function orderConfirmationHtml(order: any): string {
   const items: any[] = Array.isArray(order?.items) ? order.items : [];
   const orderNo = escapeHtml(order?.orderNumber ?? "");
+  const orderNumberRaw = String(order?.orderNumber ?? "");
   const placed = formatDate(order?.createdAt);
+  const rail = order?.rail ?? order?.payments?.[0]?.rail;
+  const isP2P = ["P2P_ZELLE", "P2P_VENMO", "P2P_WIRE"].includes(String(rail ?? ""));
+  const instructions = order?.instructions;
+  const redirectUrl =
+    typeof order?.redirectUrl === "string" && order.redirectUrl.startsWith("http")
+      ? order.redirectUrl
+      : "";
+  const successUrl = orderNumberRaw
+    ? `${env.SITE_URL}/checkout/success?order=${encodeURIComponent(orderNumberRaw)}`
+    : `${env.SITE_URL}/dashboard`;
+  const shipService = formatShipService(order?.shipService);
 
   const rows = items
     .map((it, i) => {
@@ -269,11 +299,12 @@ export function orderConfirmationHtml(order: any): string {
       const unit = it?.unitPriceCents ?? it?.priceCents;
       const lineTotal = it?.totalCents ?? (Number(unit ?? 0) * qty);
       const border = i === 0 ? "" : `border-top:1px solid ${BRAND.line};`;
+      const sku = it?.sku ? ` · SKU ${escapeHtml(String(it.sku))}` : "";
       return `
       <tr>
         <td style="padding:12px 0;${border}font-size:14px;color:${BRAND.ink};vertical-align:top;">
           <div style="font-weight:600;">${escapeHtml(it?.name ?? "Research compound")}</div>
-          <div style="color:${BRAND.muted};font-size:12px;margin-top:2px;">Qty ${qty} · ${money(unit)} each</div>
+          <div style="color:${BRAND.muted};font-size:12px;margin-top:2px;">Qty ${qty} · ${money(unit)} each${sku}</div>
         </td>
         <td style="padding:12px 0;${border}font-size:14px;font-weight:600;text-align:right;color:${BRAND.ink};vertical-align:top;white-space:nowrap;">
           ${money(lineTotal)}
@@ -295,57 +326,124 @@ export function orderConfirmationHtml(order: any): string {
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:10px;border-top:2px solid ${BRAND.line};padding-top:6px;">
       <tr><td style="height:8px;"></td></tr>
       ${totalsRow("Subtotal", money(order?.subtotalCents))}
-      ${totalsRow("Shipping", Number(order?.shippingCents ?? 0) === 0 ? "FREE" : money(order?.shippingCents))}
+      ${totalsRow(
+        shipService ? `Shipping (${escapeHtml(shipService)})` : "Shipping",
+        Number(order?.shippingCents ?? 0) === 0 ? "FREE" : money(order?.shippingCents)
+      )}
       ${totalsRow("Tax", money(order?.taxCents))}
       ${discount > 0 ? totalsRow("Discount", `−${money(discount)}`) : ""}
       <tr><td colspan="2" style="border-top:1px solid ${BRAND.line};height:8px;"></td></tr>
-      ${totalsRow("Total", money(order?.totalCents), { bold: true })}
+      ${totalsRow("Total due", money(order?.totalCents), { bold: true })}
     </table>
   `, "Order summary");
 
   const shipCard = order?.shipTo ? card(addressBlock(order.shipTo), "Shipping to") : "";
 
-  const isP2P = ["P2P_ZELLE", "P2P_VENMO", "P2P_WIRE"].includes(order?.rail);
-  const instructions = order?.instructions;
-
-  const p2pCard = isP2P && instructions
-    ? card(`
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:${BRAND.ink};line-height:1.5;">
-        <tr><td style="padding:3px 0;"><strong>Method:</strong> ${escapeHtml(instructions.method)}</td></tr>
-        <tr><td style="padding:3px 0;"><strong>Send to:</strong> ${escapeHtml(instructions.handle)}</td></tr>
-        <tr><td style="padding:3px 0;"><strong>Memo / Reference:</strong> ${escapeHtml(instructions.memo)}</td></tr>
-        <tr><td style="padding:6px 0 0;">${escapeHtml(instructions.note)}</td></tr>
-      </table>
-    `, "Payment instructions")
+  const paymentSummary = rail
+    ? card(
+        `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:${BRAND.ink};line-height:1.5;">
+          <tr><td style="padding:3px 0;"><strong>Method:</strong> ${escapeHtml(paymentRailLabel(rail))}</td></tr>
+          <tr><td style="padding:3px 0;"><strong>Amount:</strong> ${money(order?.totalCents)}</td></tr>
+          <tr><td style="padding:3px 0;"><strong>Status:</strong> ${escapeHtml(
+            String(order?.status ?? (isP2P ? "AWAITING_REVIEW" : "PENDING_PAYMENT")).replace(/_/g, " ")
+          )}</td></tr>
+        </table>`,
+        "Payment"
+      )
     : "";
 
-  const nextSteps = card(`
+  const p2pCard =
+    isP2P && instructions
+      ? card(
+          `
+      <p style="margin:0 0 12px;font-size:14px;line-height:1.5;color:${BRAND.ink};">
+        Your order is held until we confirm payment. Send the <strong>exact</strong> amount and use the memo below so we can match it.
+      </p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:${BRAND.ink};line-height:1.5;">
+        <tr><td style="padding:3px 0;"><strong>Method:</strong> ${escapeHtml(instructions.method)}</td></tr>
+        <tr><td style="padding:3px 0;"><strong>Send to:</strong> <span style="font-family:ui-monospace,Consolas,monospace;font-weight:700;">${escapeHtml(instructions.handle)}</span></td></tr>
+        <tr><td style="padding:3px 0;"><strong>Exact amount:</strong> <span style="font-weight:700;">${money(order?.totalCents)}</span></td></tr>
+        <tr><td style="padding:3px 0;"><strong>Memo / reference:</strong> <span style="font-family:ui-monospace,Consolas,monospace;font-weight:700;">${escapeHtml(instructions.memo)}</span></td></tr>
+        <tr><td style="padding:10px 0 0;color:${BRAND.muted};font-size:13px;">${escapeHtml(instructions.note)}</td></tr>
+      </table>
+    `,
+          "Action required — send payment"
+        )
+      : "";
+
+  const payOnline =
+    !isP2P && redirectUrl
+      ? `<div style="margin:0 0 22px;text-align:center;">
+          <p style="margin:0 0 10px;font-size:14px;color:${BRAND.muted};">Finish checkout with your selected payment method:</p>
+          ${button(redirectUrl, "Complete payment", BRAND.navy)}
+        </div>`
+      : "";
+
+  const viewOrderCta = `
+    <div style="margin:0 0 22px;text-align:center;">
+      ${button(successUrl, isP2P ? "View payment instructions" : "View your order")}
+      <div style="margin-top:8px;font-size:12px;color:${BRAND.muted};">
+        Or open your account:
+        <a href="${escapeHtml(env.SITE_URL + "/dashboard")}" style="color:${BRAND.accent};text-decoration:none;">Dashboard</a>
+      </div>
+    </div>`;
+
+  const nextSteps = card(
+    `
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:${BRAND.ink};line-height:1.5;">
-      ${isP2P ? `<tr><td style="padding:2px 0;"><strong style="color:${BRAND.accent};">1.</strong>&nbsp; Send the payment using the instructions above.</td></tr>` : ""}
-      <tr><td style="padding:2px 0;"><strong style="color:${BRAND.accent};">${isP2P ? "2." : "1."}</strong>&nbsp; We're preparing and QC-checking your order.</td></tr>
-      <tr><td style="padding:2px 0;"><strong style="color:${BRAND.accent};">${isP2P ? "3." : "2."}</strong>&nbsp; You'll get a tracking email the moment it ships.</td></tr>
-      <tr><td style="padding:2px 0;"><strong style="color:${BRAND.accent};">${isP2P ? "4." : "3."}</strong>&nbsp; Each vial ships with a batch-matched Certificate of Analysis.</td></tr>
+      ${
+        isP2P
+          ? `<tr><td style="padding:2px 0;"><strong style="color:${BRAND.accent};">1.</strong>&nbsp; Send <strong>${money(order?.totalCents)}</strong> with memo <strong>${escapeHtml(String(instructions?.memo ?? orderNumberRaw))}</strong>.</td></tr>
+             <tr><td style="padding:2px 0;"><strong style="color:${BRAND.accent};">2.</strong>&nbsp; We match your payment (usually within a few hours) and email you when it clears.</td></tr>
+             <tr><td style="padding:2px 0;"><strong style="color:${BRAND.accent};">3.</strong>&nbsp; We pack, QC-check, and ship — you'll get tracking when it leaves.</td></tr>
+             <tr><td style="padding:2px 0;"><strong style="color:${BRAND.accent};">4.</strong>&nbsp; Each vial includes a batch-matched Certificate of Analysis.</td></tr>`
+          : redirectUrl
+            ? `<tr><td style="padding:2px 0;"><strong style="color:${BRAND.accent};">1.</strong>&nbsp; Complete payment using the button above if you haven't already.</td></tr>
+               <tr><td style="padding:2px 0;"><strong style="color:${BRAND.accent};">2.</strong>&nbsp; Once paid, we prepare and QC-check your order.</td></tr>
+               <tr><td style="padding:2px 0;"><strong style="color:${BRAND.accent};">3.</strong>&nbsp; You'll get a tracking email the moment it ships.</td></tr>
+               <tr><td style="padding:2px 0;"><strong style="color:${BRAND.accent};">4.</strong>&nbsp; Each vial ships with a batch-matched Certificate of Analysis.</td></tr>`
+            : `<tr><td style="padding:2px 0;"><strong style="color:${BRAND.accent};">1.</strong>&nbsp; We're preparing and QC-checking your order.</td></tr>
+               <tr><td style="padding:2px 0;"><strong style="color:${BRAND.accent};">2.</strong>&nbsp; You'll get a tracking email the moment it ships.</td></tr>
+               <tr><td style="padding:2px 0;"><strong style="color:${BRAND.accent};">3.</strong>&nbsp; Each vial ships with a batch-matched Certificate of Analysis.</td></tr>`
+      }
     </table>
-  `, "What happens next");
+  `,
+    "What happens next"
+  );
+
+  const headline = isP2P
+    ? "Thanks — one more step to complete payment"
+    : "Thanks — your order is in.";
+  const pillLabel = isP2P ? "Payment needed" : "Order confirmed";
+  const pillColor = isP2P ? BRAND.accent : BRAND.green;
 
   const body = `
-    <div style="margin:0 0 14px;">${pill("Order confirmed", BRAND.green)}</div>
-    <h1 style="margin:0 0 8px;font-size:24px;line-height:1.25;color:${BRAND.ink};">Thanks — your order is in.</h1>
+    <div style="margin:0 0 14px;">${pill(pillLabel, pillColor)}</div>
+    <h1 style="margin:0 0 8px;font-size:24px;line-height:1.25;color:${BRAND.ink};">${headline}</h1>
     <p style="margin:0 0 22px;font-size:15px;line-height:1.55;color:${BRAND.muted};">
-      Order <strong style="color:${BRAND.ink};">${orderNo}</strong>${placed ? ` · placed ${placed}` : ""}. Here's everything you ordered.
+      Order <strong style="color:${BRAND.ink};">${orderNo}</strong>${placed ? ` · placed ${placed}` : ""} · total <strong style="color:${BRAND.ink};">${money(order?.totalCents)}</strong>.
+      ${isP2P ? " Use the payment details below so we can release your order." : " Here's everything you ordered."}
     </p>
-    ${itemsCard}
-    ${shipCard}
     ${p2pCard}
+    ${payOnline}
+    ${viewOrderCta}
+    ${itemsCard}
+    ${paymentSummary}
+    ${shipCard}
     ${nextSteps}
     <p style="margin:14px 0 0;font-size:13px;color:${BRAND.muted};line-height:1.5;">
       Need to make a change? Reply to this email or reach us at
       <a href="mailto:${SUPPORT_EMAIL}" style="color:${BRAND.accent};text-decoration:none;">${SUPPORT_EMAIL}</a>.
+    </p>
+    <p style="margin:12px 0 0;font-size:11px;color:${BRAND.muted};line-height:1.5;">
+      For Research Use Only. Products are analytical reference standards — not for human or veterinary consumption.
     </p>`;
 
   return shell(
     "Order Confirmation",
-    `Order ${order?.orderNumber ?? ""} confirmed — ${money(order?.totalCents)} total`,
+    isP2P
+      ? `Action needed: pay ${money(order?.totalCents)} for order ${order?.orderNumber ?? ""}`
+      : `Order ${order?.orderNumber ?? ""} confirmed — ${money(order?.totalCents)} total`,
     body
   );
 }
