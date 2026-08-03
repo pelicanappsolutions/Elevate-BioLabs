@@ -1,30 +1,72 @@
 /**
- * Lightweight in-memory sliding-window rate limiter.
- * Good enough for a single Vercel region / dev. For multi-region production,
- * swap the Map for Upstash Redis (`@upstash/ratelimit`) — same interface.
+ * Postgres-backed fixed-window rate limiter.
+ *
+ * The previous in-memory Map only protected a single serverless instance —
+ * attackers could fan out across Vercel isolates and bypass limits. Counters
+ * now live in RateLimitBucket so every instance shares the same window.
+ *
+ * If the DB is unreachable we allow the request (fail-open) so checkout/auth
+ * are not bricked by a rate-limit table outage; the error is logged.
  */
-type Bucket = { count: number; resetAt: number };
-const store = new Map<string, Bucket>();
+import { db } from "@/lib/db";
 
-export function rateLimit(
+export type RateLimitResult = {
+  success: boolean;
+  remaining: number;
+  resetAt: number;
+};
+
+export async function rateLimit(
   key: string,
   { limit = 5, windowMs = 60_000 }: { limit?: number; windowMs?: number } = {}
-): { success: boolean; remaining: number; resetAt: number } {
-  const now = Date.now();
-  const bucket = store.get(key);
+): Promise<RateLimitResult> {
+  const now = new Date();
+  const nextReset = new Date(now.getTime() + windowMs);
 
-  if (!bucket || bucket.resetAt < now) {
-    const resetAt = now + windowMs;
-    store.set(key, { count: 1, resetAt });
-    return { success: true, remaining: limit - 1, resetAt };
+  try {
+    return await db.$transaction(async (tx) => {
+      const existing = await tx.rateLimitBucket.findUnique({ where: { key } });
+
+      if (!existing || existing.resetAt <= now) {
+        await tx.rateLimitBucket.upsert({
+          where: { key },
+          create: { key, count: 1, resetAt: nextReset },
+          update: { count: 1, resetAt: nextReset },
+        });
+        return {
+          success: true,
+          remaining: Math.max(0, limit - 1),
+          resetAt: nextReset.getTime(),
+        };
+      }
+
+      if (existing.count >= limit) {
+        return {
+          success: false,
+          remaining: 0,
+          resetAt: existing.resetAt.getTime(),
+        };
+      }
+
+      const updated = await tx.rateLimitBucket.update({
+        where: { key },
+        data: { count: { increment: 1 } },
+      });
+
+      return {
+        success: true,
+        remaining: Math.max(0, limit - updated.count),
+        resetAt: existing.resetAt.getTime(),
+      };
+    });
+  } catch (err) {
+    console.error("[rate-limit] DB error — allowing request:", err);
+    return {
+      success: true,
+      remaining: limit,
+      resetAt: nextReset.getTime(),
+    };
   }
-
-  if (bucket.count >= limit) {
-    return { success: false, remaining: 0, resetAt: bucket.resetAt };
-  }
-
-  bucket.count += 1;
-  return { success: true, remaining: limit - bucket.count, resetAt: bucket.resetAt };
 }
 
 /** Extract a client key from a request (IP-ish). */

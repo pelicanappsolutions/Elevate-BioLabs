@@ -26,7 +26,7 @@ export async function logAgeConfirmation(): Promise<{ ok: boolean }> {
   const userAgent = h.get("user-agent") ?? undefined;
 
   // Light abuse guard so the endpoint can't be hammered to flood the log.
-  const rl = rateLimit(`age-confirm:${ip}`, { limit: 10, windowMs: 60_000 });
+  const rl = await rateLimit(`age-confirm:${ip}`, { limit: 10, windowMs: 60_000 });
   if (!rl.success) return { ok: false };
 
   const session = await auth().catch(() => null);

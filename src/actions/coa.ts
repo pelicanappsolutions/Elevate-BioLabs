@@ -30,7 +30,7 @@ export async function lookupBatch(
   const parsed = lookupSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Enter a valid batch or lot number." };
 
-  const rl = rateLimit(`coa-lookup:${parsed.data.batchLot}`, {
+  const rl = await rateLimit(`coa-lookup:${parsed.data.batchLot}`, {
     limit: 10,
     windowMs: 60_000,
   });

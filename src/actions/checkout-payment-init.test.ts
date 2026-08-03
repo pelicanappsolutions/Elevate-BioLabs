@@ -19,6 +19,7 @@ const {
     $transaction: vi.fn(),
     payment: { updateMany: vi.fn() },
     order: { create: vi.fn(), update: vi.fn() },
+    user: { update: vi.fn().mockResolvedValue({}) },
   },
 }));
 
@@ -80,7 +81,7 @@ const CHECKOUT_INPUT = {
 beforeEach(() => {
   vi.clearAllMocks();
   authMock.mockResolvedValue({ user: { id: "user_1", email: "buyer@example.com" } });
-  rateLimitMock.mockReturnValue({ success: true });
+  rateLimitMock.mockResolvedValue({ success: true });
   getShippingRatesMock.mockResolvedValue([
     { service: "USPS_PRIORITY", amountCents: 995, label: "Priority" },
   ]);

@@ -600,3 +600,13 @@ model ChargebackMetric {
   @@index([rail])
   @@index([periodStart])
 }
+
+/// Fixed-window counters for abuse guards (checkout, auth, COA lookup, …).
+/// Stored in Postgres so limits hold across serverless instances (unlike Map).
+model RateLimitBucket {
+  key     String   @id
+  count   Int      @default(0)
+  resetAt DateTime
+
+  @@index([resetAt])
+}

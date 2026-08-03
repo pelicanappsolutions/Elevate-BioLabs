@@ -14,7 +14,7 @@ export async function subscribeNewsletter(input: {
   const parsed = newsletterSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Please enter a valid email." };
 
-  const rl = rateLimit(`newsletter:${parsed.data.email}`, { limit: 3, windowMs: 60_000 });
+  const rl = await rateLimit(`newsletter:${parsed.data.email}`, { limit: 3, windowMs: 60_000 });
   if (!rl.success) return { ok: false, error: "Too many attempts. Try again shortly." };
 
   const source =
@@ -45,7 +45,7 @@ export async function submitContact(input: {
   const parsed = contactSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Please complete all fields." };
 
-  const rl = rateLimit(`contact:${parsed.data.email}`, { limit: 3, windowMs: 300_000 });
+  const rl = await rateLimit(`contact:${parsed.data.email}`, { limit: 3, windowMs: 300_000 });
   if (!rl.success) return { ok: false, error: "Too many messages. Try again later." };
 
   await sendEmail({

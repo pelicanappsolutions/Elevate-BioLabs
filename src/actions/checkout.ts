@@ -74,7 +74,7 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
   }
   const data = parsed.data;
 
-  const rl = rateLimit(`checkout:${data.email}`, { limit: 8, windowMs: 60_000 });
+  const rl = await rateLimit(`checkout:${data.email}`, { limit: 8, windowMs: 60_000 });
   if (!rl.success) return { ok: false, error: "Too many checkout attempts. Slow down." };
 
   // Require an account — every order must attribute to a trackable customer.
