@@ -127,3 +127,4 @@ curl -s -X POST https://elevatebiolab.com/api/webhooks/payment/nowpayments \
 | 2026-08-02 | Admin category create/rename/delete; MOTS-c seed category → Longevity |
 | 2026-08-03 | Persist NOWPayments invoice URL for abandoned checkout recovery; admin email on crypto PAID |
 | 2026-08-03 | Affiliate coupons: Admin → Coupons CRUD, checkout apply, redemption + commission paid/unpaid tracking |
+| 2026-08-03 | LA sales tax soft-launch: flat 10.25% on LA ship-tos (state+local); charged into order total for all rails |

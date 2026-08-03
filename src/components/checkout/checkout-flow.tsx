@@ -21,6 +21,7 @@ import { previewCoupon } from "@/actions/coupons";
 // plus server env) into the client bundle.
 import { PAYMENT_RAIL_META } from "@/lib/payments/meta";
 import type { ShippingRate } from "@/lib/shipping/index";
+import { salesTaxCents } from "@/lib/tax-rates";
 import { cn, formatPrice } from "@/lib/utils";
 import { useCart } from "@/store/cart";
 import { Button } from "@/components/ui/button";
@@ -132,7 +133,9 @@ export function CheckoutFlow({
   const shippingCents = selectedRate?.amountCents ?? 0;
   const discountCents = appliedCoupon?.discountCents ?? 0;
   // Display-only estimate. placeOrder re-prices everything server-side.
-  const estTotal = Math.max(0, subtotal - discountCents) + shippingCents;
+  const taxableCents = Math.max(0, subtotal - discountCents);
+  const estTaxCents = salesTaxCents(taxableCents, address.state);
+  const estTotal = taxableCents + shippingCents + estTaxCents;
 
   /** Pull live Shippo (or USPS) rates once address is complete. */
   const fetchRates = React.useCallback(async () => {
@@ -755,7 +758,13 @@ export function CheckoutFlow({
             </div>
             <div className="flex justify-between">
               <dt className="text-muted-foreground">Tax</dt>
-              <dd className="text-xs text-muted-foreground">Applied at order time</dd>
+              <dd>
+                {address.state
+                  ? estTaxCents > 0
+                    ? formatPrice(estTaxCents)
+                    : formatPrice(0)
+                  : "—"}
+              </dd>
             </div>
           </dl>
 

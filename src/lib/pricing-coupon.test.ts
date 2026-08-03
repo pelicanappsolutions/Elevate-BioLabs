@@ -87,4 +87,13 @@ describe("priceCart + coupons", () => {
     expect(evaluateCouponMock).not.toHaveBeenCalled();
     expect(priced.discountCents).toBe(0);
   });
+
+  it("charges Louisiana sales tax at 10.25% on taxable merchandise", async () => {
+    const priced = await priceCart([{ variantId: VARIANT_ID, quantity: 1 }], {
+      state: "LA",
+      shippingCents: 995,
+    });
+    expect(priced.taxCents).toBe(1_025);
+    expect(priced.totalCents).toBe(10_000 + 995 + 1_025);
+  });
 });

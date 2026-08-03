@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { evaluateCoupon } from "@/lib/coupons";
+import { salesTaxCents } from "@/lib/tax-rates";
 import { resolveUnitPrice, variantDisplayName, FREE_SHIPPING_THRESHOLD_CENTS } from "@/lib/utils";
 
 export interface PricedLine {
@@ -24,14 +25,6 @@ export interface PricedCart {
   couponId?: string;
   commissionCents?: number;
 }
-
-// Simple destination-based sales-tax table (extend as nexus grows).
-const TAX_RATES: Record<string, number> = {
-  TX: 0.0825,
-  CA: 0.0725,
-  NY: 0.08,
-  FL: 0.06,
-};
 
 /**
  * Server-authoritative re-pricing. NEVER trust client cart prices — we re-read
@@ -87,8 +80,7 @@ export async function priceCart(
   // so this can't be bypassed by an ordering flow that skips the quote step.
   const freeShipping = subtotalCents >= FREE_SHIPPING_THRESHOLD_CENTS;
   const shippingCents = freeShipping ? 0 : (opts.shippingCents ?? 0);
-  const rate = opts.state ? TAX_RATES[opts.state.toUpperCase()] ?? 0 : 0;
-  const taxCents = Math.round(taxableCents * rate);
+  const taxCents = salesTaxCents(taxableCents, opts.state);
   const totalCents = taxableCents + shippingCents + taxCents;
 
   return {
