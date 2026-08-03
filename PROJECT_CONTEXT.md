@@ -1,15 +1,15 @@
-# Elevate Bio-Labs — Project Context & Technical Reference
+# ElevateBioLab — Project Context & Technical Reference
 
 **Date**: July 15, 2026  
 **Project Status**: MVP Complete (Dev Server Running on Port 3001)  
 **Build Timeline**: 2 weeks from start to production-ready handoff  
-**Developer**: BDS (Frankie Bruno) / Client: Elevate Bio-Labs (Chazz)
+**Developer**: BDS (Frankie Bruno) / Client: ElevateBioLab (Chazz)
 
 ---
 
 ## Project Overview
 
-**Elevate Bio-Labs** is a production-ready peptide e-commerce platform for research use only (RUO). Full-stack Next.js 14 application with multi-payment rails, USPS shipping integration, compliance tracking, and comprehensive admin/user dashboards.
+**ElevateBioLab** is a production-ready peptide e-commerce platform for research use only (RUO). Full-stack Next.js 14 application with multi-payment rails, USPS shipping integration, compliance tracking, and comprehensive admin/user dashboards.
 
 **Key Business Rules:**
 - Research Use Only (RUO) messaging on every page
@@ -240,7 +240,7 @@ Anonymous Request to /dashboard → 307 redirect to /login
 ```
 
 **Seeded Credentials:**
-- Email: `admin@elevatebiolabs.com`
+- Email: `admin@elevatebiolab.com`
 - Password: `Admin123!change-me` (must change before production)
 
 **Key Fix Applied:** Split auth into two configs to prevent bcryptjs/Prisma from entering Edge Runtime:
@@ -492,8 +492,8 @@ DIRECT_URL="postgresql://..."
 
 # Auth
 NEXTAUTH_SECRET="openssl rand -base64 32"
-NEXTAUTH_URL="https://elevatebiolabs.com"
-NEXT_PUBLIC_SITE_URL="https://elevatebiolabs.com"
+NEXTAUTH_URL="https://elevatebiolab.com"
+NEXT_PUBLIC_SITE_URL="https://elevatebiolab.com"
 
 # Payment Processors (API keys only)
 NEXAPAY_API_KEY="..."

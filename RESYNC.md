@@ -1,4 +1,4 @@
-# Project Resync — Elevate Bio-Labs Context Brief
+# Project Resync — ElevateBioLab Context Brief
 
 **Start here when resuming work.** This document summarizes the project state, architecture, and key decisions so Claude can pick up where you left off without re-reading the entire codebase.
 
@@ -10,7 +10,7 @@
 
 ## Project Overview
 
-**Elevate Bio-Labs** is a full-stack e-commerce platform for research peptides and compounds, built with Next.js 14, Prisma ORM, PostgreSQL, and Auth.js v5.
+**ElevateBioLab** is a full-stack e-commerce platform for research peptides and compounds, built with Next.js 14, Prisma ORM, PostgreSQL, and Auth.js v5.
 
 **Core value prop:** Legitimate research chemical supplier with transparent testing (every batch has a third-party Certificate of Analysis uploaded + searchable), compliance-first (RUO disclaimers, age gates, LegitScript readiness tracker), and multi-rail payment processing (card, ACH, crypto, P2P).
 
@@ -227,7 +227,7 @@ npm run dev  # or: npm run dev -- -p 3001  (if port 3000 conflicts with WSL2)
 ```
 
 App at http://localhost:3000 (or :3001).  
-Seeded admin: `admin@elevatebiolabs.com` / `Admin123!change-me`.
+Seeded admin: `admin@elevatebiolab.com` / `Admin123!change-me`.
 
 ---
 

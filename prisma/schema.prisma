@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────
-//  Elevate Bio-Labs — Prisma schema
+//  ElevateBioLab — Prisma schema
 //  PostgreSQL (Neon / Supabase). Optimistic locking on Product.version.
 // ─────────────────────────────────────────────────────────────
 

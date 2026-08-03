@@ -1,6 +1,6 @@
 # Recommended Legal Operations & Compliance Build Plan
 
-**Purpose:** Translate the compliance requirements Elevate Bio-Labs received from legal/regulatory sources into a concrete map of site/software work, content work, physical operations, and business tasks. This is a **development & operations planning document**, not legal advice. Counsel is the authority on *what* is required; this doc organizes *how* the software supports it.
+**Purpose:** Translate the compliance requirements ElevateBioLab received from legal/regulatory sources into a concrete map of site/software work, content work, physical operations, and business tasks. This is a **development & operations planning document**, not legal advice. Counsel is the authority on *what* is required; this doc organizes *how* the software supports it.
 
 **Prepared:** 2026-07-20 · **Updated:** 2026-08-01 · **Status:** Path B (grey-area / individual-sales) confirmed by client 2026-08-01. Path A (institutional/IRB gate) is out of scope — do not build it. Shared + Path B build items below are unblocked.
 
@@ -22,7 +22,7 @@ Inputs A and B originally pointed at **two different business models**, and whic
 | Core software | Verification gate + chain-of-custody | Labeling/claims rigor + enhanced COAs + product-selection controls |
 | Chain-of-custody to a protocol | Required | Not required (no institutional protocol) |
 
-**These are mutually exclusive on the biggest feature: the institutional verification gate.** Build it for Path A; *don't* build it for Path B. **Do not start that build until counsel confirms which model Elevate Bio-Labs is operating under.** Everything else below is largely shared.
+**These are mutually exclusive on the biggest feature: the institutional verification gate.** Build it for Path A; *don't* build it for Path B. **Do not start that build until counsel confirms which model ElevateBioLab is operating under.** Everything else below is largely shared.
 
 ---
 

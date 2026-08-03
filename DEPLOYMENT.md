@@ -170,7 +170,7 @@ Set every variable from `.env.example` in Vercel → Project → Settings → En
 
 **Auth.js**
 - `AUTH_SECRET` (and `NEXTAUTH_SECRET` — set both to the same value for compatibility)
-- `NEXTAUTH_URL` → your production URL, e.g. `https://elevatebiolabs.com`
+- `NEXTAUTH_URL` → your production URL, e.g. `https://elevatebiolab.com`
 - `AUTH_TRUST_HOST="true"`
 - `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` (optional — omit to disable Google sign-in)
 
@@ -268,9 +268,9 @@ For simulating a rail's webhook locally against MOCK data (no real provider need
 
 1. Add your custom domain in Vercel → Project → Domains.
 2. Set:
-   - `NEXTAUTH_URL="https://elevatebiolabs.com"`
-   - `NEXT_PUBLIC_SITE_URL="https://elevatebiolabs.com"`
-3. If using Google OAuth, add the production redirect URI (`https://elevatebiolabs.com/api/auth/callback/google`) in the Google Cloud Console credentials.
+   - `NEXTAUTH_URL="https://elevatebiolab.com"`
+   - `NEXT_PUBLIC_SITE_URL="https://elevatebiolab.com"`
+3. If using Google OAuth, add the production redirect URI (`https://elevatebiolab.com/api/auth/callback/google`) in the Google Cloud Console credentials.
 4. Re-deploy after changing any `NEXT_PUBLIC_*` variable (these are inlined at build time).
 
 ## 8. Enabling Vercel Blob

@@ -236,7 +236,7 @@ ${preheader(preview)}
     <tr><td align="center">
       <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid ${BRAND.line};font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:${BRAND.ink};">
         <tr><td style="background:${BRAND.navy};padding:22px 28px;">
-          <span style="color:#ffffff;font-size:19px;font-weight:800;letter-spacing:1.5px;">ELEVATE BIO-LABS</span>
+          <span style="color:#ffffff;font-size:19px;font-weight:800;letter-spacing:1.5px;">ELEVATE BIOLAB</span>
           <div style="color:#9fb8cf;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;margin-top:3px;">Analytical Standards · RUO</div>
         </td></tr>
         <tr><td style="padding:30px 28px 8px;">

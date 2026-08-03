@@ -1,4 +1,4 @@
-# Elevate Bio-Labs
+# ElevateBioLab
 
 A production-grade Next.js 14 e-commerce platform for research peptides — catalog, cart, multi-rail checkout, inventory with optimistic locking, USPS shipping, transactional + marketing email, batch/COA verification, and a full admin back office.
 

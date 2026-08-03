@@ -39,8 +39,8 @@ export default async function CertificatesPage() {
             Every batch, <span className="text-primary">on the record.</span>
           </h1>
           <p className="mt-4 max-w-xl text-pretty text-sm leading-relaxed text-white/70 sm:text-base">
-            The full archive of Certificates of Analysis for every batch Elevate
-            Bio-Labs has shipped. Each entry links to its source report with HPLC purity,
+            The full archive of Certificates of Analysis for every batch ElevateBioLab
+            has shipped. Each entry links to its source report with HPLC purity,
             mass identification, and test date for that lot.
           </p>
           <p className="mt-3 max-w-xl text-xs text-white/50">
