@@ -61,46 +61,51 @@ export function ProductCard({ product }: { product: ProductCardProduct }) {
         )}
       </Link>
 
-      <div className="flex flex-1 flex-col gap-2 p-4">
-        <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-1 flex-col p-4">
+        {/* Fixed badge band so 2-badge and 3-badge cards align across columns */}
+        <div className="flex min-h-[4.75rem] flex-wrap content-start gap-1.5">
           <Badge variant="outline" className="font-normal text-muted-foreground">
             RUO
           </Badge>
-          {product.purity && (
+          {product.purity ? (
             <Badge variant="success" className="font-normal">
               {product.purity} purity
             </Badge>
-          )}
-          {product.cas && (
+          ) : null}
+          {product.cas ? (
             <Badge variant="outline" className="font-normal text-muted-foreground">
               CAS {product.cas}
             </Badge>
-          )}
+          ) : null}
         </div>
 
-        <Link href={`/products/${product.slug}`} className="tap">
-          <h3 className="line-clamp-2 text-sm font-semibold leading-snug transition-colors group-hover:text-primary sm:text-base">
+        {/* Fixed title band (2 lines) — override visited-link blue */}
+        <Link
+          href={`/products/${product.slug}`}
+          className="tap mt-2 block text-foreground no-underline visited:text-foreground"
+        >
+          <h3 className="line-clamp-2 min-h-[2.75rem] text-sm font-semibold leading-snug text-foreground transition-colors group-hover:text-primary sm:min-h-[3rem] sm:text-base">
             {product.name}
           </h3>
         </Link>
 
-        <p className="text-xs text-muted-foreground">
+        <p className="mt-1 min-h-[1rem] text-xs text-muted-foreground">
           {product.variantCount} strength{product.variantCount === 1 ? "" : "s"} available
         </p>
 
-        <div className="mt-auto flex items-center justify-between gap-2 pt-2">
-          <div className="flex items-baseline gap-2">
-            {priceRange && (
+        <div className="mt-auto flex flex-col gap-2 pt-3">
+          <div className="min-h-[1.75rem]">
+            {priceRange ? (
               <span className="text-base font-semibold sm:text-lg">{priceRange}</span>
-            )}
+            ) : null}
           </div>
-        </div>
 
-        <Button asChild disabled={isOutOfStock} className="mt-1 w-full">
-          <Link href={`/products/${product.slug}`}>
-            {isOutOfStock ? "Out of stock" : "View options"}
-          </Link>
-        </Button>
+          <Button asChild disabled={isOutOfStock} className="w-full">
+            <Link href={`/products/${product.slug}`}>
+              {isOutOfStock ? "Out of stock" : "View options"}
+            </Link>
+          </Button>
+        </div>
       </div>
     </div>
   );
