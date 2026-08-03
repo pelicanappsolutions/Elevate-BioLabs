@@ -15,6 +15,7 @@ import type {
   WebhookVerifyInput,
   NormalizedWebhookEvent,
 } from "./types";
+import { resolveWebhookSecret } from "./webhook-security";
 
 const COINBASE_API = "https://api.commerce.coinbase.com";
 
@@ -99,11 +100,14 @@ export const coinbaseAdapter: PaymentAdapter = {
       };
     };
 
-    // MOCK mode — no webhook secret, trust the body.
-    if (env.coinbase.webhookSecret) {
+    const secret = resolveWebhookSecret(env.coinbase.webhookSecret, {
+      rail: "COINBASE",
+    });
+    if (secret.mode === "reject") return null;
+    if (secret.mode === "verify") {
       const signature = input.headers.get("X-CC-Webhook-Signature") ?? "";
       const expected = crypto
-        .createHmac("sha256", env.coinbase.webhookSecret)
+        .createHmac("sha256", secret.secret)
         .update(input.rawBody)
         .digest("hex");
 

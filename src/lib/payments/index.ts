@@ -92,6 +92,10 @@ export {
   getAvailableCheckoutRails,
   isCheckoutRailAllowed,
 } from "./available-rails";
+export {
+  allowUnsignedWebhooks,
+  resolveWebhookSecret,
+} from "./webhook-security";
 
 export { p2pAdapter, p2pAdapterFor };
 export type {

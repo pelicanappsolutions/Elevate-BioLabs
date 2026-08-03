@@ -18,6 +18,7 @@ import type {
   WebhookVerifyInput,
   NormalizedWebhookEvent,
 } from "./types";
+import { resolveWebhookSecret } from "./webhook-security";
 
 const NOWPAYMENTS_API = env.nowpayments.baseUrl || "https://api.nowpayments.io/v1";
 
@@ -123,11 +124,14 @@ export const nowpaymentsAdapter: PaymentAdapter = {
     const priceAmount =
       typeof body.price_amount === "string" ? body.price_amount : undefined;
 
-    // Verify signature when a webhook secret is configured.
-    if (env.nowpayments.webhookSecret) {
+    const secret = resolveWebhookSecret(env.nowpayments.webhookSecret, {
+      rail: "NOWPAYMENTS",
+    });
+    if (secret.mode === "reject") return null;
+    if (secret.mode === "verify") {
       const signature = input.headers.get("x-nowpayments-sig") ?? "";
       const expected = crypto
-        .createHmac("sha512", env.nowpayments.webhookSecret)
+        .createHmac("sha512", secret.secret)
         .update(input.rawBody)
         .digest("hex");
 

@@ -23,6 +23,7 @@ import type {
   WebhookVerifyInput,
   NormalizedWebhookEvent,
 } from "./types";
+import { resolveWebhookSecret } from "./webhook-security";
 
 function mapStatus(
   eventType: string
@@ -101,30 +102,25 @@ export const payramAdapter: PaymentAdapter = {
       data?: { id?: string; amount?: number; fee?: number };
     };
 
-    // MOCK mode — no webhook secret, trust the body.
-    if (!env.payram.webhookSecret) {
-      const status = mapStatus(body.type);
-      if (!status) return null;
-      return {
-        rail: PaymentRail.PAYRAM,
-        providerRef: body.data?.id ?? "",
-        status,
-        amountCents: body.data?.amount,
-        feeCents: body.data?.fee,
-        raw: body,
-      };
-    }
+    const secret = resolveWebhookSecret(env.payram.webhookSecret, {
+      rail: "PAYRAM",
+    });
+    if (secret.mode === "reject") return null;
+    if (secret.mode === "verify") {
+      const signature = input.headers.get("x-payram-signature") ?? "";
+      const expected = crypto
+        .createHmac("sha256", secret.secret)
+        .update(input.rawBody)
+        .digest("hex");
 
-    const signature = input.headers.get("x-payram-signature") ?? "";
-    const expected = crypto
-      .createHmac("sha256", env.payram.webhookSecret)
-      .update(input.rawBody)
-      .digest("hex");
-
-    const sigBuf = Buffer.from(signature);
-    const expBuf = Buffer.from(expected);
-    if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
-      return null;
+      const sigBuf = Buffer.from(signature);
+      const expBuf = Buffer.from(expected);
+      if (
+        sigBuf.length !== expBuf.length ||
+        !crypto.timingSafeEqual(sigBuf, expBuf)
+      ) {
+        return null;
+      }
     }
 
     const status = mapStatus(body.type);

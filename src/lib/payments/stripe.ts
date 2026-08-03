@@ -19,6 +19,7 @@ import type {
   WebhookVerifyInput,
   NormalizedWebhookEvent,
 } from "./types";
+import { resolveWebhookSecret } from "./webhook-security";
 
 const STRIPE_API = "https://api.stripe.com/v1";
 
@@ -93,8 +94,11 @@ export const stripeAdapter: PaymentAdapter = {
   async verifyAndParse(
     input: WebhookVerifyInput
   ): Promise<NormalizedWebhookEvent | null> {
-    // MOCK mode — no webhook secret, trust the body.
-    if (env.stripe.webhookSecret) {
+    const secret = resolveWebhookSecret(env.stripe.webhookSecret, {
+      rail: "STRIPE",
+    });
+    if (secret.mode === "reject") return null;
+    if (secret.mode === "verify") {
       const header = input.headers.get("Stripe-Signature") ?? "";
       // Header form: "t=1492774577,v1=5257a869e7...,v0=..."
       const parts = header.split(",").reduce<Record<string, string>>((acc, kv) => {
@@ -109,7 +113,7 @@ export const stripeAdapter: PaymentAdapter = {
 
       const signedPayload = `${timestamp}.${input.rawBody}`;
       const expected = crypto
-        .createHmac("sha256", env.stripe.webhookSecret)
+        .createHmac("sha256", secret.secret)
         .update(signedPayload)
         .digest("hex");
 

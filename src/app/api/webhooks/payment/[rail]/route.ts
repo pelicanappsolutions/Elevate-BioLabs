@@ -11,7 +11,9 @@ import type { PaymentStatus } from "@prisma/client";
  *
  * Flow:
  *   1. Resolve the rail + verify the provider signature (adapter.verifyAndParse).
- *      Invalid signature -> 400, DB untouched.
+ *      Invalid / missing signature -> 400, DB untouched.
+ *      Production requires a configured webhook secret per rail (unsigned
+ *      bodies are only trusted in non-production MOCK mode).
  *   2. Look up the Payment by providerRef (idempotency: skip if already final).
  *   3. Update Payment + Order status. On SUCCEEDED: send confirmation email +
  *      marketing event. On FAILED: release the reserved inventory (we reserve at
