@@ -115,8 +115,165 @@ beforeEach(() => {
       order: {
         create: vi.fn().mockResolvedValue(createdOrder),
       },
+      coupon: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: "coup_1",
+          active: true,
+          maxRedemptions: null,
+          redemptionCount: 0,
+          affiliateName: "Partner Co",
+          affiliateEmail: "partner@example.com",
+        }),
+        update: vi.fn().mockResolvedValue({
+          affiliateName: "Partner Co",
+          affiliateEmail: "partner@example.com",
+        }),
+      },
+      couponRedemption: {
+        create: vi.fn().mockResolvedValue({ id: "red_1" }),
+      },
     };
     return fn(tx);
+  });
+});
+
+describe("placeOrder coupon redemption", () => {
+  it("increments coupon usage and writes CouponRedemption with commission", async () => {
+    priceCartMock.mockResolvedValue({
+      subtotalCents: 10000,
+      discountCents: 1000,
+      shippingCents: 995,
+      taxCents: 0,
+      totalCents: 9995,
+      couponCode: "PARTNER10",
+      couponId: "coup_1",
+      commissionCents: 1500,
+      lines: [
+        {
+          productId: "prod_1",
+          variantId: VARIANT_ID,
+          name: "Test Peptide 10mg",
+          sku: "TP-10",
+          quantity: 1,
+          unitPriceCents: 10000,
+          totalCents: 10000,
+        },
+      ],
+    });
+    createChargeMock.mockResolvedValue({
+      providerRef: "p2p_1",
+      instructions: "Send Zelle",
+    });
+    dbMock.payment.updateMany.mockResolvedValue({ count: 1 });
+    dbMock.order.update.mockResolvedValue({});
+
+    let txCouponUpdate: ReturnType<typeof vi.fn> | undefined;
+    let txRedemptionCreate: ReturnType<typeof vi.fn> | undefined;
+    dbMock.$transaction.mockImplementation(async (fn: (tx: unknown) => Promise<unknown>) => {
+      const tx = {
+        order: {
+          create: vi.fn().mockResolvedValue({
+            id: "ord_1",
+            orderNumber: "EBL-TEST01",
+            items: [{ variantId: VARIANT_ID, quantity: 1 }],
+            payments: [{ id: "pay_1", rail: "P2P_ZELLE" }],
+          }),
+        },
+        coupon: {
+          findUnique: vi.fn().mockResolvedValue({
+            id: "coup_1",
+            active: true,
+            maxRedemptions: 100,
+            redemptionCount: 3,
+            affiliateName: "Partner Co",
+            affiliateEmail: "partner@example.com",
+          }),
+          update: vi.fn().mockResolvedValue({
+            affiliateName: "Partner Co",
+            affiliateEmail: "partner@example.com",
+          }),
+        },
+        couponRedemption: {
+          create: vi.fn().mockResolvedValue({ id: "red_1" }),
+        },
+      };
+      txCouponUpdate = tx.coupon.update;
+      txRedemptionCreate = tx.couponRedemption.create;
+      return fn(tx);
+    });
+
+    const result = await placeOrder({ ...CHECKOUT_INPUT, couponCode: "PARTNER10" });
+
+    expect(result.ok).toBe(true);
+    expect(priceCartMock).toHaveBeenCalledWith(
+      CHECKOUT_INPUT.items,
+      expect.objectContaining({ couponCode: "PARTNER10" })
+    );
+    expect(txCouponUpdate).toHaveBeenCalledWith({
+      where: { id: "coup_1" },
+      data: { redemptionCount: { increment: 1 } },
+    });
+    expect(txRedemptionCreate).toHaveBeenCalledWith({
+      data: {
+        couponId: "coup_1",
+        orderId: "ord_1",
+        userId: "user_1",
+        code: "PARTNER10",
+        discountCents: 1000,
+        orderSubtotalCents: 10000,
+        orderTotalCents: 9995,
+        commissionCents: 1500,
+        affiliateName: "Partner Co",
+        affiliateEmail: "partner@example.com",
+      },
+    });
+  });
+
+  it("rejects when the coupon hits its cap inside the order transaction", async () => {
+    priceCartMock.mockResolvedValue({
+      subtotalCents: 10000,
+      discountCents: 1000,
+      shippingCents: 995,
+      taxCents: 0,
+      totalCents: 9995,
+      couponCode: "PARTNER10",
+      couponId: "coup_1",
+      commissionCents: 1500,
+      lines: [
+        {
+          productId: "prod_1",
+          variantId: VARIANT_ID,
+          name: "Test Peptide 10mg",
+          sku: "TP-10",
+          quantity: 1,
+          unitPriceCents: 10000,
+          totalCents: 10000,
+        },
+      ],
+    });
+    dbMock.$transaction.mockImplementation(async (fn: (tx: unknown) => Promise<unknown>) => {
+      const tx = {
+        order: { create: vi.fn() },
+        coupon: {
+          findUnique: vi.fn().mockResolvedValue({
+            id: "coup_1",
+            active: true,
+            maxRedemptions: 5,
+            redemptionCount: 5,
+          }),
+          update: vi.fn(),
+        },
+        couponRedemption: { create: vi.fn() },
+      };
+      return fn(tx);
+    });
+
+    const result = await placeOrder({ ...CHECKOUT_INPUT, couponCode: "PARTNER10" });
+    expect(result).toEqual({
+      ok: false,
+      error: "That coupon is no longer available.",
+    });
+    expect(createChargeMock).not.toHaveBeenCalled();
   });
 });
 
