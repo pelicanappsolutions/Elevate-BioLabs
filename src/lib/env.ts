@@ -3,10 +3,56 @@
  * to decide between LIVE and MOCK mode, so the app runs end-to-end with zero
  * third-party keys during local development.
  */
+
+const DEV_AUTH_SECRET_FALLBACK = "dev-secret";
+
+/**
+ * Resolve the Auth.js signing secret.
+ * Production must set AUTH_SECRET (or NEXTAUTH_SECRET) to a real value — never
+ * the insecure "dev-secret" fallback that previously shipped by default.
+ */
+export function resolveAuthSecret(input: {
+  authSecret?: string | null;
+  nextAuthSecret?: string | null;
+  nodeEnv?: string | null;
+  vercelEnv?: string | null;
+} = {}): string {
+  const configured = (input.authSecret ?? input.nextAuthSecret ?? "").trim();
+  const nodeEnv = input.nodeEnv ?? process.env.NODE_ENV;
+  const vercelEnv = input.vercelEnv ?? process.env.VERCEL_ENV;
+  const isProd = nodeEnv === "production" || vercelEnv === "production";
+
+  if (configured) {
+    if (isProd && configured === DEV_AUTH_SECRET_FALLBACK) {
+      throw new Error(
+        'AUTH_SECRET must not be the insecure default "dev-secret" in production. Generate one with: openssl rand -base64 32'
+      );
+    }
+    return configured;
+  }
+
+  if (isProd) {
+    throw new Error(
+      "AUTH_SECRET (or NEXTAUTH_SECRET) is required in production. Generate one with: openssl rand -base64 32"
+    );
+  }
+
+  // Local / test only — never used when NODE_ENV or VERCEL_ENV is production.
+  console.warn(
+    '[env] AUTH_SECRET not set — using insecure local fallback "dev-secret". Set AUTH_SECRET before deploying.'
+  );
+  return DEV_AUTH_SECRET_FALLBACK;
+}
+
 export const env = {
   DATABASE_URL: process.env.DATABASE_URL ?? "",
 
-  AUTH_SECRET: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET ?? "dev-secret",
+  AUTH_SECRET: resolveAuthSecret({
+    authSecret: process.env.AUTH_SECRET,
+    nextAuthSecret: process.env.NEXTAUTH_SECRET,
+    nodeEnv: process.env.NODE_ENV,
+    vercelEnv: process.env.VERCEL_ENV,
+  }),
   /**
    * Vercel Cron bearer secret. When set on the Vercel project, Cron invocations
    * send `Authorization: Bearer $CRON_SECRET`. Required for production crons.
