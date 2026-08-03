@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import {
+  categorySchema,
   compoundSchema,
   variantSchema,
   restockSchema,
@@ -39,6 +40,76 @@ async function requireAdmin() {
 // RESTOCK, COA_UPLOADED) — price/stock/images/COAs all live on the variant.
 async function audit(userId: string, action: string, entity: string, entityId: string, meta?: object) {
   await db.auditLog.create({ data: { userId, action, entity, entityId, meta: meta ?? {} } });
+}
+
+// ---------------- Categories ----------------
+
+export async function upsertCategory(
+  input: unknown
+): Promise<{ ok: boolean; error?: string; id?: string }> {
+  const admin = await requireAdmin().catch(() => null);
+  if (!admin) return { ok: false, error: "Unauthorized" };
+
+  const raw = input as { id?: string; name?: string; slug?: string };
+  const withDefaults = {
+    ...raw,
+    slug: raw.slug?.trim() || slugify(String(raw.name ?? "")),
+  };
+  const parsed = categorySchema.safeParse(withDefaults);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.errors[0]?.message ?? "Invalid category" };
+  }
+
+  const { id, name, slug, description, sortOrder } = parsed.data;
+  const data = {
+    name,
+    slug: slug || slugify(name),
+    description: description || null,
+    sortOrder,
+  };
+
+  try {
+    const saved = id
+      ? await db.category.update({ where: { id }, data })
+      : await db.category.create({ data });
+
+    await audit(admin.id, id ? "CATEGORY_UPDATED" : "CATEGORY_CREATED", "Category", saved.id, {
+      name: saved.name,
+      slug: saved.slug,
+    });
+    revalidatePath("/admin");
+    revalidatePath("/products");
+    revalidatePath("/");
+    return { ok: true, id: saved.id };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Couldn't save category";
+    if (message.includes("Unique constraint")) {
+      return { ok: false, error: "A category with that name or slug already exists." };
+    }
+    return { ok: false, error: message };
+  }
+}
+
+export async function deleteCategory(
+  id: string
+): Promise<{ ok: boolean; error?: string }> {
+  const admin = await requireAdmin().catch(() => null);
+  if (!admin) return { ok: false, error: "Unauthorized" };
+
+  const productCount = await db.product.count({ where: { categoryId: id } });
+  if (productCount > 0) {
+    return {
+      ok: false,
+      error: `Reassign or uncategorize ${productCount} product${productCount === 1 ? "" : "s"} before deleting this category.`,
+    };
+  }
+
+  await db.category.delete({ where: { id } });
+  await audit(admin.id, "CATEGORY_DELETED", "Category", id);
+  revalidatePath("/admin");
+  revalidatePath("/products");
+  revalidatePath("/");
+  return { ok: true };
 }
 
 // ---------------- Products (compound) ----------------

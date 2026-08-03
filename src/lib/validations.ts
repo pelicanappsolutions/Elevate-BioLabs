@@ -108,6 +108,20 @@ export const checkoutSchema = z.object({
   marketingOptIn: z.boolean().optional().default(false),
 });
 
+// ---- Admin: catalog category CRUD ----
+export const categorySchema = z.object({
+  id: z.string().cuid().optional(),
+  name: z.string().min(2).max(80),
+  slug: z
+    .string()
+    .min(2)
+    .max(80)
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug must be lowercase letters, numbers, and hyphens")
+    .optional(),
+  description: z.string().max(500).optional(),
+  sortOrder: z.coerce.number().int().min(0).default(0),
+});
+
 // ---- Admin: compound (parent Product) CRUD ----
 export const compoundSchema = z.object({
   name: z.string().min(2),

@@ -215,8 +215,8 @@ async function main() {
     {
       slug: "mots-c", name: "MOTS-c",
       purity: ">=99%",
-      form: ProductForm.LYOPHILIZED, category: "metabolic",
-      description: "Mitochondrial-derived peptide (MRWQEMGYIFYPRKLR) supplied as lyophilized trifluoroacetate salt. Certified ≥99% purity by HPLC-MS. Suitable for chromatography method development, mass spectrometry calibration, and in-vitro metabolic research. For Research Use Only.",
+      form: ProductForm.LYOPHILIZED, category: "longevity",
+      description: "Mitochondrial-derived peptide (MRWQEMGYIFYPRKLR) supplied as lyophilized trifluoroacetate salt. Certified ≥99% purity by HPLC-MS. Suitable for chromatography method development, mass spectrometry calibration, and in-vitro metabolic / cellular research. For Research Use Only.",
       storageInfo: "Store lyophilized powder at -20°C, protected from light and moisture. Stable as supplied for 24 months under recommended conditions.",
       variants: [
         { sku: "EBL-MOTSC-20", strengthMg: 20, priceCents: 6000, stock: 100 },

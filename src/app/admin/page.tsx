@@ -360,7 +360,14 @@ export default async function AdminPage() {
                 reconstitutionVolumeMl: v.reconstitutionVolumeMl,
               })),
             }))}
-            categories={categories.map((c) => ({ id: c.id, name: c.name }))}
+            categories={categories.map((c) => ({
+              id: c.id,
+              name: c.name,
+              slug: c.slug,
+              description: c.description,
+              sortOrder: c.sortOrder,
+              productCount: products.filter((p) => p.categoryId === c.id).length,
+            }))}
           />
         </TabsContent>
 

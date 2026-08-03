@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
+  FolderTree,
   FlaskConical,
   ImageUp,
   Loader2,
@@ -15,10 +16,12 @@ import {
 } from "lucide-react";
 
 import {
+  deleteCategory,
   deleteProduct,
   deleteVariant,
   restockVariant,
   uploadVariantImage,
+  upsertCategory,
   upsertProduct,
   upsertVariant,
 } from "@/actions/admin";
@@ -116,12 +119,36 @@ const EMPTY_COMPOUND: CompoundFormState = {
   highRisk: false,
 };
 
+interface AdminCategory {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  sortOrder: number;
+  productCount: number;
+}
+
+interface CategoryFormState {
+  id?: string;
+  name: string;
+  slug: string;
+  description: string;
+  sortOrder: string;
+}
+
+const EMPTY_CATEGORY: CategoryFormState = {
+  name: "",
+  slug: "",
+  description: "",
+  sortOrder: "0",
+};
+
 export function AdminProducts({
   products,
   categories,
 }: {
   products: AdminProduct[];
-  categories: { id: string; name: string }[];
+  categories: AdminCategory[];
 }) {
   const { toast } = useToast();
   const router = useRouter();
@@ -133,6 +160,11 @@ export function AdminProducts({
   const [variantsFor, setVariantsFor] = React.useState<AdminProduct | null>(null);
   const [restockOpen, setRestockOpen] = React.useState<AdminVariant | null>(null);
   const [showInactive, setShowInactive] = React.useState(false);
+  const [categoriesOpen, setCategoriesOpen] = React.useState(false);
+  const [catForm, setCatForm] = React.useState<CategoryFormState>(EMPTY_CATEGORY);
+  const [catPending, setCatPending] = React.useState(false);
+  const [catError, setCatError] = React.useState<string | null>(null);
+  const [catBusyId, setCatBusyId] = React.useState<string | null>(null);
 
   function openNew() {
     setForm(EMPTY_COMPOUND);
@@ -213,6 +245,66 @@ export function AdminProducts({
     }
   }
 
+  function openNewCategory() {
+    setCatForm(EMPTY_CATEGORY);
+    setCatError(null);
+  }
+
+  function openEditCategory(c: AdminCategory) {
+    setCatForm({
+      id: c.id,
+      name: c.name,
+      slug: c.slug,
+      description: c.description ?? "",
+      sortOrder: String(c.sortOrder),
+    });
+    setCatError(null);
+  }
+
+  async function saveCategory(e: React.FormEvent) {
+    e.preventDefault();
+    setCatError(null);
+    setCatPending(true);
+    try {
+      const res = await upsertCategory({
+        ...(catForm.id ? { id: catForm.id } : {}),
+        name: catForm.name,
+        slug: catForm.slug || undefined,
+        description: catForm.description || undefined,
+        sortOrder: catForm.sortOrder || 0,
+      });
+      if (!res.ok) {
+        setCatError(res.error ?? "Couldn't save category.");
+        return;
+      }
+      toast({ title: catForm.id ? "Category updated" : "Category created" });
+      setCatForm(EMPTY_CATEGORY);
+      router.refresh();
+    } finally {
+      setCatPending(false);
+    }
+  }
+
+  async function removeCategory(c: AdminCategory) {
+    setCatBusyId(c.id);
+    try {
+      const res = await deleteCategory(c.id);
+      if (!res.ok) {
+        toast({
+          title: "Couldn't delete category",
+          description: res.error,
+          variant: "destructive",
+        });
+        return;
+      }
+      toast({ title: "Category deleted" });
+      if (catForm.id === c.id) setCatForm(EMPTY_CATEGORY);
+      router.refresh();
+    } finally {
+      setCatBusyId(null);
+    }
+  }
+
   const inactiveCount = products.filter((p) => !p.active).length;
   const visibleProducts = showInactive ? products : products.filter((p) => p.active);
 
@@ -232,6 +324,10 @@ export function AdminProducts({
               Show deactivated ({inactiveCount})
             </label>
           )}
+          <Button size="sm" variant="outline" onClick={() => { openNewCategory(); setCategoriesOpen(true); }}>
+            <FolderTree className="mr-1.5 h-4 w-4" />
+            Categories
+          </Button>
           <Button size="sm" onClick={openNew}>
             <Plus className="mr-1.5 h-4 w-4" />
             New compound
@@ -375,7 +471,19 @@ export function AdminProducts({
               </div>
 
               <div>
-                <Label className="text-xs">Category</Label>
+                <div className="flex items-center justify-between gap-2">
+                  <Label className="text-xs">Category</Label>
+                  <button
+                    type="button"
+                    className="text-[11px] font-medium text-primary hover:underline"
+                    onClick={() => {
+                      openNewCategory();
+                      setCategoriesOpen(true);
+                    }}
+                  >
+                    Manage / add
+                  </button>
+                </div>
                 <Select
                   value={form.categoryId || "none"}
                   onValueChange={(v) => setForm((f) => ({ ...f, categoryId: v === "none" ? "" : v }))}
@@ -498,6 +606,114 @@ export function AdminProducts({
               <Button type="submit" disabled={pending}>
                 {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Save compound
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={categoriesOpen} onOpenChange={setCategoriesOpen}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Manage categories</DialogTitle>
+          </DialogHeader>
+
+          <div className="mt-2 max-h-[40vh] space-y-2 overflow-y-auto pr-1">
+            {categories.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No categories yet.</p>
+            ) : (
+              categories.map((c) => (
+                <div
+                  key={c.id}
+                  className="flex items-start justify-between gap-3 rounded-md border border-border px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{c.name}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      /{c.slug} · {c.productCount} product{c.productCount === 1 ? "" : "s"} · order{" "}
+                      {c.sortOrder}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 gap-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => openEditCategory(c)}
+                      aria-label={`Edit ${c.name}`}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      disabled={catBusyId === c.id}
+                      onClick={() => void removeCategory(c)}
+                      aria-label={`Delete ${c.name}`}
+                    >
+                      {catBusyId === c.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          <form onSubmit={saveCategory} className="mt-4 space-y-3 border-t border-border pt-4">
+            <p className="text-xs font-medium text-muted-foreground">
+              {catForm.id ? "Edit category" : "Add category"}
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <T
+                label="Title"
+                required
+                value={catForm.name}
+                onChange={(v) => setCatForm((f) => ({ ...f, name: v }))}
+              />
+              <T
+                label="Slug (auto if blank)"
+                value={catForm.slug}
+                onChange={(v) => setCatForm((f) => ({ ...f, slug: v }))}
+              />
+              <T
+                label="Sort order"
+                type="number"
+                value={catForm.sortOrder}
+                onChange={(v) => setCatForm((f) => ({ ...f, sortOrder: v }))}
+              />
+              <div className="sm:col-span-2">
+                <Label className="text-xs">Description</Label>
+                <Textarea
+                  rows={2}
+                  value={catForm.description}
+                  onChange={(e) => setCatForm((f) => ({ ...f, description: e.target.value }))}
+                  className="mt-1"
+                  placeholder="Shown in catalog filters / marketing copy"
+                />
+              </div>
+            </div>
+            {catError && (
+              <p
+                role="alert"
+                className="rounded-md border border-destructive/40 bg-destructive/10 p-2.5 text-xs text-destructive"
+              >
+                {catError}
+              </p>
+            )}
+            <DialogFooter>
+              {catForm.id ? (
+                <Button type="button" variant="outline" onClick={openNewCategory} disabled={catPending}>
+                  Cancel edit
+                </Button>
+              ) : null}
+              <Button type="submit" disabled={catPending}>
+                {catPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {catForm.id ? "Save category" : "Add category"}
               </Button>
             </DialogFooter>
           </form>
