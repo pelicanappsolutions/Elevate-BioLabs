@@ -82,6 +82,12 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
   if (!session?.user?.id) {
     return { ok: false, error: "Please sign in to complete your order." };
   }
+
+  // Schema already required ageConfirm === true; persist on the account.
+  await db.user
+    .update({ where: { id: session.user.id }, data: { ageVerified: true } })
+    .catch(() => {});
+
   const rail = data.rail as PaymentRail;
 
   // Same allowlist as the checkout UI — reject muted/unconfigured rails before

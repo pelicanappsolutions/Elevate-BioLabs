@@ -93,6 +93,16 @@ export const checkoutSchema = z.object({
   items: z.array(cartLineSchema).min(1, "Cart is empty"),
   rail: paymentRailSchema,
   shipService: z.string().default("USPS_PRIORITY"),
+  /**
+   * Required RUO / 18+ / laboratory certification. Must be true — UI checkbox
+   * alone is not enough; placeOrder rejects unchecked submissions.
+   */
+  ageConfirm: z.literal(true, {
+    errorMap: () => ({
+      message:
+        "Confirm you are 18+, purchasing For Research Use Only, and operate a qualified laboratory.",
+    }),
+  }),
   /** Optional marketing / promo email opt-in at checkout. */
   marketingOptIn: z.boolean().optional().default(false),
 });

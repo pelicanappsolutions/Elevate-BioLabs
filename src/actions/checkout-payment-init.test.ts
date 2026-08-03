@@ -65,6 +65,7 @@ const CHECKOUT_INPUT = {
   email: "buyer@example.com",
   rail: "P2P_ZELLE",
   shipService: "USPS_PRIORITY",
+  ageConfirm: true as const,
   address: {
     fullName: "Test Buyer",
     street1: "1 Main St",

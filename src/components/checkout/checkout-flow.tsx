@@ -217,6 +217,7 @@ export function CheckoutFlow({
         items: items.map((i) => ({ variantId: i.variantId, quantity: i.quantity })),
         rail,
         shipService,
+        ageConfirm,
         marketingOptIn,
       });
 
