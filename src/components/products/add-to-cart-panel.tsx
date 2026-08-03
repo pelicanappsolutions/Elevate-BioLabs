@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
 import { Check, Minus, Plus, ShoppingCart } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -33,7 +32,6 @@ export function AddToCartPanel({
   product: PanelProduct;
   tiers: Tier[];
 }) {
-  const router = useRouter();
   const { toast } = useToast();
   const add = useCart((s) => s.add);
   const [qty, setQty] = React.useState(1);
