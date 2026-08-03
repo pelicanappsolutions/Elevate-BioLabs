@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ProofOfPaymentModal } from "@/components/checkout/proof-of-payment-modal";
+import { paymentCheckoutUrl } from "@/lib/payments/checkout-url";
 import { PAYMENT_RAIL_META } from "@/lib/payments/meta";
 
 export const metadata: Metadata = {
@@ -50,6 +51,16 @@ export default async function CheckoutSuccessPage({
 
   const payment = order.payments[0];
   const isP2P = payment ? P2P_RAILS.includes(payment.rail) : false;
+  const isCrypto = payment?.rail === "NOWPAYMENTS";
+  const cryptoPayUrl = payment ? paymentCheckoutUrl(payment.providerRaw) : null;
+  const cryptoAwaitingPay =
+    isCrypto &&
+    Boolean(cryptoPayUrl) &&
+    payment != null &&
+    !["SUCCEEDED", "REFUNDED"].includes(payment.status) &&
+    order.status !== "PAID" &&
+    order.status !== "SHIPPED" &&
+    order.status !== "DELIVERED";
   const requiresProof = payment ? PAYMENT_RAIL_META[payment.rail].requiresProof : false;
   const hasReceipt = order.receipts.length > 0;
 
@@ -77,14 +88,18 @@ export default async function CheckoutSuccessPage({
     <div className="container-tight max-w-2xl py-10 sm:py-16">
       <div className="text-center">
         <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-          {isP2P && order.status === "AWAITING_REVIEW" ? (
+          {(isP2P && order.status === "AWAITING_REVIEW") || cryptoAwaitingPay ? (
             <Clock className="h-7 w-7 text-primary" />
           ) : (
             <CheckCircle2 className="h-7 w-7 text-primary" />
           )}
         </span>
         <h1 className="mt-4 text-2xl font-bold tracking-tight sm:text-3xl">
-          {isP2P && order.status === "AWAITING_REVIEW" ? "Almost there — send payment" : "Order confirmed"}
+          {isP2P && order.status === "AWAITING_REVIEW"
+            ? "Almost there — send payment"
+            : cryptoAwaitingPay
+              ? "Almost there — finish crypto payment"
+              : "Order confirmed"}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Order <span className="font-mono font-semibold">{order.orderNumber}</span> •{" "}
@@ -94,6 +109,22 @@ export default async function CheckoutSuccessPage({
           {order.status.replace(/_/g, " ")}
         </Badge>
       </div>
+
+      {/* Crypto: durable hosted invoice link (same URL as confirmation email) */}
+      {cryptoAwaitingPay && cryptoPayUrl && (
+        <div className="mt-8 rounded-lg border border-primary/40 bg-primary/5 p-4 sm:p-6">
+          <h2 className="text-base font-semibold">Complete your crypto payment</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Pay securely through NOWPayments. If you closed the payment window, use this same
+            link anytime — it&apos;s also in your confirmation email.
+          </p>
+          <Button asChild size="lg" className="tap mt-4 w-full sm:w-auto">
+            <a href={cryptoPayUrl} target="_blank" rel="noopener noreferrer">
+              Complete payment
+            </a>
+          </Button>
+        </div>
+      )}
 
       {/* P2P: instructions + proof upload */}
       {isP2P && instructions && (

@@ -77,6 +77,25 @@ describe("orderConfirmationHtml", () => {
     expect(html).toContain("Complete payment");
     expect(html).toContain("https://nowpayments.io/payment/?iid=abc123");
     expect(html).toContain("Crypto");
-    expect(html).toContain("View your order");
+    expect(html).toContain("Payment needed");
+    expect(html).toContain("View payment instructions");
+    expect(html).toContain("come back later");
+  });
+
+  it("falls back to persisted invoiceUrl on payment.providerRaw", () => {
+    const html = orderConfirmationHtml({
+      ...BASE_ORDER,
+      status: "PENDING_PAYMENT",
+      rail: "NOWPAYMENTS",
+      payments: [
+        {
+          rail: "NOWPAYMENTS",
+          providerRaw: { invoiceUrl: "https://nowpayments.io/payment/?iid=stored99" },
+        },
+      ],
+    });
+
+    expect(html).toContain("https://nowpayments.io/payment/?iid=stored99");
+    expect(html).toContain("Complete payment");
   });
 });

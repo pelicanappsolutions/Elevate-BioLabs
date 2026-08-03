@@ -9,6 +9,7 @@ import { decrementStock, InsufficientStockError } from "@/lib/inventory";
 import { cancelOrderAndReleaseReservation } from "@/lib/orders/release-reservation";
 import { getShippingRates, type ShippingRate } from "@/lib/shipping/index";
 import { createCharge } from "@/lib/payments/index";
+import { buildCheckoutMeta } from "@/lib/payments/checkout-url";
 import { isCheckoutRailAllowed } from "@/lib/payments/available-rails";
 import { notifyAdminNewOrder, sendTransactional, trackMarketing } from "@/lib/email/index";
 import { recordMarketingOptIn } from "@/lib/marketing";
@@ -228,6 +229,15 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
     data: {
       providerRef: charge.providerRef,
       status: (isP2P ? "MANUAL_REVIEW" : "PENDING") as PaymentStatus,
+      // Persist hosted pay link so email / dashboard can recover abandoned crypto checkouts.
+      ...(charge.redirectUrl?.startsWith("http")
+        ? {
+            providerRaw: buildCheckoutMeta({
+              invoiceUrl: charge.redirectUrl,
+              invoiceId: charge.providerRef,
+            }),
+          }
+        : {}),
     },
   });
 

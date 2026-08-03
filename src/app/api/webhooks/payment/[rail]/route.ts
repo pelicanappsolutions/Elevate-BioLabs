@@ -5,7 +5,8 @@ import {
   cancelOrderAndReleaseReservation,
   releaseOrderStockIfNeeded,
 } from "@/lib/orders/release-reservation";
-import { sendTransactional, trackMarketing } from "@/lib/email/index";
+import { notifyAdminNewOrder, sendTransactional, trackMarketing } from "@/lib/email/index";
+import { mergePaymentProviderRaw } from "@/lib/payments/checkout-url";
 import type { OrderStatus, PaymentStatus } from "@prisma/client";
 
 /**
@@ -99,7 +100,8 @@ export async function POST(
         data: {
           status: "SUCCEEDED",
           feeCents: event.feeCents,
-          providerRaw: event.raw as object,
+          // Keep invoiceUrl from checkout; nest IPN under `ipn` for audit.
+          providerRaw: mergePaymentProviderRaw(payment.providerRaw, { ipn: event.raw }),
         },
       }),
       db.order.update({ where: { id: order.id }, data: { status: "PAID" } }),
@@ -116,11 +118,23 @@ export async function POST(
     // Payment already cleared — send the "payment received" template, not a
     // second "order placed" confirmation (that was emailed at checkout).
     const to = order.guestEmail ?? (await emailForUser(order.userId));
+    const paidOrder = {
+      ...order,
+      rail: payment.rail,
+      status: "PAID" as const,
+      customerEmail: to,
+    };
     if (to) {
-      const paidOrder = { ...order, rail: payment.rail, status: "PAID" as const };
       await sendTransactional("PAYMENT_RECEIVED", { to, order: paidOrder });
       await trackMarketing("ORDER_CONFIRMATION", to, paidOrder);
     }
+    // Shop inbox — notify when crypto/card actually clears (not only at place-order).
+    await notifyAdminNewOrder({
+      ...paidOrder,
+      adminNote: `Payment confirmed via ${rail}`,
+    }).catch((err) => {
+      console.error("[webhook] admin payment-cleared email failed:", err);
+    });
   } else if (event.status === "FAILED") {
     await cancelOrderAndReleaseReservation(
       {

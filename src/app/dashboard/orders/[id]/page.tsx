@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { BuyAgainButton } from "@/components/dashboard/buy-again-button";
+import { paymentCheckoutUrl } from "@/lib/payments/checkout-url";
 
 export const metadata: Metadata = {
   title: "Order detail",
@@ -26,6 +27,7 @@ export default async function CustomerOrderDetailPage({ params }: { params: { id
   const order = await db.order.findUnique({
     where: { id: params.id },
     include: {
+      payments: { orderBy: { createdAt: "desc" }, take: 1 },
       items: {
         include: {
           variant: {
@@ -47,6 +49,14 @@ export default async function CustomerOrderDetailPage({ params }: { params: { id
   if (!order || order.userId !== session.user.id) notFound();
 
   const shipTo = (order.shipTo ?? {}) as Record<string, string>;
+  const payment = order.payments[0];
+  const cryptoPayUrl =
+    payment?.rail === "NOWPAYMENTS" ? paymentCheckoutUrl(payment.providerRaw) : null;
+  const cryptoAwaitingPay =
+    Boolean(cryptoPayUrl) &&
+    payment != null &&
+    !["SUCCEEDED", "REFUNDED"].includes(payment.status) &&
+    !["PAID", "SHIPPED", "DELIVERED", "CANCELLED", "REFUNDED"].includes(order.status);
 
   return (
     <div className="container-tight py-8 sm:py-12">
@@ -63,6 +73,13 @@ export default async function CustomerOrderDetailPage({ params }: { params: { id
           <Badge variant={ORDER_STATUS_VARIANT[order.status]}>{order.status.replace(/_/g, " ")}</Badge>
         </div>
         <div className="flex flex-wrap gap-2">
+          {cryptoAwaitingPay && cryptoPayUrl ? (
+            <Button asChild size="sm">
+              <a href={cryptoPayUrl} target="_blank" rel="noopener noreferrer">
+                Complete payment
+              </a>
+            </Button>
+          ) : null}
           <BuyAgainButton orderId={order.id} />
           <Button asChild size="sm" variant="outline">
             <Link href={`/dashboard/orders/${order.id}/invoice`}>
@@ -73,6 +90,15 @@ export default async function CustomerOrderDetailPage({ params }: { params: { id
         </div>
       </div>
       <p className="mt-1 text-sm text-muted-foreground">Placed {formatDate(order.createdAt)}</p>
+
+      {cryptoAwaitingPay && cryptoPayUrl ? (
+        <div className="mt-4 rounded-lg border border-primary/40 bg-primary/5 p-4 text-sm">
+          <p className="font-medium">Payment still needed</p>
+          <p className="mt-1 text-muted-foreground">
+            Finish crypto payment with the same secure link from your confirmation email.
+          </p>
+        </div>
+      ) : null}
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_300px] lg:items-start">
         <div className="rounded-lg border border-border bg-card p-4">

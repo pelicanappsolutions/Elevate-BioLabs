@@ -283,11 +283,21 @@ export function orderConfirmationHtml(order: any): string {
   const placed = formatDate(order?.createdAt);
   const rail = order?.rail ?? order?.payments?.[0]?.rail;
   const isP2P = ["P2P_ZELLE", "P2P_VENMO", "P2P_WIRE"].includes(String(rail ?? ""));
+  const isCryptoPayLink = String(rail ?? "") === "NOWPAYMENTS";
+  const needsOnlinePayment = isCryptoPayLink || (!isP2P && Boolean(order?.redirectUrl));
   const instructions = order?.instructions;
-  const redirectUrl =
-    typeof order?.redirectUrl === "string" && order.redirectUrl.startsWith("http")
-      ? order.redirectUrl
-      : "";
+  // Prefer live redirectUrl from checkout; fall back to persisted Payment.providerRaw.invoiceUrl.
+  const redirectUrl = (() => {
+    if (typeof order?.redirectUrl === "string" && order.redirectUrl.startsWith("http")) {
+      return order.redirectUrl;
+    }
+    const raw = order?.payments?.[0]?.providerRaw;
+    const stored =
+      raw && typeof raw === "object" && !Array.isArray(raw)
+        ? (raw as { invoiceUrl?: unknown }).invoiceUrl
+        : null;
+    return typeof stored === "string" && stored.startsWith("http") ? stored : "";
+  })();
   const successUrl = orderNumberRaw
     ? `${env.SITE_URL}/checkout/success?order=${encodeURIComponent(orderNumberRaw)}`
     : `${env.SITE_URL}/dashboard`;
@@ -374,14 +384,29 @@ export function orderConfirmationHtml(order: any): string {
   const payOnline =
     !isP2P && redirectUrl
       ? `<div style="margin:0 0 22px;text-align:center;">
-          <p style="margin:0 0 10px;font-size:14px;color:${BRAND.muted};">Finish checkout with your selected payment method:</p>
+          <p style="margin:0 0 10px;font-size:14px;color:${BRAND.muted};">
+            ${
+              isCryptoPayLink
+                ? "Use this secure link anytime to finish crypto payment (works even if you left checkout):"
+                : "Finish checkout with your selected payment method:"
+            }
+          </p>
           ${button(redirectUrl, "Complete payment", BRAND.navy)}
+          <div style="margin-top:10px;font-size:12px;color:${BRAND.muted};word-break:break-all;">
+            Or open:<br/>
+            <a href="${escapeHtml(redirectUrl)}" style="color:${BRAND.accent};text-decoration:none;">${escapeHtml(redirectUrl)}</a>
+          </div>
         </div>`
       : "";
 
   const viewOrderCta = `
     <div style="margin:0 0 22px;text-align:center;">
-      ${button(successUrl, isP2P ? "View payment instructions" : "View your order")}
+      ${button(
+        successUrl,
+        isP2P || (isCryptoPayLink && redirectUrl)
+          ? "View payment instructions"
+          : "View your order"
+      )}
       <div style="margin-top:8px;font-size:12px;color:${BRAND.muted};">
         Or open your account:
         <a href="${escapeHtml(env.SITE_URL + "/dashboard")}" style="color:${BRAND.accent};text-decoration:none;">Dashboard</a>
@@ -398,7 +423,7 @@ export function orderConfirmationHtml(order: any): string {
              <tr><td style="padding:2px 0;"><strong style="color:${BRAND.accent};">3.</strong>&nbsp; We pack, QC-check, and ship — you'll get tracking when it leaves.</td></tr>
              <tr><td style="padding:2px 0;"><strong style="color:${BRAND.accent};">4.</strong>&nbsp; Each vial includes a batch-matched Certificate of Analysis.</td></tr>`
           : redirectUrl
-            ? `<tr><td style="padding:2px 0;"><strong style="color:${BRAND.accent};">1.</strong>&nbsp; Complete payment using the button above if you haven't already.</td></tr>
+            ? `<tr><td style="padding:2px 0;"><strong style="color:${BRAND.accent};">1.</strong>&nbsp; Complete payment using the button above if you haven't already — the same link works later from this email.</td></tr>
                <tr><td style="padding:2px 0;"><strong style="color:${BRAND.accent};">2.</strong>&nbsp; Once paid, we prepare and QC-check your order.</td></tr>
                <tr><td style="padding:2px 0;"><strong style="color:${BRAND.accent};">3.</strong>&nbsp; You'll get a tracking email the moment it ships.</td></tr>
                <tr><td style="padding:2px 0;"><strong style="color:${BRAND.accent};">4.</strong>&nbsp; Each vial ships with a batch-matched Certificate of Analysis.</td></tr>`
@@ -411,18 +436,25 @@ export function orderConfirmationHtml(order: any): string {
     "What happens next"
   );
 
-  const headline = isP2P
+  const awaitingPay = isP2P || (needsOnlinePayment && Boolean(redirectUrl));
+  const headline = awaitingPay
     ? "Thanks — one more step to complete payment"
     : "Thanks — your order is in.";
-  const pillLabel = isP2P ? "Payment needed" : "Order confirmed";
-  const pillColor = isP2P ? BRAND.accent : BRAND.green;
+  const pillLabel = awaitingPay ? "Payment needed" : "Order confirmed";
+  const pillColor = awaitingPay ? BRAND.accent : BRAND.green;
 
   const body = `
     <div style="margin:0 0 14px;">${pill(pillLabel, pillColor)}</div>
     <h1 style="margin:0 0 8px;font-size:24px;line-height:1.25;color:${BRAND.ink};">${headline}</h1>
     <p style="margin:0 0 22px;font-size:15px;line-height:1.55;color:${BRAND.muted};">
       Order <strong style="color:${BRAND.ink};">${orderNo}</strong>${placed ? ` · placed ${placed}` : ""} · total <strong style="color:${BRAND.ink};">${money(order?.totalCents)}</strong>.
-      ${isP2P ? " Use the payment details below so we can release your order." : " Here's everything you ordered."}
+      ${
+        isP2P
+          ? " Use the payment details below so we can release your order."
+          : redirectUrl
+            ? " Finish payment with the link below — keep this email if you need to come back later."
+            : " Here's everything you ordered."
+      }
     </p>
     ${p2pCard}
     ${payOnline}
@@ -441,7 +473,7 @@ export function orderConfirmationHtml(order: any): string {
 
   return shell(
     "Order Confirmation",
-    isP2P
+    awaitingPay
       ? `Action needed: pay ${money(order?.totalCents)} for order ${order?.orderNumber ?? ""}`
       : `Order ${order?.orderNumber ?? ""} confirmed — ${money(order?.totalCents)} total`,
     body
