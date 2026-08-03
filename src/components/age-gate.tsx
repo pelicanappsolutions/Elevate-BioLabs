@@ -6,8 +6,7 @@ import { FlaskConical } from "lucide-react";
 import { logAgeConfirmation } from "@/actions/consent";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-
-const STORAGE_KEY = "ebl-age-ok";
+import { AGE_GATE_STORAGE_KEY, MIN_AGE, MIN_AGE_LABEL } from "@/lib/min-age";
 
 export function AgeGate() {
   // Default to enabled unless explicitly disabled via env.
@@ -17,7 +16,7 @@ export function AgeGate() {
   React.useEffect(() => {
     if (!enabled) return;
     try {
-      const ok = window.localStorage.getItem(STORAGE_KEY);
+      const ok = window.localStorage.getItem(AGE_GATE_STORAGE_KEY);
       if (ok !== "true") {
         setOpen(true);
       }
@@ -29,7 +28,7 @@ export function AgeGate() {
 
   function handleConfirm() {
     try {
-      window.localStorage.setItem(STORAGE_KEY, "true");
+      window.localStorage.setItem(AGE_GATE_STORAGE_KEY, "true");
     } catch {
       // ignore
     }
@@ -57,10 +56,10 @@ export function AgeGate() {
           <span className="mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
             <FlaskConical className="h-7 w-7 text-primary" aria-hidden="true" />
           </span>
-          <DialogTitle className="text-xl">Are you 18 or older?</DialogTitle>
+          <DialogTitle className="text-xl">Are you {MIN_AGE} or older?</DialogTitle>
           <DialogDescription className="text-balance">
             These materials are analytical reference standards sold for laboratory research only.
-            By entering, you confirm you are at least 18 years old and are acquiring them for
+            By entering, you confirm you are at least {MIN_AGE} years old and are acquiring them for
             lawful in-vitro research use.
           </DialogDescription>
         </DialogHeader>
@@ -70,7 +69,7 @@ export function AgeGate() {
             Exit
           </Button>
           <Button onClick={handleConfirm} className="sm:flex-1">
-            I am 18+
+            I am {MIN_AGE_LABEL}
           </Button>
         </div>
       </DialogContent>

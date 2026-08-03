@@ -81,7 +81,7 @@ export default async function CompliancePage() {
                   </p>
                   <p>
                     These compounds are not for introduction into humans or animals. Purchase
-                    requires that you are 18 years or older and operate a laboratory equipped for
+                    requires that you are 21 years or older and operate a laboratory equipped for
                     peptide analysis (HPLC, LC-MS, or equivalent). Reselling or relabeling for
                     human or veterinary use violates our terms of sale.
                   </p>
@@ -197,7 +197,7 @@ export default async function CompliancePage() {
             ) : (
               <>
                 <p>
-                  By placing an order, you represent that you are at least 18 years old, operate a
+                  By placing an order, you represent that you are at least 21 years old, operate a
                   laboratory equipped for analytical work, and are purchasing reference standards for
                   lawful in-vitro research only.
                 </p>

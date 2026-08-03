@@ -3,7 +3,7 @@
 A production-grade Next.js 14 e-commerce platform for research peptides — catalog, cart, multi-rail checkout, inventory with optimistic locking, USPS shipping, transactional + marketing email, batch/COA verification, and a full admin back office.
 
 > **⚠️ FOR RESEARCH USE ONLY (RUO)**
-> All products listed on this platform are intended **strictly for laboratory and in-vitro research use**. They are **not drugs, foods, cosmetics, or dietary supplements**, are **not FDA-approved** for the diagnosis, treatment, cure, mitigation, or prevention of any disease, and are **not for human or veterinary consumption**. Purchasers must certify they are 18+ and qualified researchers. See `/compliance` for the full policy rendered in-app, plus the age gate and cookie consent enforced site-wide.
+> All products listed on this platform are intended **strictly for laboratory and in-vitro research use**. They are **not drugs, foods, cosmetics, or dietary supplements**, are **not FDA-approved** for the diagnosis, treatment, cure, mitigation, or prevention of any disease, and are **not for human or veterinary consumption**. Purchasers must certify they are 21+ and qualified researchers. See `/compliance` for the full policy rendered in-app, plus the age gate and cookie consent enforced site-wide.
 
 ---
 
@@ -34,7 +34,7 @@ A production-grade Next.js 14 e-commerce platform for research peptides — cata
 - Transactional email (order confirmation, shipment tracking, password reset) via SendGrid; marketing automation via Klaviyo
 - Auth.js v5 (Credentials + optional Google OAuth), JWT sessions, split Edge-safe/Node auth config, role-gated `/admin` and `/dashboard`
 - Admin console: product CRUD (with photo upload), inventory adjustments, order management, P2P receipt approval, COA upload, email campaigns, compliance/LegitScript readiness dashboard (read-only reporting — no doc editor yet)
-- Compliance module: RUO disclaimers, 18+ age gate, cookie consent, LegitScript-readiness copy
+- Compliance module: RUO disclaimers, 21+ age gate, cookie consent, LegitScript-readiness copy
 - Mock-by-default integrations — every third-party service (payments, shipping, email, storage) auto-detects missing credentials and falls back to a realistic mock, so the entire app — including checkout — runs locally with **zero external accounts**
 
 ## Tech Stack
@@ -255,7 +255,7 @@ admin reviews the receipt queue in /admin
 - **Webhook signature verification** — every payment webhook is verified against its provider's signing secret before any DB write; invalid signatures short-circuit with a 400 and touch nothing.
 - **Optimistic locking** — inventory decrements are guarded by `Product.version` (`src/lib/inventory.ts`); a lost race retries against fresh data instead of overselling.
 - **Auth** — bcrypt-hashed passwords, JWT sessions, middleware-enforced role gates on `/admin` (ADMIN only) and `/dashboard` (any authenticated user). Auth config is split (`auth.ts` for Node/bcrypt, `auth.config.ts` for the Edge-safe middleware) so bcrypt never gets bundled into the Edge Runtime.
-- **Compliance-as-code** — RUO disclaimers and the 18+ age gate are enforced site-wide, cookie consent is shown before non-essential cookies fire.
+- **Compliance-as-code** — RUO disclaimers and the 21+ age gate are enforced site-wide, cookie consent is shown before non-essential cookies fire.
 - **Secrets hygiene** — `.env` is git-ignored; `.env.example` documents every variable without values; MOCK mode means local dev never needs real secrets at all.
 
 ## Further Reading

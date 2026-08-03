@@ -184,7 +184,7 @@ openssl rand -base64 32
 ```
 
 **Compliance flags**
-- `AGE_GATE_ENABLED="true"`, `MIN_AGE="18"`, `NEXT_PUBLIC_SITE_URL`
+- `AGE_GATE_ENABLED="true"`, `MIN_AGE="21"`, `NEXT_PUBLIC_MIN_AGE="21"`, `NEXT_PUBLIC_SITE_URL`
 
 **Payments** — set only the rails you're actually enabling; unset rails stay in MOCK mode automatically
 - `NEXAPAY_API_KEY`, `NEXAPAY_SECRET`, `NEXAPAY_WEBHOOK_SECRET`, `NEXAPAY_BASE_URL`

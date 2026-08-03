@@ -554,7 +554,7 @@ export function CheckoutFlow({
                   className="mt-0.5"
                 />
                 <span className="text-xs leading-relaxed text-muted-foreground">
-                  I confirm I am 18 or older, that I am purchasing these materials as
+                  I confirm I am 21 or older, that I am purchasing these materials as
                   analytical reference standards strictly For Research Use Only, and that
                   I will not introduce them into humans or animals. I certify that I operate
                   a laboratory equipped for peptide analysis (HPLC, LC-MS, or equivalent) and

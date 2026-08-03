@@ -116,7 +116,7 @@ export function CartView() {
 
           <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
             All items are supplied as analytical reference standards For Research Use Only.
-            By checking out you confirm you are 18+, operate appropriate analytical
+            By checking out you confirm you are 21+, operate appropriate analytical
             equipment, and will not introduce these materials into humans or animals.
           </p>
         </div>

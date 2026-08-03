@@ -47,7 +47,7 @@ export function Footer() {
             </Link>
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground">
               All materials are analytical reference standards intended for laboratory research;
-              they are not FDA-approved drugs and are not for human or veterinary use. Must be 18+
+              they are not FDA-approved drugs and are not for human or veterinary use. Must be 21+
               to purchase.
             </p>
             <div className="mt-6">
@@ -71,7 +71,7 @@ export function Footer() {
 
         <div className="mt-10 flex flex-col items-center gap-4 border-t border-border pt-6 text-xs text-muted-foreground sm:flex-row sm:justify-between">
           <p>
-            &copy; {year} ElevateBioLab. All rights reserved. Must be 18+ to purchase.
+            &copy; {year} ElevateBioLab. All rights reserved. Must be 21+ to purchase.
           </p>
           <div className="flex items-center gap-3">
             <span className="sr-only">Accepted payment methods:</span>

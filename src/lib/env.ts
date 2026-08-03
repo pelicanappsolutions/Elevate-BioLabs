@@ -62,7 +62,7 @@ export const env = {
   SITE_URL: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
 
   AGE_GATE_ENABLED: (process.env.AGE_GATE_ENABLED ?? "true") === "true",
-  MIN_AGE: Number(process.env.MIN_AGE ?? 18),
+  MIN_AGE: Number(process.env.NEXT_PUBLIC_MIN_AGE ?? process.env.MIN_AGE ?? 21),
 
   google: {
     id: process.env.AUTH_GOOGLE_ID ?? "",

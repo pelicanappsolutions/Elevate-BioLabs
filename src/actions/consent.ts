@@ -4,10 +4,11 @@ import { headers } from "next/headers";
 
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { MIN_AGE, MIN_AGE_LABEL } from "@/lib/min-age";
 import { rateLimit } from "@/lib/rate-limit";
 
 /**
- * Records an 18+ / RUO age-gate confirmation to the audit log with the client
+ * Records a MIN_AGE+ / RUO age-gate confirmation to the audit log with the client
  * IP and a server timestamp (AuditLog.createdAt). Guest-safe — the gate is
  * shown to logged-out visitors — so it never requires a session; a userId is
  * attached only when one is present.
@@ -38,8 +39,8 @@ export async function logAgeConfirmation(): Promise<{ ok: boolean }> {
       entity: "AgeGate",
       ip,
       meta: {
-        minAge: 18,
-        attestation: "Confirmed 18+ and RUO acknowledgement",
+        minAge: MIN_AGE,
+        attestation: `Confirmed ${MIN_AGE_LABEL} and RUO acknowledgement`,
         userAgent,
         confirmedAt: new Date().toISOString(),
       },

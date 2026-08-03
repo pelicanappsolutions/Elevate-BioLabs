@@ -36,7 +36,7 @@ export function RegisterForm() {
       return;
     }
     if (!ageConfirm) {
-      setError("You must confirm you are 18 years or older.");
+      setError("You must confirm you are 21 years or older.");
       return;
     }
 
@@ -127,7 +127,7 @@ export function RegisterForm() {
           aria-required="true"
         />
         <Label htmlFor="ageConfirm" className="text-sm font-normal leading-snug">
-          I confirm I am at least 18 years old and am acquiring these materials for laboratory
+          I confirm I am at least 21 years old and am acquiring these materials for laboratory
           research use only, not for human or veterinary consumption.
         </Label>
       </div>

@@ -16,7 +16,7 @@
 - Products: 8 original catalog items + 9 new items (image photos just added) = 17 total
 - Bulk pricing tiers (5+ units: 8% off, 10+ units: 15% off)
 - Multiple payment rails: NexaPay (primary, card), SeamlessChex/AllayPay (ACH), PayRam/Stripe (load balance), Coinbase (crypto), P2P manual (Zelle/Venmo/Wire)
-- Age verification required (18+)
+- Age verification required (21+)
 - All integrations run in MOCK mode (no live keys needed)
 
 ---

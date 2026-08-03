@@ -16,7 +16,7 @@ export const registerSchema = z
     password: passwordRule,
     confirmPassword: z.string(),
     ageConfirm: z.literal(true, {
-      errorMap: () => ({ message: "You must confirm you are 18+" }),
+      errorMap: () => ({ message: "You must confirm you are 21+" }),
     }),
   })
   .refine((d) => d.password === d.confirmPassword, {
@@ -95,13 +95,13 @@ export const checkoutSchema = z.object({
   rail: paymentRailSchema,
   shipService: z.string().default("USPS_PRIORITY"),
   /**
-   * Required RUO / 18+ / laboratory certification. Must be true — UI checkbox
+   * Required RUO / 21+ / laboratory certification. Must be true — UI checkbox
    * alone is not enough; placeOrder rejects unchecked submissions.
    */
   ageConfirm: z.literal(true, {
     errorMap: () => ({
       message:
-        "Confirm you are 18+, purchasing For Research Use Only, and operate a qualified laboratory.",
+        "Confirm you are 21+, purchasing For Research Use Only, and operate a qualified laboratory.",
     }),
   }),
   /** Optional marketing / promo email opt-in at checkout. */

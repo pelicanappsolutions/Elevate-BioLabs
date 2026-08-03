@@ -38,8 +38,8 @@ Every requirement falls into one of four buckets:
 ## Already implemented (baseline in place today)
 | Capability | State |
 |---|---|
-| Age gate — 18+ / RUO self-attestation | ✅ live |
-| Age/consent **audit logging** (IP + timestamp on "I am 18+") | ✅ live |
+| Age gate — 21+ / RUO self-attestation | ✅ live |
+| Age/consent **audit logging** (IP + timestamp on "I am 21+") | ✅ live |
 | RUO "For Research Use Only — Not for human consumption" notices across home / product / cart / checkout / compliance | ✅ live |
 | **Account required to check out** (no anonymous guest orders) | ✅ live |
 | Third-party **COA system** — per-strength batch/lot, purity, test date, public verify + certificate archive | ✅ live |
