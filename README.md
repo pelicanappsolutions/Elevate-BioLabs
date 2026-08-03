@@ -260,5 +260,6 @@ admin reviews the receipt queue in /admin
 
 ## Further Reading
 
+- [`BUILD_LOG.md`](./BUILD_LOG.md) — soft-launch ops log: shipped fixes, prod env snapshot, NOWPayments IPN, next checklist
 - [`DEPLOYMENT.md`](./DEPLOYMENT.md) — Vercel + Neon/Supabase deployment checklist, env var setup, webhook configuration, go-live checklist
 - [`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md) — full build history, schema reference, and the infrastructure-ownership handoff model for client work
