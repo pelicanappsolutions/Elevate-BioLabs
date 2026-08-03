@@ -36,7 +36,8 @@ export const forgotPasswordSchema = z.object({
 export const resetPasswordSchema = z
   .object({
     token: z.string().min(1),
-    password: z.string().min(8),
+    // Same strength as registration / in-app password change — do not weaken.
+    password: passwordRule,
     confirmPassword: z.string(),
   })
   .refine((d) => d.password === d.confirmPassword, {

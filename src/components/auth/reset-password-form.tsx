@@ -67,6 +67,9 @@ export function ResetPasswordForm({ token }: { token: string }) {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
+        <p className="text-xs text-muted-foreground">
+          Min. 8 characters, one uppercase letter, one number.
+        </p>
       </div>
       <div className="space-y-2">
         <Label htmlFor="confirmPassword">Confirm new password</Label>
