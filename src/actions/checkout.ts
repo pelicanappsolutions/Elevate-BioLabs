@@ -6,6 +6,7 @@ import { env } from "@/lib/env";
 import { checkoutSchema } from "@/lib/validations";
 import { priceCart } from "@/lib/pricing";
 import { decrementStock, InsufficientStockError } from "@/lib/inventory";
+import { cancelOrderAndReleaseReservation } from "@/lib/orders/release-reservation";
 import { getShippingRates, type ShippingRate } from "@/lib/shipping/index";
 import { createCharge } from "@/lib/payments/index";
 import { isCheckoutRailAllowed } from "@/lib/payments/available-rails";
@@ -173,8 +174,11 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
   }
 
   // 4) Hand off to the payment adapter (router picks the rail; mock-safe).
+  // If createCharge fails after the order txn committed, cancel + restock so
+  // inventory is not left orphaned under a PENDING_PAYMENT order.
+  let charge;
   try {
-    const charge = await createCharge(rail, {
+    charge = await createCharge(rail, {
       orderId: order.id,
       orderNumber,
       amountCents: priced.totalCents,
@@ -185,67 +189,89 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
       cancelUrl: `${env.SITE_URL}/checkout?canceled=1`,
       metadata: { orderNumber },
     });
-
-    await db.payment.updateMany({
-      where: { orderId: order.id, rail },
-      data: {
-        providerRef: charge.providerRef,
-        status: (isP2P ? "MANUAL_REVIEW" : "PENDING") as PaymentStatus,
-      },
-    });
-
-    if (isP2P) {
-      await db.order.update({ where: { id: order.id }, data: { status: "AWAITING_REVIEW" } });
-    }
-
-    const orderForEmail = {
-      ...order,
-      status: isP2P ? "AWAITING_REVIEW" : order.status,
-      payments: order.payments,
-      rail,
-      instructions: charge.instructions,
-      customerEmail: data.email,
-      guestEmail: data.email,
-    };
-
-    // Always email the customer that the order was placed (P2P includes pay instructions).
-    const customerMail = await sendTransactional("ORDER_CONFIRMATION", {
-      to: data.email,
-      order: orderForEmail,
-    });
-    if (!customerMail.ok) {
-      console.error("[placeOrder] customer ORDER_CONFIRMATION failed:", customerMail.error);
-    }
-
-    // Always notify the shop inbox so ops sees every new order.
-    await notifyAdminNewOrder(orderForEmail).catch((err) => {
-      console.error("[placeOrder] admin new-order email failed:", err);
-    });
-
-    // Persist marketing opt-in from checkout (local list + User flag + Klaviyo).
-    if (data.marketingOptIn) {
-      await recordMarketingOptIn({
-        email: data.email,
-        source: "checkout",
-        name: data.address.fullName,
-        phone: data.address.phone,
-        userId: session.user.id,
-      }).catch(() => {});
-    }
-
-    // Marketing: fire a "started checkout"-style signal for abandoned-cart flows.
-    await trackMarketing("ABANDONED_CART_24H", data.email).catch(() => {});
-
-    return {
-      ok: true,
-      orderNumber,
-      redirectUrl: charge.redirectUrl,
-      instructions: charge.instructions,
-      requiresProof: isP2P,
-    };
   } catch (e) {
     console.error("[placeOrder] payment initialization failed:", e);
     const message = e instanceof Error ? e.message : "Unknown payment error";
+    try {
+      await cancelOrderAndReleaseReservation(
+        {
+          id: order.id,
+          orderNumber: order.orderNumber,
+          items: order.items.map((i) => ({
+            variantId: i.variantId,
+            quantity: i.quantity,
+          })),
+        },
+        {
+          note: `Payment init failed ${order.orderNumber}: ${message}`,
+          auditAction: "PAYMENT_INIT_FAILED",
+          auditMeta: { rail, message },
+        }
+      );
+    } catch (rollbackErr) {
+      console.error(
+        "[placeOrder] rollback after payment init failure also failed:",
+        rollbackErr
+      );
+    }
     return { ok: false, error: `Payment could not be initialized. ${message}` };
   }
+
+  await db.payment.updateMany({
+    where: { orderId: order.id, rail },
+    data: {
+      providerRef: charge.providerRef,
+      status: (isP2P ? "MANUAL_REVIEW" : "PENDING") as PaymentStatus,
+    },
+  });
+
+  if (isP2P) {
+    await db.order.update({ where: { id: order.id }, data: { status: "AWAITING_REVIEW" } });
+  }
+
+  const orderForEmail = {
+    ...order,
+    status: isP2P ? "AWAITING_REVIEW" : order.status,
+    payments: order.payments,
+    rail,
+    instructions: charge.instructions,
+    customerEmail: data.email,
+    guestEmail: data.email,
+  };
+
+  // Always email the customer that the order was placed (P2P includes pay instructions).
+  const customerMail = await sendTransactional("ORDER_CONFIRMATION", {
+    to: data.email,
+    order: orderForEmail,
+  });
+  if (!customerMail.ok) {
+    console.error("[placeOrder] customer ORDER_CONFIRMATION failed:", customerMail.error);
+  }
+
+  // Always notify the shop inbox so ops sees every new order.
+  await notifyAdminNewOrder(orderForEmail).catch((err) => {
+    console.error("[placeOrder] admin new-order email failed:", err);
+  });
+
+  // Persist marketing opt-in from checkout (local list + User flag + Klaviyo).
+  if (data.marketingOptIn) {
+    await recordMarketingOptIn({
+      email: data.email,
+      source: "checkout",
+      name: data.address.fullName,
+      phone: data.address.phone,
+      userId: session.user.id,
+    }).catch(() => {});
+  }
+
+  // Marketing: fire a "started checkout"-style signal for abandoned-cart flows.
+  await trackMarketing("ABANDONED_CART_24H", data.email).catch(() => {});
+
+  return {
+    ok: true,
+    orderNumber,
+    redirectUrl: charge.redirectUrl,
+    instructions: charge.instructions,
+    requiresProof: isP2P,
+  };
 }

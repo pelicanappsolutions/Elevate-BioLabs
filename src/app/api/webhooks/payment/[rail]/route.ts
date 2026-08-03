@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { verifyWebhook, railFromWebhookPath } from "@/lib/payments/index";
-import { adjustStock } from "@/lib/inventory";
+import { cancelOrderAndReleaseReservation } from "@/lib/orders/release-reservation";
 import { sendTransactional, trackMarketing } from "@/lib/email/index";
 import type { PaymentStatus } from "@prisma/client";
 
@@ -86,17 +86,25 @@ export async function POST(
       await trackMarketing("ORDER_CONFIRMATION", to, order);
     }
   } else if (event.status === "FAILED") {
-    // Release reserved stock back to inventory.
-    await db.payment.update({
-      where: { id: payment.id },
-      data: { status: "FAILED", providerRaw: event.raw as object },
+    await cancelOrderAndReleaseReservation(
+      {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        items: order.items.map((i) => ({
+          variantId: i.variantId,
+          quantity: i.quantity,
+        })),
+      },
+      {
+        note: `Failed payment ${order.orderNumber}`,
+        paymentId: payment.id,
+        providerRaw: event.raw as object,
+        auditAction: "PAYMENT_FAILED",
+        auditMeta: { rail, providerRef: event.providerRef },
+      }
+    ).catch((err) => {
+      console.error("[webhook] FAILED payment cancel/restock error:", err);
     });
-    await db.order.update({ where: { id: order.id }, data: { status: "CANCELLED" } });
-    for (const item of order.items) {
-      await adjustStock(item.variantId, item.quantity, "RESERVATION_RELEASE", `Failed payment ${order.orderNumber}`).catch(
-        () => {}
-      );
-    }
   } else if (event.status === "REFUNDED") {
     await db.payment.update({ where: { id: payment.id }, data: { status: "REFUNDED" } });
     await db.order.update({ where: { id: order.id }, data: { status: "REFUNDED" } });
