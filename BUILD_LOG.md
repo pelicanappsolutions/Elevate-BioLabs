@@ -122,3 +122,4 @@ curl -s -X POST https://elevatebiolab.com/api/webhooks/payment/nowpayments \
 | Date | Note |
 |------|------|
 | 2026-08-02 | Soft-launch money/security pass; NOWPayments IPN fix; Hobby cron rollback to daily; Vercel CLI prod audit; this log created |
+| 2026-08-02 | Cookie Accept/Reject gates optional Klaviyo onsite + GA scripts; essential auth/cart unchanged |

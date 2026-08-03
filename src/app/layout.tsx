@@ -7,7 +7,9 @@ import { auth } from "@/lib/auth";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { AgeGate } from "@/components/age-gate";
+import { ConsentGatedTracking } from "@/components/consent-gated-tracking";
 import { CookieConsent } from "@/components/cookie-consent";
+import { env } from "@/lib/env";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
@@ -49,6 +51,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <main className="min-h-[70vh]">{children}</main>
           <Footer />
           <CookieConsent />
+          <ConsentGatedTracking
+            klaviyoPublicKey={env.klaviyo.publicKey}
+            gaMeasurementId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ?? ""}
+          />
         </Providers>
       </body>
     </html>
