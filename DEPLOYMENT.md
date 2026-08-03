@@ -176,7 +176,7 @@ Set every variable from `.env.example` in Vercel → Project → Settings → En
 
 **Vercel Cron**
 - `CRON_SECRET` — required for `/api/cron/sync-tracking` and `/api/cron/p2p-email-sync`. Generate with the same `openssl` command below and set it on the Vercel project; Vercel sends it as `Authorization: Bearer $CRON_SECRET` on cron invocations. Without it, production crons 401.
-- Schedules in `vercel.json`: P2P email sync every **15 minutes**, tracking sync every **6 hours**. Sub-daily crons need **Vercel Pro** (Hobby is limited to once per day and will reject the deploy).
+- Schedules in `vercel.json` are currently **once daily** (Hobby plan limit). For P2P email sync every 15 minutes / tracking every 6 hours, upgrade to **Vercel Pro** and restore the sub-daily expressions — Hobby rejects those deploys.
 
 Generate secrets:
 ```bash
