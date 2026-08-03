@@ -1,6 +1,12 @@
 import { PrismaClient } from "@prisma/client";
 
+/**
+ * Upserts customer-facing ComplianceDoc bodies (RUO / Terms / Privacy).
+ * Safe to re-run. Keeps age language at 21+.
+ */
 const prisma = new PrismaClient();
+
+const RUO = `All products sold by ElevateBioLab are intended for research use only as analytical standards and laboratory reagents. They are not drugs, foods, cosmetics, or dietary supplements, and are not FDA-approved for the diagnosis, treatment, cure, or prevention of any disease. They are not for human or veterinary consumption. By purchasing, you certify you are a qualified researcher aged 21+ operating appropriate analytical equipment (HPLC, LC-MS, or equivalent).`;
 
 const TERMS = `By placing an order, you represent that you are at least 21 years old, operate a laboratory equipped for analytical work, and are purchasing reference standards for lawful in-vitro research only. These materials are not for human or veterinary consumption, diagnosis, or treatment. Misrepresentation of laboratory status, resale for human or veterinary use, or use inconsistent with their RUO labeling is a breach of these terms and may result in order cancellation and account closure. We reserve the right to cancel any order we believe is destined for non-research use.
 
@@ -14,16 +20,36 @@ Marketing email: If you opt in at checkout, via the newsletter form, or in accou
 
 We do not sell your personal information. We use cookies and similar technologies to keep your cart and session working. For questions about your data, contact info@elevatebiolab.com. We comply with applicable U.S. privacy laws and will notify users of any material changes to this policy.`;
 
+const DOCS: { slug: string; title: string; category: string; body: string }[] = [
+  {
+    slug: "ruo-policy",
+    title: "Research Use Only Policy",
+    category: "RUO",
+    body: RUO,
+  },
+  {
+    slug: "terms-of-sale",
+    title: "Terms of Sale",
+    category: "TERMS",
+    body: TERMS,
+  },
+  {
+    slug: "privacy-policy",
+    title: "Privacy Policy",
+    category: "PRIVACY",
+    body: PRIVACY,
+  },
+];
+
 async function main() {
-  await prisma.complianceDoc.update({
-    where: { slug: "terms-of-sale" },
-    data: { body: TERMS },
-  });
-  await prisma.complianceDoc.update({
-    where: { slug: "privacy-policy" },
-    data: { body: PRIVACY },
-  });
-  console.log("Updated TERMS + PRIVACY compliance docs");
+  for (const d of DOCS) {
+    await prisma.complianceDoc.upsert({
+      where: { slug: d.slug },
+      update: { title: d.title, category: d.category, body: d.body, active: true },
+      create: { ...d, active: true },
+    });
+    console.log(`Updated ${d.slug}`);
+  }
 }
 
 main()
