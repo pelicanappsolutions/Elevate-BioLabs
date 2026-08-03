@@ -70,11 +70,6 @@ export function AddToCartPanel({
     });
   }
 
-  function buyNow() {
-    addToCart();
-    router.push("/checkout");
-  }
-
   return (
     <div className="flex flex-col gap-4">
       {/* Bulk tiers */}
@@ -182,26 +177,10 @@ export function AddToCartPanel({
         <span className="text-xl font-bold">{formatPrice(unitPrice * qty)}</span>
       </div>
 
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <Button
-          onClick={addToCart}
-          disabled={outOfStock}
-          size="lg"
-          className="tap flex-1"
-        >
-          <ShoppingCart className="mr-2 h-4 w-4" />
-          {outOfStock ? "Out of stock" : "Add to cart"}
-        </Button>
-        <Button
-          onClick={buyNow}
-          disabled={outOfStock}
-          size="lg"
-          variant="outline"
-          className="tap flex-1"
-        >
-          Order sample
-        </Button>
-      </div>
+      <Button onClick={addToCart} disabled={outOfStock} size="lg" className="tap w-full">
+        <ShoppingCart className="mr-2 h-4 w-4" />
+        {outOfStock ? "Out of stock" : "Add to cart"}
+      </Button>
     </div>
   );
 }
