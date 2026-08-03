@@ -1,27 +1,10 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import type { PaymentRail } from "@prisma/client";
 
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { isConfigured } from "@/lib/env";
+import { getAvailableCheckoutRails } from "@/lib/payments/available-rails";
 import { CheckoutFlow } from "@/components/checkout/checkout-flow";
-
-// Active rails for this launch:
-//   - Crypto (NOWPayments)
-//   - ACH / eCheck (SeamlessChex) when credentials are present
-//   - Zelle + Venmo (manual P2P)
-// Card rails (NexaPay/PayRam/Stripe), Coinbase, and Wire stay in the codebase
-// but are muted at checkout until we intentionally re-enable them.
-function getAvailableRails(): PaymentRail[] {
-  const isDev = process.env.NODE_ENV !== "production";
-  const configured: PaymentRail[] = [];
-
-  if (isConfigured.nowpayments() || isDev) configured.push("NOWPAYMENTS");
-  if (isConfigured.seamlesschex() || isDev) configured.push("SEAMLESSCHEX");
-
-  return [...configured, "P2P_ZELLE", "P2P_VENMO"];
-}
 
 export const metadata: Metadata = {
   title: "Checkout",
@@ -48,7 +31,7 @@ export default async function CheckoutPage() {
       <div className="mt-6">
         <CheckoutFlow
           defaultEmail={session?.user?.email ?? ""}
-          availableRails={getAvailableRails()}
+          availableRails={getAvailableCheckoutRails()}
           savedAddresses={addresses.map((a) => ({
             id: a.id,
             label: a.label,

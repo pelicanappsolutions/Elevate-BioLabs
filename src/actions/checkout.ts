@@ -8,6 +8,7 @@ import { priceCart } from "@/lib/pricing";
 import { decrementStock, InsufficientStockError } from "@/lib/inventory";
 import { getShippingRates, type ShippingRate } from "@/lib/shipping/index";
 import { createCharge } from "@/lib/payments/index";
+import { isCheckoutRailAllowed } from "@/lib/payments/available-rails";
 import { notifyAdminNewOrder, sendTransactional, trackMarketing } from "@/lib/email/index";
 import { recordMarketingOptIn } from "@/lib/marketing";
 import { generateOrderNumber, FREE_SHIPPING_THRESHOLD_CENTS } from "@/lib/utils";
@@ -81,6 +82,16 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
     return { ok: false, error: "Please sign in to complete your order." };
   }
   const rail = data.rail as PaymentRail;
+
+  // Same allowlist as the checkout UI — reject muted/unconfigured rails before
+  // creating an order or touching inventory (client can still POST any enum).
+  if (!isCheckoutRailAllowed(rail)) {
+    return {
+      ok: false,
+      error: "That payment method is not available. Please choose another.",
+    };
+  }
+
   const isP2P = P2P_RAILS.includes(rail);
 
   // 1) Authoritative shipping cost — re-quote server-side, never trust client.

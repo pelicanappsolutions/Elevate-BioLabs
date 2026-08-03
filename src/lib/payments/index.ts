@@ -88,6 +88,10 @@ export function railFromWebhookPath(pathSegment: string): PaymentRail | null {
  */
 export { PAYMENT_RAIL_META } from "./meta";
 export type { PaymentRailMeta, PaymentRailName } from "./meta";
+export {
+  getAvailableCheckoutRails,
+  isCheckoutRailAllowed,
+} from "./available-rails";
 
 export { p2pAdapter, p2pAdapterFor };
 export type {
