@@ -41,7 +41,9 @@ export default auth((req) => {
 
 function redirectToLogin(nextUrl: NextRequest["nextUrl"]) {
   const url = new URL("/login", nextUrl);
-  url.searchParams.set("callbackUrl", nextUrl.pathname);
+  // Keep query string (e.g. /checkout/success?order=EBL-…) so login returns
+  // to the same confirmation page instead of a bare /checkout/success 404.
+  url.searchParams.set("callbackUrl", `${nextUrl.pathname}${nextUrl.search}`);
   return NextResponse.redirect(url);
 }
 

@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { CheckCircle2, Clock, Package } from "lucide-react";
 
+import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { canAccessCustomerOrder } from "@/lib/orders/access";
 import { getAdapter } from "@/lib/payments/index";
 import { formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -29,6 +31,12 @@ export default async function CheckoutSuccessPage({
   const orderNumber = searchParams.order;
   if (!orderNumber) notFound();
 
+  // Middleware guards /checkout, but enforce session + ownership here so
+  // another logged-in customer cannot open ?order=EBL-… and see ship-to PII.
+  const session = await auth();
+  const callback = `/checkout/success?order=${encodeURIComponent(orderNumber)}`;
+  if (!session?.user?.id) redirect(`/login?callbackUrl=${encodeURIComponent(callback)}`);
+
   const order = await db.order.findUnique({
     where: { orderNumber },
     include: {
@@ -37,7 +45,8 @@ export default async function CheckoutSuccessPage({
       receipts: { orderBy: { createdAt: "desc" }, take: 1 },
     },
   });
-  if (!order) notFound();
+  // Same response for missing vs not-owned — do not leak order existence.
+  if (!order || !canAccessCustomerOrder(session.user.id, order.userId)) notFound();
 
   const payment = order.payments[0];
   const isP2P = payment ? P2P_RAILS.includes(payment.rail) : false;
