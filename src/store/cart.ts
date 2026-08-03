@@ -51,15 +51,18 @@ export const useCart = create<CartState>()(
       remove: (variantId) =>
         set((state) => ({ items: state.items.filter((i) => i.variantId !== variantId) })),
       setQty: (variantId, qty) =>
-        set((state) => ({
-          items: state.items
-            .map((i) =>
+        set((state) => {
+          if (qty <= 0) {
+            return { items: state.items.filter((i) => i.variantId !== variantId) };
+          }
+          return {
+            items: state.items.map((i) =>
               i.variantId === variantId
-                ? { ...i, quantity: Math.max(1, Math.min(qty, i.maxStock)) }
+                ? { ...i, quantity: Math.min(qty, i.maxStock) }
                 : i
-            )
-            .filter((i) => i.quantity > 0),
-        })),
+            ),
+          };
+        }),
       clear: () => set({ items: [] }),
       setHydrated: () => set({ hydrated: true }),
       count: () => get().items.reduce((n, i) => n + i.quantity, 0),

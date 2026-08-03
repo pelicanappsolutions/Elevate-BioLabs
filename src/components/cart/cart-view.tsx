@@ -144,21 +144,37 @@ function CartLineItem({ item }: { item: CartItem }) {
 
   const [offset, setOffset] = React.useState(0);
   const startX = React.useRef<number | null>(null);
+  /** Latest drag distance — touchend can fire before the last setState commit. */
+  const offsetRef = React.useRef(0);
 
   /** Swipe-left-to-remove. Only tracks leftward drags, and only commits past the
    *  threshold so an accidental brush doesn't delete a line. */
   function onTouchStart(e: React.TouchEvent) {
     startX.current = e.touches[0]?.clientX ?? null;
+    offsetRef.current = 0;
   }
   function onTouchMove(e: React.TouchEvent) {
     const touchX = e.touches[0]?.clientX;
     if (startX.current == null || touchX == null) return;
-    setOffset(Math.min(0, touchX - startX.current));
+    const next = Math.min(0, touchX - startX.current);
+    offsetRef.current = next;
+    setOffset(next);
   }
   function onTouchEnd() {
-    if (offset < -SWIPE_THRESHOLD) remove(item.variantId);
+    if (offsetRef.current < -SWIPE_THRESHOLD) {
+      remove(item.variantId);
+    }
+    offsetRef.current = 0;
     setOffset(0);
     startX.current = null;
+  }
+
+  function decreaseQty() {
+    if (item.quantity <= 1) {
+      remove(item.variantId);
+      return;
+    }
+    setQty(item.variantId, item.quantity - 1);
   }
 
   return (
@@ -172,6 +188,7 @@ function CartLineItem({ item }: { item: CartItem }) {
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
+        onTouchCancel={onTouchEnd}
         style={{ transform: `translateX(${offset}px)` }}
         className="relative flex gap-3 border border-border bg-card p-3 transition-transform duration-150 ease-out"
       >
@@ -207,8 +224,12 @@ function CartLineItem({ item }: { item: CartItem }) {
             <div className="flex items-center rounded-md border border-border">
               <button
                 type="button"
-                aria-label={`Decrease quantity of ${item.name}`}
-                onClick={() => setQty(item.variantId, item.quantity - 1)}
+                aria-label={
+                  item.quantity <= 1
+                    ? `Remove ${item.name} from cart`
+                    : `Decrease quantity of ${item.name}`
+                }
+                onClick={decreaseQty}
                 className="flex h-9 w-9 items-center justify-center text-lg leading-none transition-colors hover:bg-accent"
               >
                 −
@@ -225,7 +246,7 @@ function CartLineItem({ item }: { item: CartItem }) {
               </button>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <span className="text-sm font-semibold">
                 {formatPrice(item.priceCents * item.quantity)}
               </span>
@@ -233,7 +254,7 @@ function CartLineItem({ item }: { item: CartItem }) {
                 type="button"
                 aria-label={`Remove ${item.name} from cart`}
                 onClick={() => remove(item.variantId)}
-                className="hidden h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive sm:flex"
+                className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
               >
                 <Trash2 className="h-4 w-4" />
               </button>
