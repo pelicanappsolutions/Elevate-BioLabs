@@ -106,7 +106,8 @@ export async function adjustStock(
   variantId: string,
   delta: number,
   reason: "RESTOCK" | "ADJUSTMENT" | "RETURN" | "RESERVATION_RELEASE",
-  note?: string
+  note?: string,
+  orderId?: string
 ) {
   return db.$transaction(async (tx) => {
     const variant = await tx.productVariant.findUniqueOrThrow({
@@ -121,7 +122,15 @@ export async function adjustStock(
       data: { stock: after, version: { increment: 1 } },
     });
     await tx.inventoryLog.create({
-      data: { variantId, reason, delta, before: variant.stock, after, note },
+      data: {
+        variantId,
+        reason,
+        delta,
+        before: variant.stock,
+        after,
+        note,
+        orderId,
+      },
     });
     await recomputeProductAggregates(tx, variant.productId);
     return after;

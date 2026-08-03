@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { verifyWebhook, railFromWebhookPath } from "@/lib/payments/index";
-import { cancelOrderAndReleaseReservation } from "@/lib/orders/release-reservation";
+import {
+  cancelOrderAndReleaseReservation,
+  releaseOrderStockIfNeeded,
+} from "@/lib/orders/release-reservation";
 import { sendTransactional, trackMarketing } from "@/lib/email/index";
-import type { PaymentStatus } from "@prisma/client";
+import type { OrderStatus, PaymentStatus } from "@prisma/client";
 
 /**
  * Unified payment webhook: POST /api/webhooks/payment/{rail}
@@ -111,8 +114,18 @@ export async function POST(
       console.error("[webhook] FAILED payment cancel/restock error:", err);
     });
   } else if (event.status === "REFUNDED") {
+    const previousStatus = order.status as OrderStatus;
     await db.payment.update({ where: { id: payment.id }, data: { status: "REFUNDED" } });
     await db.order.update({ where: { id: order.id }, data: { status: "REFUNDED" } });
+    await releaseOrderStockIfNeeded({
+      orderId: order.id,
+      previousStatus,
+      nextStatus: "REFUNDED",
+      reason: "RETURN",
+      note: `Gateway refund ${order.orderNumber}`,
+    }).catch((err) => {
+      console.error("[webhook] REFUNDED restock error:", err);
+    });
   } else {
     // PENDING — record but keep order awaiting.
     await db.payment.update({ where: { id: payment.id }, data: { status: "PENDING" } });

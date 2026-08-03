@@ -11,6 +11,10 @@ import {
   orderNotesSchema,
 } from "@/lib/validations";
 import { adjustStock, recomputeProductAggregates } from "@/lib/inventory";
+import {
+  releaseOrderStockIfNeeded,
+  STOCK_RELEASED_STATUSES,
+} from "@/lib/orders/release-reservation";
 import { uploadFile, deleteFile } from "@/lib/storage";
 import { createLabel } from "@/lib/shipping/usps";
 import { createShippoLabel } from "@/lib/shipping/shippo";
@@ -202,12 +206,61 @@ export async function updateOrderStatus(input: {
   const admin = await requireAdmin().catch(() => null);
   if (!admin) return { ok: false, error: "Unauthorized" };
 
+  const nextStatus = input.status as OrderStatus;
+  const existing = await db.order.findUnique({
+    where: { id: input.orderId },
+    select: { id: true, status: true, orderNumber: true },
+  });
+  if (!existing) return { ok: false, error: "Order not found" };
+
   const order = await db.order.update({
     where: { id: input.orderId },
-    data: { status: input.status as OrderStatus },
+    data: { status: nextStatus },
   });
-  await audit(admin.id, "ORDER_STATUS_CHANGE", "Order", order.id, { status: input.status });
+
+  // Keep payment rows consistent when admin cancels / refunds from the picker.
+  if (nextStatus === "CANCELLED") {
+    await db.payment.updateMany({
+      where: {
+        orderId: order.id,
+        status: { notIn: ["SUCCEEDED", "REFUNDED", "FAILED"] },
+      },
+      data: { status: "FAILED" },
+    });
+  } else if (nextStatus === "REFUNDED") {
+    await db.payment.updateMany({
+      where: { orderId: order.id, status: "SUCCEEDED" },
+      data: { status: "REFUNDED" },
+    });
+  }
+
+  if (STOCK_RELEASED_STATUSES.includes(nextStatus)) {
+    try {
+      await releaseOrderStockIfNeeded({
+        orderId: order.id,
+        previousStatus: existing.status,
+        nextStatus,
+        reason: nextStatus === "REFUNDED" ? "RETURN" : "RESERVATION_RELEASE",
+        note: `Admin set ${nextStatus} ${existing.orderNumber}`,
+      });
+    } catch (e) {
+      console.error("[updateOrderStatus] inventory release failed:", e);
+      return {
+        ok: false,
+        error:
+          e instanceof Error
+            ? e.message
+            : "Status saved but inventory could not be restored.",
+      };
+    }
+  }
+
+  await audit(admin.id, "ORDER_STATUS_CHANGE", "Order", order.id, {
+    status: input.status,
+    previousStatus: existing.status,
+  });
   revalidatePath("/admin");
+  revalidatePath(`/admin/orders/${order.id}`);
   return { ok: true };
 }
 
@@ -669,8 +722,15 @@ export async function refundOrder(orderId: string): Promise<{ ok: boolean; error
   const admin = await requireAdmin().catch(() => null);
   if (!admin) return { ok: false, error: "Unauthorized" };
 
-  // Payments are MOCK — no gateway call. Keep Payment[] consistent with the
-  // order status so the detail view reads correctly.
+  const existing = await db.order.findUnique({
+    where: { id: orderId },
+    select: { id: true, status: true, orderNumber: true },
+  });
+  if (!existing) return { ok: false, error: "Order not found" };
+  if (existing.status === "REFUNDED") return { ok: true };
+
+  // Status + ledger only — live card/ACH/crypto refund APIs are not wired yet.
+  // Always restore inventory that was taken at checkout.
   await db.$transaction([
     db.order.update({ where: { id: orderId }, data: { status: "REFUNDED" } }),
     db.payment.updateMany({
@@ -678,7 +738,29 @@ export async function refundOrder(orderId: string): Promise<{ ok: boolean; error
       data: { status: "REFUNDED" },
     }),
   ]);
-  await audit(admin.id, "ORDER_REFUNDED", "Order", orderId);
+
+  try {
+    await releaseOrderStockIfNeeded({
+      orderId,
+      previousStatus: existing.status,
+      nextStatus: "REFUNDED",
+      reason: "RETURN",
+      note: `Admin refund ${existing.orderNumber}`,
+    });
+  } catch (e) {
+    console.error("[refundOrder] inventory release failed:", e);
+    return {
+      ok: false,
+      error:
+        e instanceof Error
+          ? e.message
+          : "Refund recorded but inventory could not be restored.",
+    };
+  }
+
+  await audit(admin.id, "ORDER_REFUNDED", "Order", orderId, {
+    previousStatus: existing.status,
+  });
   revalidatePath("/admin");
   revalidatePath(`/admin/orders/${orderId}`);
   return { ok: true };
