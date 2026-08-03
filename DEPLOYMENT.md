@@ -41,7 +41,7 @@ npm run dev -- -p 3001
 
 **3. Open `http://localhost:3001`** in your browser.
 
-**Login:** `admin@elevatebiolabs.com` / `Admin123!change-me`
+**Login:** `admin@elevatebiolab.com` / `Admin123!change-me`
 
 ---
 
@@ -231,7 +231,7 @@ Options, in order of recommendation:
 
 ## 5. Seeding Production Data
 
-`npm run db:seed` (→ `prisma/seed.ts`) is written to be idempotent (`upsert` on unique keys), so it's safe to run against production, but it **creates the default admin account** (`admin@elevatebiolabs.com` / `Admin123!change-me`), 6 categories, and 17 sample peptides (10 with product photos, all with sample COAs).
+`npm run db:seed` (→ `prisma/seed.ts`) is written to be idempotent (`upsert` on unique keys), so it's safe to run against production, but it **creates the default admin account** (`admin@elevatebiolab.com` / `Admin123!change-me`), 6 categories, and 17 sample peptides (10 with product photos, all with sample COAs).
 
 For a real launch:
 1. Either edit `prisma/seed.ts` to point at real product data / a real admin email before running it in production, **or**

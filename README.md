@@ -171,7 +171,7 @@ persists in the container's volume.
 
 | Field | Value |
 |---|---|
-| Email | `admin@elevatebiolabs.com` |
+| Email | `admin@elevatebiolab.com` |
 | Password | `Admin123!change-me` |
 
 > Change this password (or the seed script) before deploying anywhere reachable by the public.
