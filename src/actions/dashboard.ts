@@ -103,7 +103,14 @@ export async function saveAddress(input: unknown): Promise<{ ok: boolean; error?
   }
 
   if (id) {
-    await db.address.update({ where: { id }, data: { ...parsed.data, isDefault } });
+    // Scope by userId — never update another customer's address by id alone.
+    const updated = await db.address.updateMany({
+      where: { id, userId: user.id },
+      data: { ...parsed.data, isDefault },
+    });
+    if (updated.count === 0) {
+      return { ok: false, error: "Address not found." };
+    }
   } else {
     await db.address.create({ data: { ...parsed.data, userId: user.id, isDefault } });
   }
