@@ -254,6 +254,7 @@ POST https://<your-domain>/api/webhooks/payment/{rail}
 | Coinbase Commerce | `/api/webhooks/payment/coinbase` | Coinbase Commerce → Settings → Webhook subscriptions → copy shared secret into `COINBASE_COMMERCE_WEBHOOK_SECRET` |
 | SeamlessChex/AllayPay | `/api/webhooks/payment/seamlesschex` | Provider dashboard → Webhooks → paste into `SEAMLESSCHEX_WEBHOOK_SECRET` |
 | PayRam | `/api/webhooks/payment/payram` | Provider dashboard → Webhooks → paste into `PAYRAM_WEBHOOK_SECRET` |
+| NOWPayments (crypto) | `/api/webhooks/payment/nowpayments` | NOWPayments dashboard → Payment Settings → generate **IPN Secret** → `NOWPAYMENTS_WEBHOOK_SECRET`. Also set the IPN callback URL (or rely on `ipn_callback_url` sent at invoice create). |
 | P2P (Zelle/Venmo/Wire) | *(none — manual approval flow)* | n/a |
 
 After registering each webhook in the provider's dashboard, send a **test event** from that dashboard and confirm:

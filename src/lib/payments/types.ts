@@ -45,6 +45,10 @@ export interface NormalizedWebhookEvent {
   status: "SUCCEEDED" | "FAILED" | "PENDING" | "REFUNDED";
   amountCents?: number;
   feeCents?: number;
+  /** Merchant order number (e.g. EBL-…) when the provider echoes it. */
+  orderNumber?: string;
+  /** NOWPayments invoice id — may differ from payment_id on IPN. */
+  invoiceId?: string;
   raw: unknown;
 }
 

@@ -1,4 +1,3 @@
-import crypto from "crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const envState = vi.hoisted(() => ({
@@ -24,13 +23,20 @@ vi.mock("@/lib/env", () => ({
   },
 }));
 
-import { nowpaymentsAdapter } from "@/lib/payments/nowpayments";
+import {
+  nowpaymentsAdapter,
+  nowpaymentsSignature,
+} from "@/lib/payments/nowpayments";
 
-const BODY = JSON.stringify({
-  payment_id: "np_123",
+const BODY_OBJ = {
+  payment_id: 123456789,
+  invoice_id: 987654321,
+  order_id: "EBL-7F3K9Q",
   payment_status: "finished",
-  price_amount: "42.50",
-});
+  price_amount: 42.5,
+};
+
+const BODY = JSON.stringify(BODY_OBJ);
 
 beforeEach(() => {
   envState.webhookSecret = "";
@@ -50,7 +56,7 @@ describe("nowpaymentsAdapter.verifyAndParse", () => {
     expect(event).toBeNull();
   });
 
-  it("accepts unsigned bodies outside production for local mock", async () => {
+  it("accepts numeric payment_id / invoice_id / order_id outside production", async () => {
     vi.stubEnv("NODE_ENV", "development");
 
     const event = await nowpaymentsAdapter.verifyAndParse({
@@ -60,7 +66,9 @@ describe("nowpaymentsAdapter.verifyAndParse", () => {
 
     expect(event).toMatchObject({
       rail: "NOWPAYMENTS",
-      providerRef: "np_123",
+      providerRef: "123456789",
+      invoiceId: "987654321",
+      orderNumber: "EBL-7F3K9Q",
       status: "SUCCEEDED",
       amountCents: 4250,
     });
@@ -77,19 +85,17 @@ describe("nowpaymentsAdapter.verifyAndParse", () => {
     expect(event).toBeNull();
   });
 
-  it("accepts a valid HMAC-SHA512 signature", async () => {
+  it("accepts a valid sorted-key HMAC-SHA512 signature", async () => {
     envState.webhookSecret = "ipn_secret";
-    const sig = crypto
-      .createHmac("sha512", "ipn_secret")
-      .update(BODY)
-      .digest("hex");
+    const sig = nowpaymentsSignature("ipn_secret", BODY_OBJ);
 
     const event = await nowpaymentsAdapter.verifyAndParse({
       rawBody: BODY,
       headers: new Headers({ "x-nowpayments-sig": sig }),
     });
 
-    expect(event?.providerRef).toBe("np_123");
+    expect(event?.providerRef).toBe("123456789");
     expect(event?.status).toBe("SUCCEEDED");
+    expect(event?.orderNumber).toBe("EBL-7F3K9Q");
   });
 });

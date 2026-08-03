@@ -47,13 +47,41 @@ export async function POST(
   }
 
   // Find the payment this event refers to.
-  const payment = await db.payment.findFirst({
-    where: { providerRef: event.providerRef, rail },
-    include: { order: { include: { items: true } } },
-  });
+  // NOWPayments invoices store invoice `id` as providerRef at checkout, but IPN
+  // callbacks send a different `payment_id` (plus invoice_id / order_id). Match
+  // all three so a paid invoice actually flips the order to PAID.
+  const includeOrder = { order: { include: { items: true } } } as const;
+  let payment =
+    (await db.payment.findFirst({
+      where: { providerRef: event.providerRef, rail },
+      include: includeOrder,
+    })) ??
+    (event.invoiceId
+      ? await db.payment.findFirst({
+          where: { providerRef: event.invoiceId, rail },
+          include: includeOrder,
+        })
+      : null) ??
+    (event.orderNumber
+      ? await db.payment.findFirst({
+          where: { rail, order: { orderNumber: event.orderNumber } },
+          include: includeOrder,
+          orderBy: { createdAt: "desc" },
+        })
+      : null);
+
   if (!payment) {
     // Nothing to reconcile — ack so the provider stops retrying.
     return NextResponse.json({ received: true, matched: false });
+  }
+
+  // Keep providerRef on the live payment_id so later IPNs match directly.
+  if (payment.providerRef !== event.providerRef) {
+    await db.payment.update({
+      where: { id: payment.id },
+      data: { providerRef: event.providerRef },
+    });
+    payment = { ...payment, providerRef: event.providerRef };
   }
 
   // Idempotency: if already in a terminal state, ack without re-processing.

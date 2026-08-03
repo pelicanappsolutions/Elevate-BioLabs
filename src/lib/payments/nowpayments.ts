@@ -7,6 +7,11 @@
  *
  * Webhook path: POST /api/webhooks/payment/nowpayments
  * NOWPayments calls the configured IPN callback URL with status updates.
+ *
+ * Important NOWPayments quirks handled here:
+ * - Invoice create returns `id` (invoice id); IPN later sends `payment_id`
+ *   (different) plus `invoice_id` / `order_id` — webhook matching must use all three.
+ * - IPN HMAC must be computed over alphabetically sorted JSON keys, not the raw body.
  */
 import crypto from "crypto";
 import { PaymentRail } from "@prisma/client";
@@ -42,6 +47,44 @@ function mapStatus(
     default:
       return null;
   }
+}
+
+/** NOWPayments IPN requires deep key-sorted JSON before HMAC-SHA512. */
+export function sortObject(obj: unknown): unknown {
+  if (Array.isArray(obj)) return obj.map(sortObject);
+  if (obj && typeof obj === "object") {
+    return Object.keys(obj as Record<string, unknown>)
+      .sort()
+      .reduce<Record<string, unknown>>((result, key) => {
+        result[key] = sortObject((obj as Record<string, unknown>)[key]);
+        return result;
+      }, {});
+  }
+  return obj;
+}
+
+export function nowpaymentsSignature(secret: string, body: unknown): string {
+  return crypto
+    .createHmac("sha512", secret)
+    .update(JSON.stringify(sortObject(body)))
+    .digest("hex");
+}
+
+function asId(value: unknown): string {
+  if (typeof value === "string" && value.trim()) return value.trim();
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  return "";
+}
+
+function asAmountCents(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return Math.round(value * 100);
+  }
+  if (typeof value === "string" && value.trim()) {
+    const n = parseFloat(value);
+    if (Number.isFinite(n)) return Math.round(n * 100);
+  }
+  return undefined;
 }
 
 export const nowpaymentsAdapter: PaymentAdapter = {
@@ -83,14 +126,15 @@ export const nowpaymentsAdapter: PaymentAdapter = {
     }
 
     const json = JSON.parse(rawBody) as {
-      id?: string;
-      payment_id?: string;
+      id?: string | number;
+      payment_id?: string | number;
       invoice_url?: string;
       payment_url?: string;
       status?: string;
     };
 
-    const providerRef = json.id || json.payment_id;
+    // Invoice endpoint returns invoice id — IPN later uses payment_id + invoice_id.
+    const providerRef = asId(json.id) || asId(json.payment_id);
     if (!providerRef) {
       throw new Error("NOWPayments response missing id/payment_id");
     }
@@ -113,16 +157,10 @@ export const nowpaymentsAdapter: PaymentAdapter = {
       return null;
     }
 
-    const paymentId =
-      (typeof body.payment_id === "string" && body.payment_id) ||
-      (typeof body.id === "string" && body.id) ||
-      "";
-    const paymentStatus =
-      (typeof body.payment_status === "string" && body.payment_status) ||
-      (typeof body.status === "string" && body.status) ||
-      "";
-    const priceAmount =
-      typeof body.price_amount === "string" ? body.price_amount : undefined;
+    const paymentId = asId(body.payment_id) || asId(body.id);
+    const invoiceId = asId(body.invoice_id);
+    const orderNumber = asId(body.order_id);
+    const paymentStatus = asId(body.payment_status) || asId(body.status);
 
     const secret = resolveWebhookSecret(env.nowpayments.webhookSecret, {
       rail: "NOWPAYMENTS",
@@ -130,10 +168,7 @@ export const nowpaymentsAdapter: PaymentAdapter = {
     if (secret.mode === "reject") return null;
     if (secret.mode === "verify") {
       const signature = input.headers.get("x-nowpayments-sig") ?? "";
-      const expected = crypto
-        .createHmac("sha512", secret.secret)
-        .update(input.rawBody)
-        .digest("hex");
+      const expected = nowpaymentsSignature(secret.secret, body);
 
       const sigBuf = Buffer.from(signature);
       const expBuf = Buffer.from(expected);
@@ -148,13 +183,17 @@ export const nowpaymentsAdapter: PaymentAdapter = {
     const status = mapStatus(paymentStatus);
     if (!status) return null;
 
+    // Prefer payment_id for providerRef (canonical on IPN); fall back to invoice id.
+    const providerRef = paymentId || invoiceId;
+    if (!providerRef) return null;
+
     return {
       rail: PaymentRail.NOWPAYMENTS,
-      providerRef: paymentId,
+      providerRef,
       status,
-      amountCents: priceAmount
-        ? Math.round(parseFloat(priceAmount) * 100)
-        : undefined,
+      amountCents: asAmountCents(body.price_amount),
+      orderNumber: orderNumber || undefined,
+      invoiceId: invoiceId || undefined,
       raw: body,
     };
   },
