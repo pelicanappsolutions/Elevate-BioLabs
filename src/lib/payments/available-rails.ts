@@ -22,7 +22,8 @@ export function getAvailableCheckoutRails(
   const configured: PaymentRail[] = [];
 
   if (isConfigured.nowpayments() || isDev) configured.push("NOWPAYMENTS");
-  if (isConfigured.seamlesschex() || isDev) configured.push("SEAMLESSCHEX");
+  // ACH (SeamlessChex) disabled until a new high-risk ACH provider is onboarded.
+  // if (isConfigured.seamlesschex() || isDev) configured.push("SEAMLESSCHEX");
 
   return [...configured, "P2P_ZELLE", "P2P_VENMO"];
 }
