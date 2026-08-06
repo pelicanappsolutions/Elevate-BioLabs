@@ -117,6 +117,8 @@ export const env = {
       city: process.env.SHIP_FROM_CITY ?? "Belle Chasse",
       state: process.env.SHIP_FROM_STATE ?? "LA",
       zip: process.env.SHIP_FROM_ZIP ?? "70037",
+      email: process.env.SHIP_FROM_EMAIL ?? "info@elevatebiolab.com",
+      phone: process.env.SHIP_FROM_PHONE ?? "",
     },
   },
   shippo: {
