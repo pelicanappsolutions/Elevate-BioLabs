@@ -135,7 +135,13 @@ async function createShipment(input: {
         zip: env.usps.from.zip,
         country: "US",
         email: env.usps.from.email,
-        ...(env.usps.from.phone ? { phone: env.usps.from.phone } : {}),
+        ...(env.usps.from.phone
+          ? {
+              phone: env.usps.from.phone.startsWith("+")
+                ? env.usps.from.phone
+                : `+1${env.usps.from.phone.replace(/\D/g, "")}`,
+            }
+          : {}),
       },
       address_to: {
         name: input.toName || "Customer",
